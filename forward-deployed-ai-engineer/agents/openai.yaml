@@ -1,0 +1,4 @@
+interface:
+  display_name: "Forward Deployed AI Engineer"
+  short_description: "Forward Deployed AI Engineer"
+  default_prompt: "Use $forward-deployed-ai-engineer to apply a risk-elastic Minimum Responsible Methodology (MRM) to discovery, design, deployment, assurance, operation, and transfer of AI-enabled systems in real organizations."
