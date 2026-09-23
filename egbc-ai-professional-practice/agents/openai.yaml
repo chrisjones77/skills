@@ -1,0 +1,4 @@
+interface:
+  display_name: "EGBC AI Professional Practice"
+  short_description: "Assess AI use in regulated professional work"
+  default_prompt: "Use $egbc-ai-professional-practice to assess this proposed AI use and produce the required risk, checking, and documentation controls."
