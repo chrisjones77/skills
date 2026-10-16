@@ -1,0 +1,4 @@
+interface:
+  display_name: "Engineering Work Safety"
+  short_description: "Use the 0xF engineering lenses responsibly"
+  default_prompt: "Use $engineering-work-safety to review this engineering work across people, technology, and their interfaces."
