@@ -20,6 +20,8 @@ Use this framework to discuss engineering work across **silicon, flesh, and in b
 
 Read [references/framework.md](references/framework.md) for the task-class and command map, task model and scheduling prompts, concern-response path, and lightweight records.
 
+When a named standard informs the discussion, record its identifier, title, edition, and the topic it informs. State whether it is used as inspiration or under a separately established conformity obligation. If applicability is unresolved, mark it as a candidate for review; do not assume it is mandatory or optional. Use the [standards lens record](references/framework.md#standards-lens-record) or reference an existing equivalent record. Keep clause-level evidence and compliance decisions in the separate assessment process.
+
 ## Safety commitments
 
 When delivery pressure conflicts with a credible safety concern, make space to assess and address it before proceeding as planned. Schedule, cost, and convenience alone do not justify leaving a material risk unexamined. Unresolved material risks need an authorized decision owner, documented rationale and impacts, interim protections, and a review point. If no owner can resolve the risk, escalate it and keep it visible. These are aspirational framework commitments; they do not establish that an organization has fulfilled them.
