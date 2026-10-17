@@ -129,6 +129,7 @@ If this work relates to a formal compliance obligation, use this framework only 
 - **Affected people and systems (including interfaces and work conditions):**
 - **Primary task class / command word:**
 - **Related class tags (if useful):**
+- **Standards lens record(s), if used:** Reference the records below or their existing project equivalents.
 - **Evidence or answer:**
 - **Open question / risk:**
 - **Interim protection while risk remains open:**
@@ -140,13 +141,33 @@ If this work relates to a formal compliance obligation, use this framework only 
 - **Risk status / closure rationale:**
 - **Revisit when:**
 
-For work with a defined compliance obligation, track these separately from the mode record:
+### Standards lens record
 
-- **Requirement / source:**
+Use this short record only when a named standard informs the discussion. Reuse an existing project reference rather than copying it into every review.
+
+- **Reference ID, identifier, and title:**
+- **Edition and relevant amendments:** Mark unknown details as unverified.
+- **Source, verification date, and access limits:** State whether the full text or only a summary was available.
+- **Topic informing the discussion:**
+- **Use:** Inspiration, or a separately established conformity obligation with a pointer to its assessment record.
+- **Applicability:** Candidate, confirmed for the stated scope, or out of scope with rationale.
+
+If a possible obligation has not been resolved, record it as a candidate and assign its applicability review through the concern-response path. Do not silently treat it as optional inspiration or as an established requirement. Missing editions or limited source access constrain what the discussion can support; do not invent details or infer conformity from a summary.
+
+The lens record identifies what informs the discussion. Keep clause-level evidence, findings, and compliance decisions in the separate assessment process. Completing this record does not establish conformity.
+
+### Separate compliance assessment
+
+For work with a defined compliance obligation, track these separately from the task record:
+
+- **Requirement / source, edition or effective date, and applicable clauses:**
 - **Scope and applicability:**
+- **Basis of obligation:** Such as law, contract, or an explicitly adopted requirement.
 - **Accountable owner / decision authority:**
+- **Reviewer and assessment method:**
 - **Evidence required and evidence located:**
 - **Gap, disposition, and follow-up:**
+- **Decision, rationale, and permitted claim wording:**
 
 ## Interpreting overlaps
 
