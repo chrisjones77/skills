@@ -2,7 +2,7 @@
 
 ## Inspiration and scope
 
-This framework draws on real-time systems work, where engineering attention spans constructing and maintaining systems, diagnosing faults, managing constraints, communicating operational state, and considering the consequences of delayed or missed behavior. The modes generalize that experience into prompts for discussion across engineering work. They do not encode a particular real-time architecture, timing model, safety case, or verification method.
+This framework applies real-time systems engineering discipline to software engineering practice. Code 0x0 frames work before dispatch; codes 0x1–0xF identify task classes. Each dispatched work item pairs a class with a concrete task and command word that states the requested action. Scheduling then makes explicit what work is released, what takes precedence, what constraints apply, and how lateness, overload, interruption, and recovery are handled. The code and command provide a shared vocabulary; they do not, by themselves, define an executable scheduler or guarantee timing behavior.
 
 ## Purpose
 
@@ -16,51 +16,75 @@ When delivery pressure conflicts with a credible safety concern, the organizatio
 
 These are aspirational commitments in this framework, not evidence that an organization has fulfilled them. The framework supports reflection; it does not by itself establish that a workplace is safe or that psychosocial hazards have been adequately controlled.
 
-Within these commitments, the 0xF Modes name different kinds of attention that engineering work may need. They are a reflective tool for making the nature of work visible, noticing neglected concerns, and prompting useful questions during planning, review, incident learning, and retrospectives; the organizational commitments above apply whether or not the modes are used. The hexadecimal framing offers a simple sequence: **0x0** orients the work before selecting among the fifteen named modes, **0x1–0xE** cover the working lenses, and **0xF** holds the future-facing lens. This is a mnemonic structure, not a claim that the modes form a mathematically complete system.
+Within these commitments, **0x0** orients the work before dispatch; **0x1–0xE** identify operational and supporting task classes; **0xF** identifies future-facing work. A task instance uses a 0x1–0xF code to identify its class and a command word to state the requested action. This is a taxonomy and task interface, not a claim that the hexadecimal set is mathematically complete or that a code alone makes work schedulable.
 
-A mode is a **lens on the work**, not a job title, personality type, seniority level, team, phase gate, control, or measure of individual performance. Anyone may use any mode. Work can involve several modes at once, and the relevant modes can change as the work changes. Completing a mode prompt does not, by itself, show that a risk was controlled or a requirement was met. The Asimov reference is a literary prompt to ask how human–technology relationships should be governed and whose safety and agency count. It does not supply the answer, define enforceable rules, or substitute for responsibilities, requirements, or evidence.
+A mode is a **task class**, not a job title, personality type, seniority level, team, phase gate, control, or measure of individual performance. Anyone with appropriate authority and support may carry out a task. Work can involve several classes, and the relevant class can change as the work changes. Scheduling must account for the actual task and its constraints rather than infer priority or duration from a code. The Asimov reference is a literary prompt to ask how human–technology relationships should be governed and whose safety and agency count. It does not supply the answer, define enforceable rules, or substitute for responsibilities, requirements, or evidence.
 
-## The modes
+## Task classes and command words
 
-| Code | Mode | Work focus | Review prompt |
+| Code | Mode / task class | Command word | Work focus | Task framing question |
 |---|---|---|---|
-| 0x0 | **Orient** | Clarify the work, context, desired outcome, and constraints before choosing a lens. | What are we looking at, why now, who is affected, what timing or response expectations matter, and what would a useful outcome look like? |
-| 0x1 | **Builder** | Create a feature, system, or capability. | What are we making, for whom, and what observable result—including relevant timing behavior—would show it works? |
-| 0x2 | **Gardener** | Maintain, refactor, and improve what already exists. | What needs care, simplification, or repair to remain useful and sustainable, including any timing assumptions that maintenance could change? |
-| 0x3 | **Doctor** | Diagnose and resolve a failure or urgent defect. | What is failing, what evidence do we have, what timing or deadline was affected, and what action restores safe operation or an acceptable degraded state? |
-| 0x4 | **Explorer** | Investigate an unknown, technology, or method. | What uncertainty matters, and what bounded inquiry could reduce it? |
-| 0x5 | **Librarian** | Record, organize, and make knowledge findable. | What should be recorded so another person can understand, operate, or continue this work? |
-| 0x6 | **Ambassador** | Communicate and engage with stakeholders. | Who needs to know what, when, and in what form to make a sound decision or use the result? |
-| 0x7 | **Architect** | Shape sustainable systems, interfaces, and processes. | How does this fit with surrounding systems, constraints, timing assumptions, failure modes, and future maintenance? |
-| 0x8 | **Advocate** | Represent user needs, ethical concerns, and sound practice. | Whose needs, rights, or risks might otherwise be missed? |
-| 0x9 | **Strategist** | Choose priorities in light of longer-term aims. | Why is this the right work now, and what are we choosing to defer? |
-| 0xA | **Mentor** | Help people learn and grow through the work. | What knowledge or capability can be shared or developed here? |
-| 0xB | **Auditor** | Check work against explicit requirements or criteria. | What criterion are we checking, what evidence is relevant, and what remains unverified? |
-| 0xC | **Scout** | Find risks, gaps, dependencies, and weak signals. | What could go wrong or surprise us—including missed deadlines, overload, or loss of observability—and how might we notice early? |
-| 0xD | **Steward** | Care for capacity, resources, continuity, and well-being. | Is this work sustainable for the people, time, and resources involved? |
-| 0xE | **Facilitator** | Help people coordinate, decide, and move through blockers. | Which dependency, decision, or handoff needs attention to let work proceed? |
-| 0xF | **Visionary** | Imagine and articulate future directions or capabilities. | What future possibility are we trying to make thinkable, and what present signal could test its value? |
+| 0x0 | **Orient** | `orient` | Frame the work, context, desired outcome, and constraints before dispatch. | What are we looking at, why now, who is affected, what timing or response expectations matter, and what would a useful outcome look like? |
+| 0x1 | **Builder** | `build` | Create a feature, system, or capability. | What are we making, for whom, and what observable result—including relevant timing behavior—would show it works? |
+| 0x2 | **Gardener** | `maintain` | Maintain, refactor, and improve what already exists. | What needs care, simplification, or repair to remain useful and sustainable, including any timing assumptions that maintenance could change? |
+| 0x3 | **Doctor** | `diagnose` | Diagnose and resolve a failure or urgent defect. | What is failing, what evidence do we have, what timing or deadline was affected, and what action restores safe operation or an acceptable degraded state? |
+| 0x4 | **Explorer** | `investigate` | Investigate an unknown, technology, or method. | What uncertainty matters, and what bounded inquiry could reduce it? |
+| 0x5 | **Librarian** | `record` | Record, organize, and make knowledge findable. | What should be recorded so another person can understand, operate, or continue this work? |
+| 0x6 | **Ambassador** | `communicate` | Communicate and engage with stakeholders. | Who needs to know what, when, and in what form to make a sound decision or use the result? |
+| 0x7 | **Architect** | `design` | Shape sustainable systems, interfaces, and processes. | How does this fit with surrounding systems, constraints, timing assumptions, failure modes, and future maintenance? |
+| 0x8 | **Advocate** | `represent` | Represent user needs, ethical concerns, and sound practice. | Whose needs, rights, or risks might otherwise be missed? |
+| 0x9 | **Strategist** | `prioritize` | Choose priorities in light of longer-term aims. | Why is this the right work now, and what are we choosing to defer? |
+| 0xA | **Mentor** | `teach` | Help people learn and grow through the work. | What knowledge or capability can be shared or developed here? |
+| 0xB | **Auditor** | `verify` | Check work against explicit requirements or criteria. | What criterion are we checking, what evidence is relevant, and what remains unverified? |
+| 0xC | **Scout** | `inspect` | Find risks, gaps, dependencies, and weak signals. | What could go wrong or surprise us—including missed deadlines, overload, or loss of observability—and how might we notice early? |
+| 0xD | **Steward** | `sustain` | Care for capacity, resources, continuity, and well-being. | Is this work sustainable for the people, time, and resources involved? |
+| 0xE | **Facilitator** | `coordinate` | Help people coordinate, decide, and move through blockers. | Which dependency, decision, or handoff needs attention to let work proceed? |
+| 0xF | **Visionary** | `envision` | Imagine and articulate future directions or capabilities. | What future possibility are we trying to make thinkable, and what present signal could test its value? |
 
 ## How to use the harness
 
-1. **Orient (0x0).** State the decision, deliverable, incident, or learning goal; note the context, affected people, constraints, and desired outcome.
-2. **Choose one primary mode.** Pick the lens that best describes the work receiving attention now.
-3. **Add up to two companion modes.** Choose these to expose important obligations or blind spots. Do not try to use every mode on every task.
-4. **Answer the prompts concretely.** Record evidence, a decision, an owner, or a next action. A mode label by itself is not evidence that the work was done.
-5. **Revisit when the work changes.** An investigation may become a repair; a prototype may become a maintained product. Update the selected modes accordingly.
-6. **Apply the optional real-time lens when relevant.** Use the questions below where timing, ordering, failure, or recovery behavior matters; skip them when they do not fit the work.
-7. **Check psychosocial safety throughout.** Consider how the work affects workload and pace, role clarity and control, communication, support, fairness, and worker voice. Respond to concerns proportionately; do not make people’s safety depend on whether a mode was selected.
-8. **Review the usefulness.** Ask which lens helped, what was missed, and whether the set of prompts added clarity or just ceremony.
+1. **Orient (0x0).** State the outcome, context, affected people and systems, constraints, urgency, and desired result before dispatch.
+2. **Classify the work.** Select one primary 0x1–0xF task class and its command word. Use related codes as descriptive tags only; they do not create additional work items or priority by themselves.
+3. **Define a task instance.** Make the command concrete: name its trigger, expected output, completion condition, dependencies, owner or execution resource, and relevant safety constraints.
+4. **Schedule and dispatch.** Apply relevant release, priority, deadline, budget, dependency, resource, admission, and overload rules. A code does not set these values.
+5. **Track execution and outcomes.** Record dispatch, start, completion, interruption or deferral, and missed constraints at a level proportionate to the work.
+6. **Revisit when the work changes.** An investigation may become a repair; a prototype may become maintained capability. Reclassify or reschedule when the task model changes.
+7. **Check psychosocial safety throughout.** Consider workload and pace, role clarity and control, communication, support, fairness, and worker voice. Do not make people’s safety depend on whether a mode was selected.
+8. **Review usefulness and performance.** Ask whether the command, queue policy, and schedule improved outcomes safely, what was missed, and whether the method added clarity or ceremony.
 
-### Optional real-time lens
+### Task model and scheduling discipline
 
-Use these prompts when the work involves timing, ordering, response, or recovery constraints. They are optional discussion prompts; answering them does not establish timing correctness, fault tolerance, or safety.
+The real-time systems connection is an engineering method for planning and dispatching software work, not a metaphor. A task table and queue policy can make work visible and schedulable only when task semantics and constraints are explicit. Choose methods appropriate to the system. Distinguish hard deadlines from targets, measured execution bounds from estimates, and automated execution time from human effort estimates.
 
-- **Timing:** What deadlines, response times, or ordering constraints matter?
-- **Failure and human impact:** What happens when a deadline is missed or a component fails, and who may face harm or extra workload?
-- **Degraded operation:** What reduced service is acceptable, and for how long?
-- **Observability:** What signals would show the system is late, overloaded, or failing?
-- **Recovery:** How does it return to normal operation, and what evidence confirms recovery?
+- **Release:** What event releases the task? Is it periodic, event-triggered, or sporadic? If sporadic, what minimum inter-arrival constraint is part of the model? A probability of selecting or assigning work does not by itself define a sporadic task.
+- **Priority:** Which work has precedence, who sets that precedence, and can it change? How are aging, starvation, urgent work, and conflicting priorities handled?
+- **Deadline:** What is the deadline, what starts the clock, and is it hard, firm, or a target? What is the safe response to a miss?
+- **Budget:** What execution-time budget or human effort estimate is available, how was it derived, and what happens when it is exhausted? Do not treat an unvalidated estimate as a worst-case execution-time bound.
+- **Dependencies and resources:** What must finish first? Which shared resources, skills, tools, or people can block progress, and how is contention handled?
+- **Admission and overload:** Which capacity and safety checks happen before work is accepted? Under overload, what is deferred, rejected, cancelled, degraded, or escalated—and who has authority to decide?
+- **Interruption and recovery:** Can a task be preempted, paused, retried, or resumed safely? What state must be preserved and what completion evidence is required?
+- **Observation:** Which events and measurements show queue depth, lateness, budget use, overload, failure, and recovery?
+- **Human impact:** How do priority, schedule, and overload response affect workload, autonomy, fairness, recovery time, and safe participation?
+
+For human work, effort estimates and capacity constraints support planning but do not establish deterministic execution bounds. Do not apply processor schedulability conclusions to people. Scheduling objectives should balance timely delivery, quality, safety, fairness, and sustainable workload; utilization or throughput alone is not sufficient.
+
+#### Lightweight scheduled-task record
+
+- **Task ID / code / command:**
+- **Outcome and completion condition:**
+- **Release condition / cadence / minimum inter-arrival constraint, if applicable:**
+- **Priority and authority for setting it:**
+- **Deadline and miss response:**
+- **Execution budget or human effort estimate, source, and confidence:**
+- **Dependencies and constrained resources:**
+- **Admission decision and rationale:**
+- **Queue / preemption / cancellation / retry policy:**
+- **Overload behavior and escalation owner:**
+- **Affected people and worker-safety constraints:**
+- **Dispatch / start / completion / outcome evidence:**
+- **Revisit trigger:**
+
+This record is a planning aid. Formal scheduling guarantees require an appropriate task and resource model, explicit assumptions, suitable analysis, and target-system evidence. A task table, priority label, or queue policy alone does not establish schedulability or deadline compliance.
 
 ### Psychosocial safety baseline
 
@@ -83,14 +107,14 @@ These prompts support reflection and do not replace a systematic, context-specif
 - **Worker input and follow-through:** Who is affected across the system lifecycle and operational boundary—including contractors, maintainers, operators, users, customers, and the public where relevant? How can they contribute, how will input inform decisions, and how will actions or limits be reported back?
 - **Accessible and safe participation:** Who may be excluded by the default language, format, schedule, location, reporting route, or power relationship? What accessible or alternate channel is available?
 
-If this work relates to a formal compliance obligation, use this harness only to support discussion. Separately identify the applicable requirement, its scope, the responsible owner and decision-maker, the evidence needed, and how gaps will be recorded and followed up. Do not infer compliance from a selected mode or completed record.
+If this work relates to a formal compliance obligation, use this framework only to support task planning and discussion. Separately identify the applicable requirement, its scope, the responsible owner and decision-maker, the evidence needed, and how gaps will be recorded and followed up. Do not infer compliance from a selected code or completed record.
 
 ### Lightweight record
 
 - **Work / decision:**
 - **Affected people and systems (including interfaces and work conditions):**
-- **Primary mode:**
-- **Companion mode(s):**
+- **Primary task class / command word:**
+- **Related class tags (if useful):**
 - **Evidence or answer:**
 - **Open question / risk:**
 - **Interim protection while risk remains open:**
@@ -112,7 +136,7 @@ For work with a defined compliance obligation, track these separately from the m
 
 ## Interpreting overlaps
 
-Some modes naturally touch the same work. Treat overlap as a prompt to clarify the question being asked, not as a defect to eliminate:
+Some task classes naturally touch the same work. Treat overlap as a reason to name one primary dispatch class and any related tags, not as a reason to create duplicate tasks or priorities:
 
 - **Architect / Strategist:** system shape and constraints versus priority and timing.
 - **Advocate / Steward:** whose needs and risks count versus whether the work is sustainable for the people and resources involved.
@@ -123,9 +147,9 @@ Some modes naturally touch the same work. Treat overlap as a prompt to clarify t
 
 ## Boundaries and cautions
 
-- The modes support discussion; they do not assign authority or accountability. Explicit owners and decision rights still need to be established separately.
+- Task classes and command words structure classification and dispatch; they do not assign authority or accountability. Explicit owners and decision rights still need to be established separately.
 - “Doctor” is a metaphor for diagnosis and response. It does not imply that every defect is an incident or that urgency removes normal safety, privacy, or change controls. For real-time systems, this prompt does not determine acceptable deadlines, failure responses, or degraded modes; those need system-specific requirements and analysis.
-- The real-time systems inspiration does not make this harness a timing analysis or verification technique. It does not establish schedulability, bounded response, deadline compliance, fault tolerance, or safety. Use the system’s defined requirements, models, measurements, and verification methods for those claims.
+- Applying real-time systems discipline to task planning does not itself establish schedulability, bounded response, deadline compliance, fault tolerance, or safety. Those claims require a defined system and task model, assumptions, suitable analysis, and evidence. Do not present human effort estimates as worst-case execution-time bounds.
 - “Auditor” is a review lens, not an audit method. It does not establish compliance. A formal compliance assessment needs a defined requirement and scope, appropriate reviewer and method, relevant evidence, documented findings, and follow-up. A mode label or completed harness record is not a control, audit, certification, or proof of conformity.
 - The harness does not assign independence, authority, or decision rights. Define these in the surrounding governance or review process when they matter.
 - If applying the harness during organizational change, use a separate, context-specific psychosocial hazard assessment. The responsible change process should determine and document when worker consultation is required or appropriate, who needs to be involved, how they can contribute safely and accessibly, how their input will inform decisions, and how outcomes will be communicated. The modes can surface questions about workload, autonomy, communication, role clarity, support, and fairness; they do not replace a systematic assessment or consultation process.
@@ -135,13 +159,13 @@ Some modes naturally touch the same work. Treat overlap as a prompt to clarify t
 
 ## Assessment
 
-Inspired by real-time systems work, the framework’s useful contribution is its broad picture of engineering: creating and maintaining systems is only part of the work; diagnosis, knowledge, communication, risk, learning, coordination, and care also matter. It holds safety across silicon, flesh, and the interfaces and conditions between them, with every worker’s right to a safe workplace as a baseline responsibility. The modes can prompt attention to timing expectations, deadline effects, degraded operation, observability, and recovery where those concerns apply, without forcing every project into one workflow.
+The framework applies real-time systems discipline to software engineering work. Codes identify task classes, command words state requested actions, and the task model supplies the release, priority, deadline, budget, dependencies, resources, admission, and overload behavior needed to schedule work deliberately. Creating and maintaining systems are only part of the work; diagnosis, knowledge, communication, risk, learning, coordination, and care also matter. It holds safety across silicon, flesh, and the interfaces and conditions between them, with every worker’s right to a safe workplace as a baseline responsibility.
 
-The original list combines modes at different levels—hands-on activity, system design, coordination, organizational planning, and future direction. This refactor keeps all sixteen identities while treating them as complementary lenses, not equivalent process stages. The overlap notes make several close pairs easier to distinguish, and the prompts turn abstract labels into questions that can elicit evidence or action.
+The original list combines work at different levels—hands-on activity, system design, coordination, organizational planning, and future direction. This refactor keeps all sixteen identities as task classes and pairs them with command words. The overlap notes help teams select a primary dispatch class without implying that the classes are equivalent process stages or roles.
 
-The 0xF modes are best used lightly in planning, reviews, incident learning, and retrospectives as one tool within the broader safety commitments. Their value should be judged by whether they improve shared understanding, reveal a consequential omission, or lead to a clearer decision. The commitments remain relevant even when no mode or harness record is used. The modes should not become a checklist quota, a performance rubric, an org chart, or evidence of standards conformity. It also does not verify real-time behavior or replace system-specific requirements, timing analysis, testing, or other engineering assurance. When a real compliance obligation applies, connect discussion to the named requirement and a separate evidence-based process; mode selection and completed prompts are not proof that a risk was assessed or managed.
+Use the task classes and commands to make software work actionable and schedulable. Judge the method by whether it improves safe, timely, high-quality delivery and exposes overload or unfair workload. Do not turn codes into a checklist quota, performance rubric, or org chart. A completed task record is not proof that a real-time system meets its timing requirements. When timing guarantees or a compliance obligation apply, use the system-specific requirements, analysis, tests, and separate evidence-based process; codes and prompts alone do not establish the claim.
 
 
 ## Provenance
 
-Modes 0x1–0xF and their initial focus statements are derived from *Engineering Super Soft Reboot 2025*, dated 2025-01-25, pages 26–28. Mode 0x0, the inspiration and scope note, timing-sensitive wording, optional 0xF reflection harness, optional real-time lens, psychosocial safety baseline and concern-response path, affected people and systems and next action and conditional separate risk response owner fields, purpose, prompts, usage steps, overlap distinctions, boundaries, and assessment above are editorial interpretation for this draft. The source document presents an aspirational proposal; this draft does not claim that the proposed roles, teams, or practices were implemented.
+Modes 0x1–0xF and their initial focus statements are derived from *Engineering Super Soft Reboot 2025*, dated 2025-01-25, pages 26–28. Mode 0x0, command words, task model and scheduling guidance, timing-sensitive wording, optional 0xF future-work class, psychosocial safety baseline and concern-response path, affected people and systems and next action and conditional separate risk response owner fields, purpose, prompts, usage steps, overlap distinctions, boundaries, and assessment above are editorial interpretation for this draft. The source document presents an aspirational proposal; this draft does not claim that the proposed roles, teams, or practices were implemented.

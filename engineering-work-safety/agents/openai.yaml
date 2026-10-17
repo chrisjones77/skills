@@ -1,4 +1,4 @@
 interface:
   display_name: "Engineering Work Safety"
-  short_description: "Use the 0xF engineering lenses responsibly"
-  default_prompt: "Use $engineering-work-safety to review this engineering work across people, technology, and their interfaces."
+  short_description: "Use 0xF task classes and scheduling discipline"
+  default_prompt: "Use $engineering-work-safety to classify this work, define its command and constraints, and apply real-time scheduling discipline while accounting for worker safety."
