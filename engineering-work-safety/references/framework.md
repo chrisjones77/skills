@@ -20,11 +20,12 @@ Within these commitments, **0x0** orients the work before dispatch; **0x1–0xE*
 
 A mode is a **task class**, not a job title, personality type, seniority level, team, phase gate, control, or measure of individual performance. Anyone with appropriate authority and support may carry out a task. Work can involve several classes, and the relevant class can change as the work changes. Scheduling must account for the actual task and its constraints rather than infer priority or duration from a code. The Asimov reference is a literary prompt to ask how human–technology relationships should be governed and whose safety and agency count. It does not supply the answer, define enforceable rules, or substitute for responsibilities, requirements, or evidence.
 
-## Task classes and command words
+## Orientation, task classes, and command words
+
+**0x0 — Orient** is the framing step before dispatch, not a dispatched task class. Use it to clarify what work is being considered, why now, the people and systems affected, relevant constraints, and the desired outcome. Once the work is ready to dispatch, select one primary task class from 0x1–0xF and pair it with a command word.
 
 | Code | Mode / task class | Command word | Work focus | Task framing question |
-|---|---|---|---|
-| 0x0 | **Orient** | `orient` | Frame the work, context, desired outcome, and constraints before dispatch. | What are we looking at, why now, who is affected, what timing or response expectations matter, and what would a useful outcome look like? |
+|---|---|---|---|---|
 | 0x1 | **Builder** | `build` | Create a feature, system, or capability. | What are we making, for whom, and what observable result—including relevant timing behavior—would show it works? |
 | 0x2 | **Gardener** | `maintain` | Maintain, refactor, and improve what already exists. | What needs care, simplification, or repair to remain useful and sustainable, including any timing assumptions that maintenance could change? |
 | 0x3 | **Doctor** | `diagnose` | Diagnose and resolve a failure or urgent defect. | What is failing, what evidence do we have, what timing or deadline was affected, and what action restores safe operation or an acceptable degraded state? |
@@ -44,9 +45,9 @@ A mode is a **task class**, not a job title, personality type, seniority level, 
 ## How to use the harness
 
 1. **Orient (0x0).** State the outcome, context, affected people and systems, constraints, urgency, and desired result before dispatch.
-2. **Classify the work.** Select one primary 0x1–0xF task class and its command word. Use related codes as descriptive tags only; they do not create additional work items or priority by themselves.
+2. **Classify the work.** Select one primary 0x1–0xF task class and its command word. Use related codes as descriptive tags only; they do not create additional work items or priority by themselves. 0x0 remains the pre-dispatch orientation step.
 3. **Define a task instance.** Make the command concrete: name its trigger, expected output, completion condition, dependencies, owner or execution resource, and relevant safety constraints.
-4. **Schedule and dispatch.** Apply relevant release, priority, deadline, budget, dependency, resource, admission, and overload rules. A code does not set these values.
+4. **Select a policy, then schedule and dispatch.** Apply relevant release, priority, deadline, budget, dependency, resource, admission, and overload rules. Choose a queue or dispatch policy that fits the stated objective, workload assumptions, constraints, and decision authority; a code does not set these values.
 5. **Track execution and outcomes.** Record dispatch, start, completion, interruption or deferral, and missed constraints at a level proportionate to the work.
 6. **Revisit when the work changes.** An investigation may become a repair; a prototype may become maintained capability. Reclassify or reschedule when the task model changes.
 7. **Check psychosocial safety throughout.** Consider workload and pace, role clarity and control, communication, support, fairness, and worker voice. Do not make people’s safety depend on whether a mode was selected.
@@ -68,6 +69,18 @@ The real-time systems connection is an engineering method for planning and dispa
 
 For human work, effort estimates and capacity constraints support planning but do not establish deterministic execution bounds. Do not apply processor schedulability conclusions to people. Scheduling objectives should balance timely delivery, quality, safety, fairness, and sustainable workload; utilization or throughput alone is not sufficient.
 
+#### Select and evaluate a scheduling policy
+
+There is no universally best policy for software-work queues. Select one for the actual work context, record why it fits, and revisit it when workload or constraints change:
+
+1. **Set objectives and non-negotiable constraints.** Name the desired outcomes (for example, timely completion, quality, service continuity, or reduced waiting) and the constraints that cannot be traded away. Treat worker safety, fair and sustainable workload, legal or contractual obligations, and required review gates as constraints, not as weights that throughput can outweigh.
+2. **Describe the workload and authority.** Record how work arrives, the range of task sizes, deadlines and dependencies, shared resources, interrupt frequency, and who may set or change precedence. Mark assumptions and uncertainty; do not invent precision where estimates are rough.
+3. **Choose plausible policy candidates.** Examples include first-in-first-out for simple arrival-order queues; explicit fixed priorities where precedence is governed; earliest-deadline-first when deadlines and release assumptions are meaningful; or dependency-aware dispatch with aging when blocked work and starvation matter. These are candidates to assess, not recommendations independent of context. A policy may combine rules, but define tie-breaking and exception authority.
+4. **Compare candidates against representative scenarios.** Use historical traces, a small simulation, or a bounded pilot when proportionate. Include normal load, bursts, urgent arrivals, long tasks, dependencies, absences, and overload. Check both intended outcomes and failure modes; do not infer guarantees from a short or unrepresentative sample.
+5. **Make and review the decision.** Record the selected policy, rationale, evidence, known trade-offs, owner, review trigger, and how affected workers can raise concerns. Monitor lateness and missed constraints alongside quality, waiting time, starvation, rework, workload distribution, overtime or recovery time, and worker feedback. If evidence shows harm, unfairness, or unsafe overload, adjust admission or dispatch and protect affected workers while reviewing.
+
+For a lightweight comparison, state which measures are acceptance constraints and which are optimization goals. Avoid a single aggregate score that can hide safety, quality, or fairness failures. Where no reliable data exist, state that the choice is provisional and set a review point rather than presenting it as optimized.
+
 #### Lightweight scheduled-task record
 
 - **Task ID / code / command:**
@@ -78,6 +91,7 @@ For human work, effort estimates and capacity constraints support planning but d
 - **Execution budget or human effort estimate, source, and confidence:**
 - **Dependencies and constrained resources:**
 - **Admission decision and rationale:**
+- **Scheduling / dispatch policy, rationale, evidence, and review trigger:**
 - **Queue / preemption / cancellation / retry policy:**
 - **Overload behavior and escalation owner:**
 - **Affected people and worker-safety constraints:**
@@ -161,7 +175,7 @@ Some task classes naturally touch the same work. Treat overlap as a reason to na
 
 The framework applies real-time systems discipline to software engineering work. Codes identify task classes, command words state requested actions, and the task model supplies the release, priority, deadline, budget, dependencies, resources, admission, and overload behavior needed to schedule work deliberately. Creating and maintaining systems are only part of the work; diagnosis, knowledge, communication, risk, learning, coordination, and care also matter. It holds safety across silicon, flesh, and the interfaces and conditions between them, with every worker’s right to a safe workplace as a baseline responsibility.
 
-The original list combines work at different levels—hands-on activity, system design, coordination, organizational planning, and future direction. This refactor keeps all sixteen identities as task classes and pairs them with command words. The overlap notes help teams select a primary dispatch class without implying that the classes are equivalent process stages or roles.
+The original list combines work at different levels—hands-on activity, system design, coordination, organizational planning, and future direction. This refactor keeps the fifteen 0x1–0xF identities as task classes and pairs them with command words; 0x0 remains the orientation step. The overlap notes help teams select a primary dispatch class without implying that the classes are equivalent process stages or roles.
 
 Use the task classes and commands to make software work actionable and schedulable. Judge the method by whether it improves safe, timely, high-quality delivery and exposes overload or unfair workload. Do not turn codes into a checklist quota, performance rubric, or org chart. A completed task record is not proof that a real-time system meets its timing requirements. When timing guarantees or a compliance obligation apply, use the system-specific requirements, analysis, tests, and separate evidence-based process; codes and prompts alone do not establish the claim.
 
