@@ -1,0 +1,103 @@
+# Copy per task into the task's private/local context. Do not commit populated
+# packets. Omit unrelated history and all secrets, credentials, private records,
+# and local media. This packet transfers context, never authority.
+version: 1
+task_id: stable-task-identifier
+objective: one user-stated outcome
+status: active # active | checkpointed | blocked | complete
+mode: Implementation # Review | Research | Implementation
+repository:
+  identity: chrisjones77/bridgeincluded.ca
+  root: /absolute/path/to/repository
+  expected_base: branch-or-commit
+  actual_branch: report-before-action
+  actual_revision: report-before-action
+  workspace_identity: exact-worktree-or-session-identity
+  isolation_verified: false # Must be true before implementation edits
+  starting_status: report-before-action
+  starting_changed_paths: [] # Include untracked paths; never normalize or hide them
+owner:
+  task_lead: named-agent-or-human
+  paused_owners: []
+  candidate_task_state_verified: false # Titles/idle status are not ownership evidence
+scope:
+  allowed_paths: [] # Exact paths or a narrow subsystem; no wildcard repo-wide edit
+  allowed_actions: []
+  prohibited_paths: []
+  prohibited_actions:
+    - commit
+    - push
+    - merge
+    - deploy
+    - external-account-actions
+    - third-party-contact
+permissions:
+  granted_by: user-or-applicable-instruction
+  allowed: []
+  prohibited: []
+decisions: []
+completed: [] # Each item includes evidence pointer
+open_items: []
+next_action: one concrete next step
+verification:
+  required: []
+  observed: []
+handoff:
+  current_writer: named-agent-or-human # Sole writer; null means no one may write; delegation does not transfer ownership implicitly
+  pending_transfer: null # Null means no transfer is pending; otherwise use the record below
+  transfer_log: [] # Append-only completed transfer and return events
+# Pending transfer record shape:
+# from: named current owner; to: proposed next owner
+# mode: clean-handoff | takeover
+# reason: why ownership changes; action: bounded requested continuation
+# authority: explicit source authorizing the ownership transfer
+# checkpoint: last verified state; created_at: ISO-8601 timestamp
+# packet_digest and workspace_identity: values receiver must acknowledge
+# acknowledgement: pending | acknowledged; sender_paused: true | false
+# return_condition and return_owner: when and to whom ownership returns
+# Clean handoff while pending: current_writer stays `from`; sender remains sole writer.
+# After clean-handoff acknowledgement: pause `from`, set current_writer to null, permit no writes.
+# Takeover while pending: pause `from`, set current_writer to null, permit no writes.
+# After acknowledgement but before state verification, keep the transfer pending and current_writer null.
+# Only after verifying actual state does the receiver become writer.
+# On completion: clear pending_transfer and append its record to transfer_log.
+# Completed transfer event shape: from, to, mode, reason, action, authority, checkpoint,
+# created_at, acknowledged_at, packet_digest, workspace_identity, state_verified,
+# return_condition, return_owner, and returned_at. For a return event, mode is `return`
+# and `to` is the return owner; never use a second destination field.
+# A return is a separate transfer event; never keep a completed transfer pending.
+git_writes:
+  commit_authorized: false
+  push_authorized: false
+  task_branch: null
+  commit_scope: task-only-logical-commits
+  review_staged_diff: true
+  prohibit_default_or_protected_branch_push: true
+  prohibit_force_push: true
+recovery:
+  last_verified_checkpoint: null
+  preserve_paths: []
+  uncertain_state_action: read-only-inspect-and-report
+  prohibited_implicit_recovery:
+    - reset
+    - clean
+    - stash
+    - overwrite
+    - branch-switch
+scratch:
+  location: system-temp-or-preexisting-verified-ignored-path
+  ignore_rule_changed: false
+  staged: false
+  sensitive_content_added: false
+stop_conditions:
+  - actual repository, base, root, or workspace does not match this packet
+  - implementation isolation cannot be independently verified
+  - starting dirty state is not the state recorded here
+  - current write owner or required acknowledgement is uncertain
+  - requested action exceeds explicit permissions
+report:
+  result: null # completed | blocked | no-findings
+  findings: []
+  changed_paths: []
+  checks: [] # Mark each passed, failed, or not run
+  limitations: []
