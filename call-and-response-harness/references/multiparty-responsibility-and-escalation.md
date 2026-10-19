@@ -7,11 +7,11 @@ This overlay answers **who owns each workflow activity, decision, and handoff** 
 Apply RACI to named activities or decisions, not to people in the abstract:
 
 - **R — Responsible:** performs or coordinates the activity. There may be more than one R.
-- **A — Accountable:** owns the outcome or decision and has the authority to do so. Name one A per activity where practicable. If two distinct authorities are needed, split the work into separate rows.
+- **A — Accountable:** owns the outcome or decision and has the authority to do so. Name exactly one A per activity or decision. If two distinct authorities are needed, split the work into separate rows. If no authorized A can be identified, mark the activity blocked and route it to the designated governance or supervisory authority; do not proceed by default.
 - **C — Consulted:** provides input before the action or decision.
 - **I — Informed:** receives an update or disposition.
 
-Name roles and the actual person or channel filling each role for the exchange. Confirm assignments with the people who hold them; a RACI table does not grant authority. Do not make the recipient responsible for repairing an unclear call. The caller/request owner owns clarification and, if needed, re-orientation.
+Name roles and the actual person or channel filling each role for the exchange. Confirm assignments with the people who hold them; a RACI table does not grant authority. Do not make the recipient responsible for repairing an unclear call. The caller/request owner owns clarification and, if needed, re-orientation. Record an alternate route for an unavailable or conflicted A. Anyone may raise a concern through the relevant protective process; the RACI does not restrict access to escalation.
 
 ## Separate three decisions
 
@@ -34,15 +34,15 @@ Start consequential work only when the necessary recipient disposition, authorit
 | Resolve a blocker or make an escalation decision | Named blocker owner supplies facts and coordinates follow-up | Escalation/decision owner authorized to resolve the specific issue | People with relevant evidence or impact | Parties who need the disposition |
 | Record disposition and close or hand off the exchange | Caller/request owner | Request sponsor or owner | Recipient and work owner | Parties who need the outcome |
 
-This is a template, not a default assignment of authority. Remove roles that do not apply; add rows where decision rights differ. The person accountable for the request is not automatically authorized to accept risk, approve work, or override a recipient's decline.
+This is a template, not a default assignment of authority. Remove roles that do not apply; add rows where decision rights differ. The person accountable for the request is not automatically authorized to accept risk, approve work, or override a recipient's decline. If required authorities disagree, keep the affected decision blocked, preserve a safe interim state, and route the disagreement to the designated governance authority. Do not treat silence, elapsed time, or the most senior participant's preference as approval.
 
 ## Define escalation routes
 
 An escalation route is a specific handoff, not a generic instruction to “escalate.” Record:
 
-`trigger → receiving role and channel → decision/action requested → authority boundary → checkpoint or response target → interim protection`
+`trigger → receiving role and channel → decision/action requested → authority boundary → checkpoint owner and response target → interim protection`
 
-Examples of triggers include an unresolved scope question after caller follow-up, a blocked dependency past its agreed checkpoint, a material capacity change, or a safety/consent/authority concern. Route each trigger to a role that can act on it. A person may raise a concern through an applicable protective channel even if they are not R or A in the delivery RACI.
+Examples of triggers include an unresolved scope question after caller follow-up, a blocked dependency past its agreed checkpoint, a material capacity change, or a safety/consent/authority concern. Route each trigger to a role that can act on it. Name who sets and monitors the checkpoint. If no response target can be agreed, state that explicitly, identify the interim owner and protective condition, and keep consequential work blocked where the unresolved issue affects it. A person may raise a concern through an applicable protective channel even if they are not R or A in the delivery RACI.
 
 Escalation seeks a decision or support; it does not increase the recipient's obligation to accept. Do not use a delivery escalation to bypass a decline, withdrawal, safety process, or authority limit. If the recipient declines or withdraws, record that disposition. Any reassignment is a new call to a new recipient, with the scope and authority checked again.
 
@@ -55,4 +55,4 @@ When the response is `Unclear` or otherwise signals confusion:
 3. Keep the exchange open until the recipient indicates the revised call is understood or the request is explicitly deferred, withdrawn, or declined.
 4. Understanding does not equal acceptance. If work had started, pause consequential steps affected by unresolved meaning and resume only if the recipient chooses to continue and the authority/work-owner conditions are met.
 
-Keep the RACI assignment, actual reply, response posture, exchange status, and escalation record distinct. Link them by one exchange identifier so each role can see the context without treating one layer as proof of another.
+Keep the RACI assignment, actual reply, response posture, exchange status, and escalation record distinct. Link them by one exchange identifier, while sharing only the information each role needs for its assigned activity. Protect sensitive personal or task details; consultation and being informed do not imply unrestricted access.
