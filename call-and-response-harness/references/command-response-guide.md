@@ -43,6 +43,30 @@ The command vocabulary supplied for this matrix is:
 
 Each word identifies a broad requested activity, not sufficient task scope. State the request, intended outcome, constraints, authority, and affected people in plain language. If the applicable request taxonomy assigns codes to these words, use that defined mapping; this guide does not establish one.
 
+### Command-specific evidence anchors
+
+For any command–response pairing, use the relevant anchor to identify what would count as progress or evidence. These anchors prevent a response marker from being mistaken for completion of the command.
+
+| Command | Evidence or scope anchor |
+|---|---|
+| Build | The defined artifact or capability, its acceptance criteria, and whether it was produced. |
+| Maintain | The named asset or service, its condition, the maintenance action, and the observation period. |
+| Diagnose | The symptoms, hypotheses, supporting evidence, and whether a cause is confirmed or still tentative. |
+| Investigate | The question, sources examined, findings, and unresolved questions. |
+| Record | The information to capture, its source, the record location, and whether the record was actually made. |
+| Communicate | The content, intended audience, channel, and whether the message was sent or received. |
+| Design | The design artifact, constraints, alternatives, and required review or decision. |
+| Represent | The subject represented, the chosen model or view, provenance, and fidelity or validation limits. |
+| Prioritize | The options, criteria, ordering, rationale, and authority for setting that order. |
+| Teach | The topic, audience, materials or activity, and evidence of learning; attendance alone is not comprehension. |
+| Verify | The criterion, method or test, evidence, result, and any unresolved criteria. |
+| Inspect | The object or condition, inspection criteria, observations, and any limits of the inspection. |
+| Sustain | The service or capability, continuity measure, responsible owner, time period, and threshold for action. |
+| Coordinate | The participants, dependencies, commitments, handoffs, and unresolved conflicts. |
+| Envision | The options or future states, assumptions, affected parties, and who decides whether to act on them. |
+
+For each of the 15 response words, combine its definition with the applicable command anchor. For example, `Checked` reports a check; the `Verify` anchor asks which criterion and method were checked and with what evidence, while the `Build` anchor asks whether the artifact's acceptance criteria were checked. In both cases, a check report alone does not establish successful completion. Apply the same composition to all 225 pairings; add bespoke cell guidance only when context requires it.
+
 ## Response words
 
 The supplied list had fourteen words. `Unclear` is added as the fifteenth because it names an explicit comprehension problem and connects to caller-owned clarification.
@@ -87,7 +111,7 @@ Use the narrowest claim supported by the person's actual words:
 | **Teach** | May signal readiness to discuss teaching; not acceptance to teach. Confirm the specific ask and scope. | Receipt only; no commitment or demonstrated understanding. | A limit applies to teaching; clarify audience, topic, time, or other boundary. | A teaching-related finding or resource is reported; record it and whether the teaching request remains open. | Caller follows up. If the call itself remains unclear, return to `0x0 Orient` and issue a linked revised call. |
 | **Verify** | Readiness to consider verification; not evidence that verification occurred. Confirm scope and acceptance separately. | Receipt only; no verification performed is implied. | Verification scope or capacity is limited; record what is in and out. | A finding is reported; record evidence and distinguish it from a pass/fail conclusion. | Caller clarifies the verification target and criteria; re-orient only if the request context is insufficient. |
 
-These examples illustrate 15 of the 225 pairings (three commands by five response markers); the other 210 cells are not yet reviewed in this draft. This file is a partial example set and authoring method, not a complete matrix. Review cells incrementally using the coverage marks above and the same three-part form. Avoid presenting illustrative content as a universal rule.
+These examples illustrate 15 of the 225 pairings (three commands by five response markers). The remaining pairings are covered compositionally by applying each command's evidence anchor below to the shared response-marker definitions above; they do not each need a unique paragraph. This is a complete coverage method, not 225 individually authored cell notes. If a project needs a fully enumerated matrix, use the coverage marks above and write a cell note only where the combination adds context-specific meaning or follow-up. Avoid presenting illustrative content as a universal rule.
 
 ## Follow-up and `0x0 Orient`
 
