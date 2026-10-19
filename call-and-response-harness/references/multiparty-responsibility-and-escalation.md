@@ -46,6 +46,22 @@ Examples of triggers include an unresolved scope question after caller follow-up
 
 Escalation seeks a decision or support; it does not increase the recipient's obligation to accept. Do not use a delivery escalation to bypass a decline, withdrawal, safety process, or authority limit. If the recipient declines or withdraws, record that disposition. Any reassignment is a new call to a new recipient, with the scope and authority checked again.
 
+## Optional `MASK` modifier
+
+`MASK` is a conceptual, opt-in modifier for producing an audience-specific view of an exchange record. It is not a 16th command, a reply marker, an exchange state, or an access-control mechanism. When no extra masking is needed, omit the modifier; baseline privacy, confidentiality, and need-to-know controls still apply. Its absence never means that unrestricted sharing is appropriate.
+
+When used, scope it explicitly:
+
+`MASK: fields/content → audience → purpose/authority → applying owner → treatment of downstream copies → review or release condition`
+
+Apply the narrowest treatment that meets the stated purpose. Use a neutral placeholder such as `[MASKED]` so omission is not mistaken for an empty value; add a category only when that label itself does not reveal sensitive information. Preserve source, provenance, and an access-controlled complete record when authorized and required by the applicable retention rules. Propagate the view restriction to derivatives, exports, and logs. `MASK` describes the intended view; the actual storage, transport, and access controls must enforce it.
+
+Keep view-specific masking distinct from **redaction**, which removes information from a particular copy or record under the applicable authority and retention process. Do not promise that the original is retained if policy requires its removal; record what was transformed or removed and preserve permitted provenance.
+
+If a person with an authorized safety, consent, or decision responsibility needs the hidden information, provide it through an appropriate protected channel. If that cannot be done, identify the information gap and keep the affected decision or consequential work on hold. Never use masking to conceal a decline, uncertainty, safety issue, decision basis, or evidence from a role that needs it to act. A mask must not erase the recipient's actual words or change the meaning of their disposition.
+
+Use the activity-level RACI to name who applies a mask and who is authorized to approve its scope under the relevant policy; name an alternate if that owner is unavailable or conflicted. Limit each role's view to what it needs for its activity. A placeholder is not proof that access controls worked, and a RACI assignment does not grant permission to disclose.
+
 ## Interaction with unclear replies
 
 When the response is `Unclear` or otherwise signals confusion:
