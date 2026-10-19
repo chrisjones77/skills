@@ -12,9 +12,15 @@ TIME    DIR   TERMINAL  TYPE       DATA
 00.130  ---   RT-01     POSTURE    Initial BH-8: contemplate / toward / simple / risk
 00.240  RT→BC RT-01     RESPONSE   Accept bounded review; report assumptions
 00.245  ---   RT-01     STATUS     accepted → started
-00.610  RT→BC RT-01     RESPONSE   One dependency needs clarification
-00.615  ---   RT-01     STATUS     paused; revisit when dependency owner responds
-00.620  ---   BUS       QUIET      Exchange yields
+00.610  RT→BC RT-01     RESPONSE   Dependency owner and review boundary are unclear
+00.615  ---   RT-01     STATUS     clarification-needed; follow-up owner=BC; exchange open
+00.650  BC→RT RT-01     FOLLOWUP   Name dependency owner; confirm review is read-only
+00.658  RT→BC RT-01     ACK        Clarification received
+00.700  RT→BC RT-01     RESPONSE   Accept bounded review; report assumptions
+00.710  ---   RT-01     STATUS     accepted → started
+00.850  RT→BC RT-01     RESPONSE   Review complete; dependency and assumptions recorded
+00.855  ---   RT-01     STATUS     completed → closed
+00.860  ---   BUS       QUIET      Exchange closed after follow-up
 
 01.000  ---   BUS       QUIET      No active exchange
 01.120  BC→RT RT-02     CALL       0x7 / design: reduce deployment steps
@@ -22,7 +28,7 @@ TIME    DIR   TERMINAL  TYPE       DATA
 01.150  ---   RT-02     POSTURE    Initial BH-F: contemplate / away / complex / pause
 01.300  RT→BC RT-02     RESPONSE   Clarify: simplify operator steps or remove safeguards?
 01.305  ---   RT-02     STATUS     clarification-needed
-01.500  BC→RT RT-02     CALL       CLARIFY: retain safeguards; simplify operator steps
+01.500  BC→RT RT-02     FOLLOWUP   CLARIFY: retain safeguards; simplify operator steps
 01.540  ---   RT-02     POSTURE    Reassessed BH-E: contemplate / away / complex / risk
 01.700  RT→BC RT-02     RESPONSE   Accept bounded change; retain rollback and verification
 02.105  ---   RT-02     STATUS     completed → closed
@@ -45,8 +51,8 @@ RACI attaches to **activities and decisions**, not posture codes or people's wil
 
 | Activity | Responsible | Accountable | Consulted | Informed |
 |---|---|---|---|---|
-| RT-01 dependency review | Reviewer identifies the dependency gap. | Change owner decides scope and authorizes next steps. | Dependency owner supplies context; affected team advises as useful. | Requester receives pause and revisit condition. |
+| RT-01 clarification and review | Request owner follows up with the missing dependency and scope details; reviewer completes the bounded review. | Change owner remains accountable for the request and its disposition. | Dependency owner supplies facts; affected team advises as useful. | Recipient receives the clarification; requester receives review outcome. |
 | RT-02 deployment-step change | Recipient proposes a bounded simplification. | Procedure owner approves changes to deployment steps. | Operators review usability; reliability owner advises on retained safeguards. | Requester and affected operators receive the result. |
 | RT-03 declined telemetry request | Recipient communicates the decline and capacity constraint. | Request owner decides whether to defer, reassign, or close the request. | Resource owner advises on capacity and alternatives. | Requester receives the outcome and any next step. |
 
-A posture such as `BH-F` does not assign responsibility or accountability for resolving a concern. RACI should name authorized roles and handoffs separately. For safety concerns, follow the organization's appropriate protective and reporting processes; do not let the analogy delay urgent action.
+A posture such as `BH-F` does not assign responsibility or accountability for resolving a concern. RACI should name authorized roles and handoffs separately. Confusion creates a caller-side follow-up duty; it does not make the recipient responsible for resolving ambiguity or accepting the request. For safety concerns, follow the organization's appropriate protective and reporting processes; do not let the analogy delay urgent action.
