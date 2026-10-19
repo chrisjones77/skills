@@ -1,11 +1,11 @@
 ---
 name: call-and-response-harness
-description: Describe recipient responses with an optional four-bit, 16-state posture matrix and safeguards against coercive interpretation. Use for response reflection or call-and-response logs; not for judging people or validating safety.
+description: Soft command-and-control for task handoffs, replies, RACI ownership, and escalation. Preserves recipient choice; does not compel acceptance or guarantee safety.
 ---
 
-# Four-Bit Call-and-Response Harness
+# Gentle Boss
 
-Use this as an optional vocabulary for describing a response to a specific task request. It is the **answer side** of a conceptual call-and-response pair. The engineering 0xF modes classify and dispatch requested work with a task code and command word; this harness describes a recipient's response posture and actual answer. Keep those namespaces separate: request `0x0`–`0xF`; response `BH-0`–`BH-F`.
+Gentle Boss is a **soft command-and-control protocol** for multiparty work: it structures calls, replies, ownership, and escalation while leaving each recipient's disposition theirs to choose. It does not turn a request into automatic obedience. The engineering 0xF modes classify and dispatch requested work with a task code and command word; the response-posture harness describes a recipient's optional posture and actual answer. Keep those namespaces separate: request-side operations and task commands; response posture `BH-0`–`BH-F`.
 
 The response matrix has four binary axes and sixteen possible complete states. “Four-bit” describes the code width; it is not a 16-bit error-correcting code. The 1553 bus analogy may help structure turns, acknowledgements, status, and quiet intervals, but this harness is not a bus protocol or standards-conformance claim.
 
