@@ -1,4 +1,4 @@
-# Monitor and RACI Examples
+# Gentle Boss — Monitor and RACI Examples
 
 The following examples are fictional and use a **1553-inspired** turn-taking analogy only. They are not MIL-STD-1553 captures, protocol definitions, or claims of standards conformance. Use request-side codes only when a known task taxonomy supplies them; never invent mappings. Response-side `BH-*` posture codes are separate from exchange status.
 
