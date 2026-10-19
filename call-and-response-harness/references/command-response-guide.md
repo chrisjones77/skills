@@ -1,4 +1,4 @@
-# Command–Response Interpretation Guide
+# Gentle Boss — Command–Response Interpretation Guide
 
 This guide extends the response-posture harness with a **16 × 16 contextual interpretation matrix**: sixteen request-side operations crossed with sixteen optional response words. It is part of the same harness, not a new response state space. The request operations include `0x0 Orient` as a framing row and the fifteen task command words; Orient remains distinct from task dispatch. `MASK` is a separate optional record/view modifier described in [Multiparty Responsibility and Escalation](multiparty-responsibility-and-escalation.md); it is not a request operation, response word, or matrix state.
 
