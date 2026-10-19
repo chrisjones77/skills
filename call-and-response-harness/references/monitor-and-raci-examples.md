@@ -10,12 +10,13 @@ TIME    DIR   TERMINAL  TYPE       DATA
 00.100  BC→RT RT-01     CALL       0x4 / investigate: inspect proposed API change
 00.108  RT→BC RT-01     ACK        Received; reviewing stated scope
 00.130  ---   RT-01     POSTURE    Initial BH-8: contemplate / toward / simple / risk
-00.240  RT→BC RT-01     RESPONSE   Accept bounded review; report assumptions
-00.245  ---   RT-01     STATUS     accepted → started
-00.610  RT→BC RT-01     RESPONSE   Dependency owner and review boundary are unclear
-00.615  ---   RT-01     STATUS     clarification-needed; follow-up owner=BC; exchange open
-00.650  BC→RT RT-01     FOLLOWUP   Name dependency owner; confirm review is read-only
-00.658  RT→BC RT-01     ACK        Clarification received
+00.240  RT→BC RT-01     RESPONSE   Dependency owner and review boundary are unclear
+00.245  ---   RT-01     STATUS     clarification-needed; follow-up owner=BC; exchange open
+00.650  ---   BC        ORIENT     0x0: restate purpose, outcome, scope, constraints
+00.670  BC→RT RT-01     CALL       0x4 / investigate: read-only API and dependency review
+00.678  RT→BC RT-01     ACK        Revised call received
+00.688  RT→BC RT-01     RESPONSE   Revised request is understood
+00.690  ---   RT-01     STATUS     clarified → reconsidered
 00.700  RT→BC RT-01     RESPONSE   Accept bounded review; report assumptions
 00.710  ---   RT-01     STATUS     accepted → started
 00.850  RT→BC RT-01     RESPONSE   Review complete; dependency and assumptions recorded
@@ -29,6 +30,8 @@ TIME    DIR   TERMINAL  TYPE       DATA
 01.300  RT→BC RT-02     RESPONSE   Clarify: simplify operator steps or remove safeguards?
 01.305  ---   RT-02     STATUS     clarification-needed
 01.500  BC→RT RT-02     FOLLOWUP   CLARIFY: retain safeguards; simplify operator steps
+01.520  RT→BC RT-02     ACK        Scope understood: safeguards remain in scope
+01.530  ---   RT-02     STATUS     clarified → reconsidered
 01.540  ---   RT-02     POSTURE    Reassessed BH-E: contemplate / away / complex / risk
 01.700  RT→BC RT-02     RESPONSE   Accept bounded change; retain rollback and verification
 02.105  ---   RT-02     STATUS     completed → closed
@@ -55,4 +58,4 @@ RACI attaches to **activities and decisions**, not posture codes or people's wil
 | RT-02 deployment-step change | Recipient proposes a bounded simplification. | Procedure owner approves changes to deployment steps. | Operators review usability; reliability owner advises on retained safeguards. | Requester and affected operators receive the result. |
 | RT-03 declined telemetry request | Recipient communicates the decline and capacity constraint. | Request owner decides whether to defer, reassign, or close the request. | Resource owner advises on capacity and alternatives. | Requester receives the outcome and any next step. |
 
-A posture such as `BH-F` does not assign responsibility or accountability for resolving a concern. RACI should name authorized roles and handoffs separately. Confusion creates a caller-side follow-up duty; it does not make the recipient responsible for resolving ambiguity or accepting the request. For safety concerns, follow the organization's appropriate protective and reporting processes; do not let the analogy delay urgent action.
+A posture such as `BH-F` does not assign responsibility or accountability for resolving a concern. RACI should name authorized roles and handoffs separately. Confusion creates a caller-side follow-up duty; when the existing request cannot be clarified, the caller returns to request-side `0x0 Orient` and then issues a revised call. Neither step makes the recipient responsible for resolving ambiguity or accepting the request. For safety concerns, follow the organization's appropriate protective and reporting processes; do not let the analogy delay urgent action.
