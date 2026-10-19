@@ -1,4 +1,0 @@
-interface:
-  display_name: "Call and Response Harness"
-  short_description: "Describe a request response with a four-bit posture matrix"
-  default_prompt: "Use $call-and-response-harness to map this request and response while preserving recipient choice and consent."
