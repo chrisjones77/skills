@@ -12,7 +12,7 @@ TIME    DIR   TERMINAL  TYPE       DATA
 00.130  ---   RT-01     POSTURE    Initial BH-8: contemplate / toward / simple / risk
 00.240  RT→BC RT-01     RESPONSE   Dependency owner and review boundary are unclear
 00.245  ---   RT-01     STATUS     clarification-needed; follow-up owner=BC; exchange open
-00.650  ---   BC        ORIENT     0x0: restate purpose, outcome, scope, constraints
+00.650  ---   BC        ORIENT     0x0: restate purpose, affected people, outcome, scope, constraints
 00.670  BC→RT RT-01     CALL       0x4 / investigate: read-only API and dependency review
 00.678  RT→BC RT-01     ACK        Revised call received
 00.688  RT→BC RT-01     RESPONSE   Revised request is understood
@@ -30,12 +30,14 @@ TIME    DIR   TERMINAL  TYPE       DATA
 01.300  RT→BC RT-02     RESPONSE   Clarify: simplify operator steps or remove safeguards?
 01.305  ---   RT-02     STATUS     clarification-needed
 01.500  BC→RT RT-02     FOLLOWUP   CLARIFY: retain safeguards; simplify operator steps
-01.520  RT→BC RT-02     ACK        Scope understood: safeguards remain in scope
+01.520  RT→BC RT-02     RESPONSE   Clarification understood; safeguards remain in scope
 01.530  ---   RT-02     STATUS     clarified → reconsidered
 01.540  ---   RT-02     POSTURE    Reassessed BH-E: contemplate / away / complex / risk
 01.700  RT→BC RT-02     RESPONSE   Accept bounded change; retain rollback and verification
-02.105  ---   RT-02     STATUS     completed → closed
-02.110  ---   BUS       QUIET      Exchange closed
+01.710  ---   RT-02     STATUS     accepted → started
+02.105  ---   RT-02     RESPONSE   Change complete; rollback and verification evidence recorded
+02.110  ---   RT-02     STATUS     completed → closed
+02.115  ---   BUS       QUIET      Exchange closed
 
 03.000  ---   BUS       QUIET      No active exchange
 03.140  BC→RT RT-03     CALL       0x1 / build: add requested telemetry
