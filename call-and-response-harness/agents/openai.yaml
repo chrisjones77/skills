@@ -1,4 +1,4 @@
 interface:
-  display_name: "Call and Response Harness"
-  short_description: "Describe a request response with a four-bit posture matrix"
-  default_prompt: "Use $call-and-response-harness to map this request and response while preserving recipient choice and consent."
+  display_name: "Gentle Boss"
+  short_description: "Soft command-and-control for task handoffs"
+  default_prompt: "Use $call-and-response-harness as Gentle Boss: clarify the call, preserve the recipient's disposition, assign owners, and define escalation."
