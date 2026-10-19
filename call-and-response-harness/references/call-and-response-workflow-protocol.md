@@ -1,8 +1,8 @@
-# Call-and-Response Workflow Protocol
+# Gentle Boss — Call-and-Response Workflow Protocol
 
 ## Purpose and status
 
-This note consolidates the call-and-response harness into a lightweight, multiparty workflow protocol. It is an aspirational design aid inspired by explicit request/response turns and real-time systems practice. It is not MIL-STD-1553, an executable scheduler, a safety case, a security mechanism, or a formal guarantee of consent, fairness, or safety.
+This note consolidates Gentle Boss into a lightweight, multiparty workflow protocol. It is an aspirational design aid inspired by explicit request/response turns and real-time systems practice. It is not MIL-STD-1553, an executable scheduler, a safety case, a security mechanism, or a formal guarantee of consent, fairness, or safety.
 
 The protocol makes a request interpretable, preserves the recipient's answer, assigns workflow ownership, and gives unresolved issues a named recovery and escalation route. Use only the parts that help; routine exchanges should not need extra fields unless a boundary, ambiguity, or risk calls for them.
 
