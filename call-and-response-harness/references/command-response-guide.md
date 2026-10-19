@@ -10,7 +10,14 @@ Each cell records a possible contextual reading of a command–response pairing 
 
 Cells are interpretation notes, not allowed/invalid pairings, scores, deterministic protocol states, or evidence of consent, authorization, understanding, or completion. A marker is only a shorthand attached to the recipient's actual words. Context and the actual reply control interpretation. One reply may carry several markers, or none.
 
-Use the matrix to examine what a pairing might mean and guard against over-reading it. If no useful contextual interpretation is available, leave the cell unfilled or mark it not applicable; do not invent certainty. Cells may share guidance, and the 225 combinations do not require 225 unique rules.
+Use the matrix to examine what a pairing might mean and guard against over-reading it. Cells may share guidance, and the 225 combinations do not require 225 unique rules. Track coverage explicitly with these marks:
+
+- **Not reviewed:** no interpretation review has been completed. An empty cell means this unless a coverage register says otherwise.
+- **Reviewed — no special handling:** the general marker definition is sufficient for this command; preserve the actual reply and ordinary exchange process.
+- **Interpretation note:** record the contextual meaning, what it does not establish, and follow-up if needed.
+- **Not applicable:** use only with a brief reason the pairing has no meaningful use in this harness.
+
+Do not treat an empty or unreviewed cell as “no special handling.” Record the reviewer and review date in the coverage register when the matrix is maintained as a project artifact.
 
 ## Command words
 
@@ -60,6 +67,8 @@ The supplied list had fourteen words. `Unclear` is added as the fifteenth becaus
 
 These are optional, mixed-kind descriptors, not mutually exclusive states. They concern receipt, understanding, capacity, decision, work report, or proposal. Preserve the actual response and do not force a marker when it does not fit.
 
+The recipient may choose a marker for their own response. If another person annotates the reply, preserve the recipient's words and label the marker as an observer's provisional interpretation; do not use it to infer private feelings, intent, or consent. For software or AI, annotate only observable output or configured behavior.
+
 ### Distinguish similar markers
 
 Use the narrowest claim supported by the person's actual words:
@@ -78,7 +87,7 @@ Use the narrowest claim supported by the person's actual words:
 | **Teach** | May signal readiness to discuss teaching; not acceptance to teach. Confirm the specific ask and scope. | Receipt only; no commitment or demonstrated understanding. | A limit applies to teaching; clarify audience, topic, time, or other boundary. | A teaching-related finding or resource is reported; record it and whether the teaching request remains open. | Caller follows up. If the call itself remains unclear, return to `0x0 Orient` and issue a linked revised call. |
 | **Verify** | Readiness to consider verification; not evidence that verification occurred. Confirm scope and acceptance separately. | Receipt only; no verification performed is implied. | Verification scope or capacity is limited; record what is in and out. | A finding is reported; record evidence and distinguish it from a pass/fail conclusion. | Caller clarifies the verification target and criteria; re-orient only if the request context is insufficient. |
 
-These examples illustrate 15 of the 225 pairings (three commands by five response markers); the other 210 cells are not yet authored. This file is a partial example set and authoring method, not a complete matrix. Add cells incrementally using the same three-part form and label coverage as partial until all intended pairings have been reviewed. Avoid presenting illustrative content as a universal rule.
+These examples illustrate 15 of the 225 pairings (three commands by five response markers); the other 210 cells are not yet reviewed in this draft. This file is a partial example set and authoring method, not a complete matrix. Review cells incrementally using the coverage marks above and the same three-part form. Avoid presenting illustrative content as a universal rule.
 
 ## Follow-up and `0x0 Orient`
 
