@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gentle Boss"
+  short_description: "Soft command-and-control for task handoffs"
+  default_prompt: "Use $call-and-response-harness as Gentle Boss: clarify the call, preserve the recipient's disposition, assign owners, and define escalation."
