@@ -1,6 +1,6 @@
 # Command–Response Interpretation Guide
 
-This guide extends the response-posture harness with a **15 × 15 contextual interpretation matrix**: each request-side command word crossed with each optional response word. It is part of the same harness, not a new response state space. Request-side `0x0 Orient` remains outside the matrix because it frames or repairs the call; it is not a dispatched command or a recipient response.
+This guide extends the response-posture harness with a **15 × 15 contextual interpretation matrix**: each request-side command word crossed with each optional response word. It is part of the same harness, not a new response state space. Request-side `0x0 Orient` remains outside the matrix because it frames or repairs the call; it is not a dispatched command or a recipient response. `MASK` is a separate optional record/view modifier described in [Multiparty Responsibility and Escalation](multiparty-responsibility-and-escalation.md); it is not a command, response word, or matrix state.
 
 ## Purpose
 
