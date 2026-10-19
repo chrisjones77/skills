@@ -1,4 +1,4 @@
-# Multiparty Responsibility and Escalation
+# Gentle Boss — Multiparty Responsibility and Escalation
 
 This overlay answers **who owns each workflow activity, decision, and handoff** when a call involves several people or roles. It complements the command–response interpretation guide; it does not change a response marker, assign a posture, or determine what a person consents to do.
 
