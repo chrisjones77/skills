@@ -60,6 +60,16 @@ The supplied list had fourteen words. `Unclear` is added as the fifteenth becaus
 
 These are optional, mixed-kind descriptors, not mutually exclusive states. They concern receipt, understanding, capacity, decision, work report, or proposal. Preserve the actual response and do not force a marker when it does not fit.
 
+### Distinguish similar markers
+
+Use the narrowest claim supported by the person's actual words:
+
+- **Noted** records receipt. **Heard** records that the message was attended to. Neither establishes comprehension; use **Clear** only when the recipient indicates the request is understood.
+- **Present** reports current availability or participation. **Ready** reports readiness for a stated next step. Neither is acceptance; acceptance must be explicit and scoped.
+- **Clear** reports comprehension. **Aligned** reports a stated shared understanding of a named goal or scope. Neither establishes consent, authorization, or acceptance.
+- **Curious** marks a question or request for information. **Unclear** marks that the call cannot yet be interpreted. A question can be clear and specific; do not label it Unclear unless the recipient says the request is not understood.
+- **Steady** must name what remains stable and over what period; if that cannot be stated, preserve the original words without the marker.
+
 ## Matrix examples
 
 | Command ↓ / response → | Ready | Noted | Bounded | Found | Unclear |
@@ -68,7 +78,7 @@ These are optional, mixed-kind descriptors, not mutually exclusive states. They 
 | **Teach** | May signal readiness to discuss teaching; not acceptance to teach. Confirm the specific ask and scope. | Receipt only; no commitment or demonstrated understanding. | A limit applies to teaching; clarify audience, topic, time, or other boundary. | A teaching-related finding or resource is reported; record it and whether the teaching request remains open. | Caller follows up. If the call itself remains unclear, return to `0x0 Orient` and issue a linked revised call. |
 | **Verify** | Readiness to consider verification; not evidence that verification occurred. Confirm scope and acceptance separately. | Receipt only; no verification performed is implied. | Verification scope or capacity is limited; record what is in and out. | A finding is reported; record evidence and distinguish it from a pass/fail conclusion. | Caller clarifies the verification target and criteria; re-orient only if the request context is insufficient. |
 
-These examples illustrate a few cells, not a complete filled matrix or canonical meanings. A full matrix may be authored incrementally using the same three-part cell form. Avoid presenting illustrative content as a universal rule.
+These examples illustrate 15 of the 225 pairings (three commands by five response markers); the other 210 cells are not yet authored. This file is a partial example set and authoring method, not a complete matrix. Add cells incrementally using the same three-part form and label coverage as partial until all intended pairings have been reviewed. Avoid presenting illustrative content as a universal rule.
 
 ## Follow-up and `0x0 Orient`
 
