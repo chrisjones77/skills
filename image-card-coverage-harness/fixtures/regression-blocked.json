@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_id": "DEMO-BRIDGE-REGRESSION-001",
+  "artifact_type": "infrastructure_card",
+  "brief": {
+    "subject": "Fixture with a known regression",
+    "canonical_constraints": [
+      {
+        "constraint_id": "STRUCTURE",
+        "statement": "Plate-girder bridge",
+        "mutability": "immutable"
+      }
+    ],
+    "forbidden_drift": [
+      "truss"
+    ],
+    "required_text": [],
+    "technical_claims": [],
+    "creative_deviations_policy": "Record deviations."
+  },
+  "generation": {
+    "id": "G-003",
+    "parent_generation_id": "G-002",
+    "requested_delta": [
+      "Fix label"
+    ],
+    "preservation_targets": [
+      "structure"
+    ],
+    "regression_checks": [
+      {
+        "check_id": "R-STRUCTURE",
+        "requirement": "remain plate girder",
+        "status": "fail",
+        "evidence_note": "Fixture assertion only; no image attached."
+      }
+    ]
+  },
+  "review": {
+    "artifact_type_fit": {
+      "status": "pass"
+    },
+    "canonical_constraints": [
+      {
+        "constraint_id": "STRUCTURE",
+        "status": "fail",
+        "evidence_note": "Fixture assertion only; no image attached."
+      }
+    ],
+    "forbidden_drift": [
+      {
+        "item": "truss",
+        "status": "pass",
+        "evidence_note": "Fixture assertion only; no image attached."
+      }
+    ],
+    "regression_review": {
+      "status": "fail"
+    },
+    "minimal_delta": {
+      "status": "pass",
+      "preserved_target_ids": []
+    },
+    "synthetic_familiarity": {
+      "status": "pass"
+    },
+    "reference_fidelity": {
+      "status": "not_applicable"
+    },
+    "technical_evidence": {
+      "status": "pass",
+      "included_claim_ids": [],
+      "excluded_claim_ids": [],
+      "fictional_labelled_claim_ids": []
+    },
+    "typography": {
+      "status": "not_applicable",
+      "items": []
+    },
+    "collection_consistency": {
+      "status": "pass"
+    },
+    "creative_deviations": {
+      "status": "not_applicable",
+      "items": []
+    },
+    "reviewer": "fixture",
+    "decision": "revise"
+  },
+  "provenance": {
+    "source_kind": "synthetic_fixture",
+    "created_for_archive": true
+  }
+}
