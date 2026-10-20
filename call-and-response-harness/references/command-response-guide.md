@@ -120,6 +120,9 @@ These examples illustrate 24 of the 256 pairings (four operations by six respons
 
 ## Follow-up and `0x0 Orient`
 
+In this guide, an **exchange** means the whole call episode. A **bus turn** is one serialized call or status transmission inside that episode. A bus turn may end and the channel may become quiescent while the call episode remains open for caller-owned clarification or another agreed follow-up. Quiescence is not closure.
+
+
 When a recipient reports confusion, set the exchange to `clarification-needed` and assign follow-up to the caller/request owner. First clarify from the existing request context. If that context cannot resolve the ambiguity, return to request-side `0x0 Orient` to restate purpose, context, affected people, desired outcome, scope, and constraints; then issue a revised call linked to the original. Orient repairs the call; it does not compel acceptance. If an agreed response target passes without a reply, record a no-response/timeout event and have the caller/request owner set a new checkpoint, defer the request, or withdraw it with a recorded disposition. Silence is not the `Declined` marker and does not establish consent, refusal, or understanding. Do not send repeated calls without a stated purpose and review point.
 
 Mark the request clarified only when the recipient indicates it is understood. Understanding is not acceptance. The recipient may accept, defer, decline, remain unsure, or withdraw consent. Keep the exchange and its response posture separate, as described in the main skill and [monitor examples](monitor-and-raci-examples.md).
