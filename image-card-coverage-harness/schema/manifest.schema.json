@@ -1,0 +1,440 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/image-card-coverage/manifest-1.4.schema.json",
+  "title": "Image and Card Coverage Manifest v1.4",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "artifact_type",
+    "brief",
+    "generation",
+    "review",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.4.0"
+    },
+    "artifact_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "artifact_type": {
+      "enum": [
+        "album_cover",
+        "infrastructure_card",
+        "collectible_card",
+        "illustration",
+        "other"
+      ]
+    },
+    "brief": {
+      "$ref": "#/$defs/brief"
+    },
+    "generation": {
+      "$ref": "#/$defs/generation"
+    },
+    "review": {
+      "$ref": "#/$defs/review"
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "source_kind",
+        "created_for_archive"
+      ],
+      "properties": {
+        "source_kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "created_for_archive": {
+          "type": "boolean"
+        },
+        "asset_ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Normalized slash-separated relative file path within the manifest directory. Runtime validation also checks containment, file existence, and SHA-256.",
+          "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+"
+        },
+        "asset_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{64}$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "source_kind": {
+                "const": "synthetic_fixture"
+              }
+            },
+            "required": [
+              "source_kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "created_for_archive": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_kind": {
+                "not": {
+                  "const": "synthetic_fixture"
+                }
+              }
+            },
+            "required": [
+              "source_kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "asset_ref",
+              "asset_sha256"
+            ]
+          }
+        }
+      ],
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "status": {
+      "enum": [
+        "pass",
+        "fail",
+        "not_applicable",
+        "unresolved"
+      ]
+    },
+    "brief": {
+      "type": "object",
+      "required": [
+        "subject",
+        "canonical_constraints",
+        "forbidden_drift",
+        "required_text",
+        "technical_claims",
+        "creative_deviations_policy"
+      ],
+      "properties": {
+        "subject": {
+          "type": "string"
+        },
+        "canonical_constraints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "constraint_id",
+              "statement"
+            ],
+            "properties": {
+              "constraint_id": {
+                "type": "string"
+              },
+              "statement": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "mutability": {
+                "enum": [
+                  "immutable",
+                  "revisable"
+                ]
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "forbidden_drift": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "required_text": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "text_id",
+              "exact"
+            ],
+            "properties": {
+              "text_id": {
+                "type": "string"
+              },
+              "exact": {
+                "type": "string"
+              },
+              "case_sensitive": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "technical_claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "claim_id",
+              "status"
+            ],
+            "properties": {
+              "claim_id": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "included",
+                  "excluded",
+                  "fictional_labelled"
+                ]
+              },
+              "evidence_ref": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "creative_deviations_policy": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "generation": {
+      "type": "object",
+      "required": [
+        "id",
+        "parent_generation_id",
+        "requested_delta",
+        "preservation_targets",
+        "regression_checks"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent_generation_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "requested_delta": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "preservation_targets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "regression_checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "check_id",
+              "status",
+              "requirement",
+              "evidence_note"
+            ],
+            "properties": {
+              "check_id": {
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/$defs/status"
+              },
+              "requirement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidence_note": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "section": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/status"
+        }
+      },
+      "additionalProperties": true
+    },
+    "review": {
+      "type": "object",
+      "required": [
+        "artifact_type_fit",
+        "canonical_constraints",
+        "forbidden_drift",
+        "regression_review",
+        "minimal_delta",
+        "synthetic_familiarity",
+        "reference_fidelity",
+        "technical_evidence",
+        "typography",
+        "collection_consistency",
+        "creative_deviations",
+        "reviewer",
+        "decision"
+      ],
+      "properties": {
+        "artifact_type_fit": {
+          "$ref": "#/$defs/section"
+        },
+        "canonical_constraints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "constraint_id",
+              "status",
+              "evidence_note"
+            ],
+            "properties": {
+              "constraint_id": {
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/$defs/status"
+              },
+              "evidence_note": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "forbidden_drift": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "item",
+              "status",
+              "evidence_note"
+            ],
+            "properties": {
+              "item": {
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/$defs/status"
+              },
+              "evidence_note": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "regression_review": {
+          "$ref": "#/$defs/section"
+        },
+        "minimal_delta": {
+          "$ref": "#/$defs/section"
+        },
+        "synthetic_familiarity": {
+          "$ref": "#/$defs/section"
+        },
+        "reference_fidelity": {
+          "$ref": "#/$defs/section"
+        },
+        "technical_evidence": {
+          "type": "object",
+          "required": [
+            "status",
+            "included_claim_ids",
+            "excluded_claim_ids",
+            "fictional_labelled_claim_ids"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "included_claim_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "excluded_claim_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "fictional_labelled_claim_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": true
+        },
+        "typography": {
+          "$ref": "#/$defs/section"
+        },
+        "collection_consistency": {
+          "$ref": "#/$defs/section"
+        },
+        "creative_deviations": {
+          "$ref": "#/$defs/section"
+        },
+        "reviewer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision": {
+          "enum": [
+            "accept",
+            "revise",
+            "reject",
+            "hold"
+          ]
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

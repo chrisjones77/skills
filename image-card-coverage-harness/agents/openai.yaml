@@ -1,0 +1,4 @@
+interface:
+  display_name: "Image Coverage Harness"
+  short_description: "Review image coverage, revisions, and asset provenance"
+  default_prompt: "Use $image-card-coverage-harness to review this image manifest for coverage and lineage gaps."

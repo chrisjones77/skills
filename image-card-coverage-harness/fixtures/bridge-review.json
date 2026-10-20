@@ -1,0 +1,173 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_id": "DEMO-IMAGE-CARD-001",
+  "artifact_type": "infrastructure_card",
+  "brief": {
+    "subject": "Fictional plate-girder bridge card used only as a harness fixture",
+    "canonical_constraints": [
+      {
+        "constraint_id": "C-STRUCTURE",
+        "statement": "Depict a plate-girder bridge; do not silently substitute a truss.",
+        "source": "fixture-only authored requirement",
+        "mutability": "immutable"
+      },
+      {
+        "constraint_id": "C-TEXT",
+        "statement": "The title must read exactly THE BRIDGE.",
+        "source": "fixture-only authored requirement",
+        "mutability": "immutable"
+      }
+    ],
+    "forbidden_drift": [
+      "truss structure",
+      "unrequested dog",
+      "invented load rating"
+    ],
+    "required_text": [
+      {
+        "text_id": "TITLE",
+        "exact": "THE BRIDGE",
+        "case_sensitive": true
+      }
+    ],
+    "technical_claims": [
+      {
+        "claim_id": "LOAD-RATING",
+        "text": "No load rating supplied",
+        "status": "excluded",
+        "evidence_ref": null
+      }
+    ],
+    "creative_deviations_policy": "Only explicitly recorded and approved deviations are allowed."
+  },
+  "generation": {
+    "id": "G-002",
+    "parent_generation_id": "G-001",
+    "requested_delta": [
+      "Correct bridge type to plate girder"
+    ],
+    "preservation_targets": [
+      "palette",
+      "card-frame",
+      "river-background"
+    ],
+    "regression_checks": [
+      {
+        "check_id": "R-STRUCTURE",
+        "requirement": "plate-girder remains present",
+        "status": "pass",
+        "evidence_note": "Fixture assertion only; no image attached."
+      },
+      {
+        "check_id": "R-NO-RATING",
+        "requirement": "no unsupported engineering rating",
+        "status": "pass",
+        "evidence_note": "Fixture assertion only; no image attached."
+      }
+    ],
+    "fixture_asset_ref": "not-included-fixture"
+  },
+  "review": {
+    "artifact_type_fit": {
+      "status": "pass",
+      "note": "Reviewed as a collectible infrastructure card, not an engineering dossier."
+    },
+    "canonical_constraints": [
+      {
+        "constraint_id": "C-STRUCTURE",
+        "status": "pass",
+        "evidence_note": "Fixture assertion only; no image attached."
+      },
+      {
+        "constraint_id": "C-TEXT",
+        "status": "pass",
+        "evidence_note": "Fixture assertion only; no image attached."
+      }
+    ],
+    "forbidden_drift": [
+      {
+        "item": "truss structure",
+        "status": "pass",
+        "evidence_note": "Fixture assertion only; no image attached."
+      },
+      {
+        "item": "unrequested dog",
+        "status": "pass",
+        "evidence_note": "Fixture assertion only; no image attached."
+      },
+      {
+        "item": "invented load rating",
+        "status": "pass",
+        "evidence_note": "Fixture assertion only; no image attached."
+      }
+    ],
+    "regression_review": {
+      "status": "pass",
+      "compared_to": [
+        "G-001",
+        "resolved-constraints"
+      ],
+      "note": "Illustrative record, not a claim of actual visual inspection."
+    },
+    "minimal_delta": {
+      "status": "pass",
+      "preserved_target_ids": [
+        "palette",
+        "card-frame",
+        "river-background"
+      ],
+      "note": "Illustrative fixture."
+    },
+    "synthetic_familiarity": {
+      "status": "pass",
+      "unrequested_recurring_elements_checked": [
+        "unrequested recurring human figure",
+        "unrequested recurring animal"
+      ],
+      "note": "Illustrative fixture; no image attached."
+    },
+    "reference_fidelity": {
+      "status": "not_applicable",
+      "reference_ids": [],
+      "deidentification_review": "not_applicable"
+    },
+    "technical_evidence": {
+      "status": "pass",
+      "included_claim_ids": [],
+      "excluded_claim_ids": [
+        "LOAD-RATING"
+      ],
+      "fictional_labelled_claim_ids": []
+    },
+    "typography": {
+      "status": "pass",
+      "items": [
+        {
+          "text_id": "TITLE",
+          "status": "pass",
+          "observed_text": "THE BRIDGE"
+        }
+      ]
+    },
+    "collection_consistency": {
+      "status": "pass",
+      "collection_id": "DEMO-CARD-SERIES",
+      "baseline_ref": "fixture-baseline",
+      "dimensions_checked": [
+        "frame",
+        "palette",
+        "label-hierarchy"
+      ]
+    },
+    "creative_deviations": {
+      "status": "not_applicable",
+      "items": []
+    },
+    "reviewer": "fixture-reviewer",
+    "decision": "accept"
+  },
+  "provenance": {
+    "source_kind": "synthetic_fixture",
+    "created_for_archive": true
+  }
+}
