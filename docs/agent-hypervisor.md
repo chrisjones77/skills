@@ -4,7 +4,7 @@
 
 The agent hypervisor is a small, harness-neutral control role that keeps a task coherent when work moves between agent runtimes. It coordinates the user's objective, task state, permissions, evidence, and ownership. It is not another task-solving model and it does not expand an agent's authority.
 
-The same role can sit above Codex, Claude, Ollama-hosted models, Cloudflare Workers AI, or another compatible harness/provider. Harness-specific adapters translate this contract into each tool's native session, delegation, and approval mechanisms. The contract itself stays plain text and portable.
+The same role can sit above any compatible agent harness or model provider. Harness-specific adapters translate this contract into each tool's native session, delegation, and approval mechanisms. The contract itself stays plain text and portable.
 
 ## Responsibilities
 
@@ -30,7 +30,7 @@ Use the native tool exposed by the active harness. In the Codex runtime document
 
 ## Task packet
 
-Use a portable Markdown or JSON packet with these fields. The repository's [task-packet YAML template](wrbg-harnessed-dispatch/templates/task-packet.yaml) is one fill-in format. Omit sensitive or irrelevant history; include exact paths and identifiers when they are needed to resume safely. Populate packets in task-local/private context and do not commit them by default.
+Use a portable Markdown or JSON packet with these fields. The repository's [task-packet YAML template](delegation/templates/task-packet.yaml) is one fill-in format. Omit sensitive or irrelevant history; include exact paths and identifiers when they are needed to resume safely. Populate packets in task-local/private context and do not commit them by default.
 
 ```yaml
 version: 1
@@ -118,36 +118,12 @@ An adapter for any agent harness should expose the equivalent of:
 
 These names describe behavior, not a required API. An adapter can map them to native subagents, a local model runner, a shell process, or a human-operated copy/paste workflow. It must preserve single-writer ownership for edits and explicit permission checks for side effects.
 
-## Local-model continuity
+## Provider adapters
 
-When the primary hosted session approaches its context or usage limit, the hypervisor can package the current checkpoint for a local Ollama-backed runtime. The local model is another executor under the same task contract. It should receive a bounded task, a sanitized packet, and the minimum local tools needed. Model/provider changes do not change the verification bar or the user's authorization.
+A local model, hosted model, or other execution provider is another executor under the same task contract. Give it a bounded assignment, a sanitized packet, and only the tools required for that task. Changing providers does not change the verification bar, task ownership, or user authorization.
 
-Treat Ollama account or plan availability as environment configuration to verify locally. This document does not assume a particular subscription, model catalog, tool-calling feature, API compatibility, or local service endpoint.
-
-## Cloudflare free-tier mode
-
-Cloudflare can provide a hosted execution mode when the account's currently available Free plan services are sufficient. This is a separate provider mode in the same hypervisor contract; task packets, handoff, takeover, ownership, and evidence rules remain the same.
-
-Possible building blocks include:
-
-- **Workers AI** for model inference, within its free daily allocation and model eligibility. Cloudflare currently documents 10,000 Neurons per day at no charge. Some models require Workers Paid or prepaid AI Gateway credits, so the adapter must use an explicitly free-eligible model and stop or hand off when the allocation is exhausted.
-- **Workers Free** for a small HTTPS coordinator or adapter endpoint, subject to account limits such as 100,000 requests per day, 10 ms CPU per invocation, and 128 MB memory.
-- **D1, KV, or Durable Objects** only when needed for task packet storage, locks, or coordination, with their own free-plan limits and availability. Store only sanitized task state; keep workspace files on the user's machine.
-
-This mode is suitable for lightweight coordination and bounded model calls. A Cloudflare Worker does not automatically have access to the user's local repository, local Ollama service, desktop session, or agent tools. A local connector would need to expose a narrowly scoped, authenticated capability, and should initiate outbound connections or use another explicitly secured channel. Do not expose a local control endpoint publicly.
-
-Keep the free-tier mode fail-closed: track provider and storage usage where available, set conservative per-task limits, and stop or return a checkpoint at quota, model-access, capacity, or connectivity errors. Never silently switch to a paid plan, consume prepaid credits, or route to a billable model. Confirm the account plan, selected model's eligibility, current quotas, and any account-specific service settings before enabling it; published limits can change.
-
-Cloudflare Workers AI usage and quotas are distinct from a local Ollama subscription or hosted-agent session. This mode may avoid additional provider spend only while the selected service and usage remain within the account's free allowance.
-
-### Current documentation references
-
-- [Workers AI pricing and daily allocation](https://developers.cloudflare.com/workers-ai/platform/pricing/)
-- [Workers AI model access and rate limits](https://developers.cloudflare.com/workers-ai/platform/limits/)
-- [Workers Free limits and pricing](https://developers.cloudflare.com/workers/platform/pricing/)
-
-These values were checked on 2026-10-13 and should be revalidated before implementation or use.
+Provider availability, model access, tool support, quotas, pricing, and connectivity are environment-specific and can change. Verify them against current provider documentation and the active account before implementation. Never silently switch to a paid service, consume credits, or grant local repository access through a public endpoint. Stop or return a checkpoint when access, capacity, or connectivity is unavailable.
 
 ## Relationship to this repository's dispatch workflow
 
-The existing [WRBG Harnessed Subagent Dispatch](wrbg-harnessed-dispatch/README.md) remains the repository's cross-harness operating procedure for delegated work. The hypervisor contract can carry its bounded objective, isolation, permission, evidence, and stop-condition fields between harnesses. Each destination still follows its own tool and repository rules; a portable packet does not bypass them.
+The existing [Harnessed Subagent Dispatch](delegation/README.md) remains the repository's cross-harness operating procedure for delegated work. The hypervisor contract can carry its bounded objective, isolation, permission, evidence, and stop-condition fields between harnesses. Each destination still follows its own tool and repository rules; a portable packet does not bypass them.
