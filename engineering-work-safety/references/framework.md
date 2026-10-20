@@ -83,7 +83,10 @@ For a lightweight comparison, state which measures are acceptance constraints an
 
 #### Lightweight scheduled-task record
 
-- **Task ID / code / command:**
+- **Task ID / code / command / current lifecycle state:**
+- **Requester / accountable owner / dispatcher / execution owner:**
+- **Approver and reviewer, if needed:**
+- **Response-event record reference / next action / owner / review point:**
 - **Outcome and completion condition:**
 - **Release condition / cadence / minimum inter-arrival constraint, if applicable:**
 - **Priority and authority for setting it:**
@@ -99,6 +102,83 @@ For a lightweight comparison, state which measures are acceptance constraints an
 - **Revisit trigger:**
 
 This record is a planning aid. Formal scheduling guarantees require an appropriate task and resource model, explicit assumptions, suitable analysis, and target-system evidence. A task table, priority label, or queue policy alone does not establish schedulability or deadline compliance.
+
+### Response lifecycle and half-duplex handoff
+
+Use this lifecycle when work is explicitly dispatched. It is a coordination aid, not a required ceremony for ordinary collaboration.
+
+`queued → acknowledged → accepted | deferred | rejected → started → completed | blocked | failed | interrupted | cancelled`
+
+These are work-item states, not a demand that every task pass through every state. A transition is an event recorded by its actor; do not silently rewrite history. A task may be cancelled before it starts, or deferred/rejected after receipt. `completed` means the execution owner reports the agreed output and evidence; it does not itself mean an authorized reviewer accepted the result or that the surrounding work is closed.
+
+- **Queued:** request is recorded but not yet selected. Name who owns queue review and the next review point or trigger; no response time is implied unless agreed.
+- **Acknowledged:** dispatcher or recipient confirms receipt only. This is not acceptance, authorization, a promise to start, or a completion claim. Name the expected decision-maker and next review point if a decision is not immediate.
+- **Accepted:** the execution owner agrees to undertake the bounded task under stated scope, capacity, constraints, and timing expectations. Record the planned start or next update point. Acceptance is not approval to make a separately controlled decision or release.
+- **Deferred:** work is not accepted for now. Record a reason at an appropriate level of detail, the next review point or trigger, the next action, and who will re-evaluate it. It may return to the queue after review; do not leave it as silent pending work.
+- **Rejected:** recipient declines the assignment or the request is outside authority, scope, or capacity. Record the disposition and route a revised request or decision to the named requester/dispatcher. A decline is not a worker-performance failure.
+- **Started:** work begins. Record the execution owner, relevant start point, changed assumptions or constraints, and the next status/review point.
+- **Blocked:** progress cannot safely or reasonably continue. Preserve current state and evidence, describe the dependency or concern without unnecessary sensitive details, name the next action and owner, and set a review point. Re-queue only after the blocker is reviewed.
+- **Interrupted:** work is paused by an external event, safety concern, capacity change, or authorized decision. Preserve recoverable state and evidence; identify interim protections, who can authorize resumption, and when or what will trigger review. Resume only after scope, safety, and capacity are rechecked.
+- **Failed:** the agreed completion condition was not met or the attempt failed. Preserve evidence, identify a recovery/diagnosis owner and next review point. Retry only after an authorized review of the cause, risk, and capacity; do not treat retry as automatic.
+- **Cancelled:** an authorized requester or decision owner ends the task, or the worker withdraws from work they cannot safely undertake. Record who decided, the reason as appropriate, what state/evidence is retained, and any handoff or cleanup owner.
+- **Completed:** execution owner reports the output, completion evidence, and any remaining limitations. If review is required, name the reviewer and review point. The reviewer records accept, rework/reopen, or unresolved disposition under their authority. Mark the work item `closed` only when required review and follow-up are resolved or explicitly transferred to a named owner with a review point. Do not claim acceptance or closure from a completion message alone.
+
+Every transition records **status, actor/role, and timestamp or agreed review point**. For deferred, rejected, blocked, interrupted, failed, or cancelled states, also record a proportionate reason, next action, responsible owner, and next review point. For started and completed, record the relevant task evidence. Store only the minimum sensitive detail needed and use an access-appropriate record.
+
+**Active exchange and quiescence.** Model the dispatch channel as having at most one active request/response exchange at a time for its declared channel. The exchange begins when the dispatcher selects and issues a queued task. It ends when receipt/decision or status is recorded with its next action and owner; the channel then returns to quiescence. Execution can continue after a `started` response, and later progress/completion is a new exchange. Quiescence means no exchange is in progress; it does not mean no work exists, no task is executing, or a person is available. A dispatcher buffers requests while the channel is quiescent and selects the next exchange under its published policy.
+
+**Authority and queue behavior.** The requester describes the need; the accountable owner sets scope, priority, admission and risk-acceptance authority; the dispatcher selects and assigns within that authority; the execution owner decides whether they can accept and performs the work; a designated approver authorizes controlled actions; and a reviewer determines whether completion evidence meets the agreed criterion. One person may hold multiple roles only when appropriate and transparent. Assignment is not authorization, and execution ownership does not imply risk acceptance.
+
+Declare the queue bound/capacity, priority criteria, tie-breaker, and an aging or review mechanism to reduce starvation. A queue overflow or capacity shortfall triggers an explicit admission, deferral, or escalation decision; it must not create hidden work or imply unbounded worker availability. Priority and aging do not override worker voice, safety protections, authorization, or applicable stop-work processes. An immediate danger or credible safety escalation uses the applicable emergency/incident/stop-work route without waiting behind ordinary work; record the resulting interruption and protect sensitive information. Deadlines and effort estimates for human work are coordination inputs, not WCET or deterministic response promises. A missed target triggers the agreed check-in, reprioritization, or escalation—not a finding that a person is a protocol fault.
+
+**Recovery rules.** On interruption, cancellation, or a stalled exchange, record the last known state, preserved evidence/location, owner, and review trigger. After deferral or blockage, re-evaluate priority, dependencies, scope, and capacity before re-queueing. A failed or interrupted task is not automatically retried or resumed. For long-running work, use periodic status exchanges only at agreed review points or meaningful state changes; no acknowledgement does not authorize a dispatcher to assume acceptance or completion.
+
+#### Lightweight call/response record
+
+```yaml
+work_id: ""                 # stable task identifier
+task_class: "0x0"           # 0x1–0xF for dispatched work; 0x0 is orientation
+command: ""                 # concrete requested action
+requester: ""
+accountable_owner: ""
+dispatcher: ""
+execution_owner: ""
+approver: ""                # if a controlled action needs approval
+reviewer: ""                # if completion review is required
+scope_and_completion_condition: ""
+priority_and_basis: ""
+deadline_or_review_point: "" # planning target, not a human response guarantee
+capacity_or_effort_note: ""
+dependencies: []
+safety_constraints_and_escalation_route: ""
+queue_policy_ref: ""
+events:
+  - status: queued
+    actor: ""
+    at_or_review_point: ""
+    reason: ""
+    next_action: ""
+    next_action_owner: ""
+    evidence_ref: ""
+channel:
+  state: quiescent            # quiescent | exchange_active
+  active_exchange_id: null
+```
+
+Append a new event for each transition rather than overwriting prior events. Omit fields that are not applicable, but preserve the distinction between receipt, decision, start, completion, review, and closure. Use a protected record or a minimal reference for sensitive safety matters.
+
+#### Worked scenarios
+
+| Scenario | Recorded transitions and response | Next action / owner | Channel and safety handling |
+|---|---|---|---|
+| Normal completion | queued → acknowledged → accepted → started → completed; reviewer records accept when required | Execution owner supplies output/evidence; reviewer closes review | Each exchange closes to quiescence; start/completion reports may be separate exchanges |
+| Deferral | queued → acknowledged → deferred, with reason and review point | Accountable owner rechecks capacity and priority at that point | No implied acceptance or invisible commitment; re-queue only after review |
+| Blocked dependency | started → blocked, with dependency and evidence reference | Named dependency owner resolves or reports; dispatcher/accountable owner re-admits | Preserve work state; channel returns to quiescence while blocker remains visible |
+| Interruption and recovery | started → interrupted; preserve state; later review → started or deferred/cancelled | Authorized owner checks safety, scope, and capacity before resumption | Interim protection and escalation route remain active; resumption is not automatic |
+| Overload | new request → acknowledged → deferred or rejected under capacity policy | Accountable owner reprioritizes, changes capacity/scope, or declines work | Bound queue and aging/review prevent silent accumulation; no pressure to exceed safe capacity |
+| Safety escalation | started → interrupted/blocked; invoke applicable safety route immediately | Appropriate safety/decision owner sets protection and review; use alternate route if ordinary owner is implicated | Bypass ordinary queue delay; restrict sensitive records; throughput cannot overrule safety |
+
+The 1553 analogy is limited to buffered requests, controlled dispatch, explicit responses, one active exchange per declared channel, and return to quiescence. It does not claim protocol conformance, deterministic human response, inherited bus timing, arbitration correctness, schedulability, or transferred mathematical proof. Any real-time guarantee needs a separately defined system/task/resource model, assumptions, analysis, and evidence.
 
 ### Psychosocial safety baseline
 

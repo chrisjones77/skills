@@ -13,12 +13,13 @@ Use this framework to discuss engineering work across **silicon, flesh, and in b
 
 1. Orient the work: clarify purpose, context, desired outcome, constraints, timing expectations, and affected people and systems.
 2. Use 0x0 to orient the work; use a 0x1–0xF code to identify its task class. For work to be dispatched, define a concrete task and its command word; the code classifies the work, while the command says what action to perform.
-3. Apply real-time systems discipline to scheduling software work: state relevant releases, priorities, deadlines, effort or execution budgets, dependencies, resource constraints, admission decisions, and overload behavior. Use only the level of timing analysis supported by the task model and evidence.
-4. Consider psychosocial effects throughout: workload and pace, role clarity and control, communication and change, support and resources, fairness and respect, worker voice, and barriers to participation.
-5. Turn material concerns into an action, owner, interim protection, escalation route, effectiveness check, and revisit point. Keep unresolved material risks visible.
-6. Review whether the prompts improved understanding or decisions; simplify or set the tool aside when it adds ceremony without value.
+3. For dispatched work, record the response lifecycle separately from scheduling: acknowledgement is receipt only; acceptance, start, completion, review, deferral, interruption, and closure are distinct events. Bound the dispatch/response exchange and return the channel to quiescence between exchanges. Use the lightweight call/response record and recovery rules in `references/framework.md`.
+4. Apply real-time systems discipline to scheduling software work: state relevant releases, priorities, deadlines, effort or execution budgets, dependencies, resource constraints, admission decisions, and overload behavior. Use only the level of timing analysis supported by the task model and evidence.
+5. Consider psychosocial effects throughout: workload and pace, role clarity and control, communication and change, support and resources, fairness and respect, worker voice, and barriers to participation.
+6. Turn material concerns into an action, owner, interim protection, escalation route, effectiveness check, and revisit point. Keep unresolved material risks visible.
+7. Review whether the prompts improved understanding or decisions; simplify or set the tool aside when it adds ceremony without value.
 
-Read [references/framework.md](references/framework.md) for the task-class and command map, task model and scheduling prompts, concern-response path, and lightweight records.
+Read [references/framework.md](references/framework.md) for the task-class and command map, task model and scheduling prompts, worker-dispatch response lifecycle, half-duplex handoff rules, worked scenarios, concern-response path, and lightweight records.
 
 When a named standard informs the discussion, record its identifier, title, edition, and the topic it informs. State whether it is used as inspiration or under a separately established conformity obligation. If applicability is unresolved, mark it as a candidate for review; do not assume it is mandatory or optional. Use the [standards lens record](references/framework.md#standards-lens-record) or reference an existing equivalent record. Keep clause-level evidence and compliance decisions in the separate assessment process.
 

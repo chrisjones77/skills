@@ -1,4 +1,4 @@
 interface:
   display_name: "Engineering Work Safety"
-  short_description: "Use 0xF task classes and scheduling discipline"
-  default_prompt: "Use $engineering-work-safety to classify this work, define its command and constraints, and apply real-time scheduling discipline while accounting for worker safety."
+  short_description: "Classify, schedule, and hand off work safely"
+  default_prompt: "Use $engineering-work-safety to classify and schedule this work, define its response lifecycle and handoff, and account for worker safety."
