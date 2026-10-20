@@ -4,7 +4,7 @@
 
 The agent hypervisor is a small, harness-neutral control role that keeps a task coherent when work moves between agent runtimes. It coordinates the user's objective, task state, permissions, evidence, and ownership. It is not another task-solving model and it does not expand an agent's authority.
 
-The same role can sit above Codex, Claude, Ollama-hosted models, Cloudflare Workers AI, or another compatible harness/provider. Harness-specific adapters translate this contract into each tool's native session, delegation, and approval mechanisms. The contract itself stays plain text and portable.
+The same role can sit above any compatible agent harness or model provider. Harness-specific adapters translate this contract into each tool's native session, delegation, and approval mechanisms. The contract itself stays plain text and portable.
 
 ## Responsibilities
 
