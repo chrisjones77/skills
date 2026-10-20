@@ -216,8 +216,23 @@ class HarnessTests(unittest.TestCase):
 
     def test_unapproved_deviation_blocks(self):
         data = self.load("bridge-review.json")
-        data["review"]["creative_deviations"] = {"status": "pass", "items": [{"deviation_id": "D1", "intentional": True}]}
-        self.assertIn("DEVIATION_UNCONTROLLED", {x["code"] for x in validate(data)["findings"]})
+        deviation = {"deviation_id": "D1", "rationale": "Intentional composition change", "intentional": True, "approved_by": "owner"}
+        data["review"]["creative_deviations"] = {"status": "pass", "items": [deviation]}
+        del deviation["approved_by"]
+        self.assertIn("DEVIATION_APPROVER_MISSING", {x["code"] for x in validate(data)["findings"]})
+
+    def test_deviation_requires_unique_id_rationale_boolean_intent_and_approver(self):
+        data = self.load("bridge-review.json")
+        deviation = {"deviation_id": "D1", "rationale": "Intentional composition change", "intentional": True, "approved_by": "owner"}
+        data["review"]["creative_deviations"] = {"status": "pass", "items": [deviation.copy(), deviation.copy()]}
+        codes = {x["code"] for x in validate(data)["findings"]}
+        self.assertIn("DEVIATION_ID_DUPLICATE", codes)
+        for field, expected in (("deviation_id", "DEVIATION_ID_INVALID"), ("rationale", "DEVIATION_RATIONALE_MISSING"), ("intentional", "DEVIATION_INTENT_INVALID"), ("approved_by", "DEVIATION_APPROVER_MISSING")):
+            with self.subTest(field=field):
+                invalid = deviation.copy()
+                invalid[field] = " " if field != "intentional" else "yes"
+                data["review"]["creative_deviations"] = {"status": "pass", "items": [invalid]}
+                self.assertIn(expected, {x["code"] for x in validate(data)["findings"]})
 
 if __name__ == "__main__":
     unittest.main()

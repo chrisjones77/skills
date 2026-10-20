@@ -303,9 +303,23 @@ def validate(data: dict, asset_root: Path | None = None) -> dict:
         add("TYPOGRAPHY_DUPLICATE", "blocker", "Required text IDs must be unique.")
 
     deviations = _records(review.get("creative_deviations", {}).get("items", []), "review.creative_deviations.items", findings)
+    deviation_ids = []
     for d in deviations:
-        if not d.get("intentional") or not d.get("approved_by"):
-            add("DEVIATION_UNCONTROLLED", "blocker", f"Creative deviation lacks intent or approval: {d.get('deviation_id')}")
+        deviation_id = d.get("deviation_id")
+        if not isinstance(deviation_id, str) or not deviation_id.strip():
+            add("DEVIATION_ID_INVALID", "blocker", "Each creative deviation needs a non-empty deviation_id.")
+        else:
+            deviation_ids.append(deviation_id)
+        rationale = d.get("rationale")
+        if not isinstance(rationale, str) or not rationale.strip():
+            add("DEVIATION_RATIONALE_MISSING", "blocker", f"Creative deviation needs a non-empty rationale: {deviation_id}")
+        if not isinstance(d.get("intentional"), bool):
+            add("DEVIATION_INTENT_INVALID", "blocker", f"Creative deviation intentional must be boolean: {deviation_id}")
+        approver = d.get("approved_by")
+        if not isinstance(approver, str) or not approver.strip():
+            add("DEVIATION_APPROVER_MISSING", "blocker", f"Creative deviation needs a named approver: {deviation_id}")
+    if len(deviation_ids) != len(set(deviation_ids)):
+        add("DEVIATION_ID_DUPLICATE", "blocker", "Creative deviation IDs must be unique.")
     deviations_status = review.get("creative_deviations", {}).get("status")
     if deviations and deviations_status != "pass":
         add("DEVIATION_STATUS_CONFLICT", "blocker", "Creative deviations are listed, so the review status must be pass.")

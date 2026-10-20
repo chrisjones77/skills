@@ -22,7 +22,7 @@ Human review fields:
 - `technical_evidence`: Ensure technical-looking labels and specifications are sourced or clearly fictionalized; reconcile all claim IDs in the included, excluded, and fictional-labelled lists.
 - `typography`: Compare every exact string, punctuation, capitalization, symbols, and legibility at intended display size.
 - `collection_consistency`: Compare against an approved baseline for frame, palette, hierarchy, rendering, and series-specific rules.
-- `creative_deviations`: Explain additions and omissions; identify approval.
+- `creative_deviations`: Give each addition or omission a unique ID, a concise rationale, a boolean `intentional` value, and a named `approved_by` person or role. The validator checks these fields are present and well-formed; a human still determines whether the deviation is appropriate and authorized.
 
 ## Decision
 
