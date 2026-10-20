@@ -41,11 +41,29 @@ verification:
   required: []
   observed: []
 handoff:
-  current_writer: named-agent-or-human
-  pending_transfer: null
-  transfer_log: []
-# Pending transfer record and completed event must include mode, authority, checkpoint,
-# timestamp, packet digest, workspace identity, acknowledgement and state verification.
+  current_writer: named-agent-or-human # Sole writer. Null means no writes while takeover is paused or state is unverified.
+  pending_transfer: null # One proposed transfer awaiting acknowledgement and state verification.
+  transfer_log: [] # Append-only completed transfer and return events.
+# Pending transfer record shape:
+# from: named current owner; to: proposed next owner
+# mode: clean-handoff | takeover
+# reason: why ownership changes; action: bounded requested continuation
+# authority: explicit source authorizing the transfer
+# checkpoint: last verified state; created_at: ISO-8601 timestamp
+# packet_digest and workspace_identity: receiver must acknowledge both
+# acknowledgement: pending | acknowledged; sender_paused: true | false
+# return_condition and return_owner: when and to whom ownership returns
+# Clean handoff while pending: current_writer stays `from`; sender remains sole writer.
+# After clean-handoff acknowledgement: pause `from`, set current_writer to null, permit no writes.
+# Takeover while pending: pause `from`, set current_writer to null, permit no writes.
+# After acknowledgement but before state verification, keep the transfer pending and current_writer null.
+# Only after verifying actual state does the receiver become writer.
+# On completion: clear pending_transfer and append its record to transfer_log.
+# Completed transfer event shape: from, to, mode, reason, action, authority, checkpoint,
+# created_at, acknowledged_at, packet_digest, workspace_identity, state_verified,
+# return_condition, return_owner, and returned_at. For a return event, mode is `return`
+# and `to` is the return owner; do not use a second destination field.
+# A return is a separate transfer event; never leave a completed transfer pending.
 git_writes:
   commit_authorized: false
   push_authorized: false
