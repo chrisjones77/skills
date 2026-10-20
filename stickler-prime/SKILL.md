@@ -62,6 +62,7 @@ Use this workflow when work is compliance-heavy, adversarial, evidence-based, or
 
 ### Suggested output
 
+~~~markdown
 ## Dark Mode Assessment
 
 | Finding | Evidence and limits | Risk level, if supported | Impact | Recommended action |
@@ -88,6 +89,7 @@ Explain the compliance, trust, safety, or defensibility rationale.
 ## Mission Reflection
 
 One sentence capturing the ethical or strategic essence of the task.
+~~~
 
 Omit sections that do not help the user act. Do not fill blanks with invented findings.
 
@@ -105,6 +107,7 @@ Use this workflow for trust repair, culture rebuilding, supportive communication
 
 ### Suggested output
 
+~~~markdown
 ## Pink Mode Repair Plan
 
 ### Human impact
@@ -134,6 +137,7 @@ Explain how the response may reduce harm and rebuild trust.
 ## Mission Reflection
 
 One sentence capturing the ethical or strategic essence of the task.
+~~~
 
 ---
 
@@ -143,6 +147,7 @@ Activate when a document is supplied or referenced for evaluation. Identify its 
 
 Use the relevant parts of this outline. Omit scoring when unsupported or unhelpful.
 
+~~~markdown
 # Evaluation Report
 
 ## Standards used
@@ -187,7 +192,7 @@ Explain the quality, stakeholder, trust, or psychosocial-safety rationale.
 ## Mission Reflection
 
 One sentence capturing the ethical or strategic essence of the task.
-
+~~~
 ---
 
 ## Procurement Overlay
@@ -196,6 +201,7 @@ Activate when a request concerns procurement, a supplier, contract, bid, proposa
 
 Keep candidate applicability and evidence gaps explicit. Distinguish established mandatory requirements from weighted preferences. Recommendations support but do not authorize a procurement decision or establish supplier conformity.
 
+~~~markdown
 # Procurement Packet
 
 ## Section A — Tailored clauses
@@ -249,7 +255,7 @@ Explain why defensible procurement supports organizational integrity, worker wel
 ## Mission Reflection
 
 One sentence capturing the ethical or strategic essence of the task.
-
+~~~
 ---
 
 ## Risk Rating Scale
@@ -295,7 +301,7 @@ Do:
 1. Respond to immediate danger through applicable emergency, incident, or stop-work channels and appropriate interim protection. Do not wait for a review to finish.
 2. Receive concerns respectfully and without retaliation. Record only necessary information in an authorized, access-limited location. Explain who may access it and the limits of confidentiality.
 3. Use an appropriate alternate or independent route when the usual route is implicated. If none is available, record the gap and escalate to an appropriate higher-level or independent function; do not send the concern back through the implicated person.
-4. Assign an authorized human owner with capacity and resources, interim protection, next action, and revisit point. Escalate unresolved material concerns when the owner cannot act. Raising a concern does not assign its remedy to the person reporting it.
+4. Recommend that the authorized decision-maker confirm a human owner with capacity and resources, interim protection, next action, and revisit point. Escalate unresolved material concerns when the owner cannot act. Raising a concern does not assign its remedy to the person reporting it.
 5. Check effectiveness with appropriate evidence and affected-person input before closure. Keep the concern open or revise the response if effectiveness remains uncertain. Report back on action taken, remaining concerns, protections, and limits.
 
 Use one concern record across reviews. Share only necessary evidence pointers and permitted context. Keep coordination until the receiving person acknowledges the handoff. A persona or generated report does not transfer human authority. This path supports, and does not replace, formal hazard assessment, required consultation, or incident procedures.
