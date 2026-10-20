@@ -1,0 +1,4 @@
+interface:
+  display_name: "Creative Seed Development"
+  short_description: "Develop distinct creative seeds across media"
+  default_prompt: "Use $creative-seed-development to transform the premise into an independently developed creative seed. Preserve the broad dramatic function while avoiding close substitutions, and do not claim legal clearance."
