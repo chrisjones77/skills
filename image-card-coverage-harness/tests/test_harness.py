@@ -1,6 +1,7 @@
 import json
 import hashlib
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -10,9 +11,66 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from harness import validate
 
+try:
+    import jsonschema
+except ImportError:
+    jsonschema = None
+
 class HarnessTests(unittest.TestCase):
     def load(self, name):
         return json.loads((ROOT / "fixtures" / name).read_text(encoding="utf-8"))
+
+    def test_schema_accepts_complete_fixtures(self):
+        if jsonschema is None:
+            self.skipTest("install requirements-dev.txt to run JSON Schema parity checks")
+        schema = json.loads((ROOT / "schema" / "manifest.schema.json").read_text(encoding="utf-8"))
+        validator = jsonschema.Draft202012Validator(schema)
+        for name in ("bridge-review.json", "regression-blocked.json"):
+            with self.subTest(fixture=name):
+                validator.validate(self.load(name))
+
+    def test_schema_requires_deviation_record_fields(self):
+        if jsonschema is None:
+            self.skipTest("install requirements-dev.txt to run JSON Schema parity checks")
+        schema = json.loads((ROOT / "schema" / "manifest.schema.json").read_text(encoding="utf-8"))
+        validator = jsonschema.Draft202012Validator(schema)
+        data = self.load("bridge-review.json")
+        data["review"]["creative_deviations"] = {"status": "pass", "items": [{"deviation_id": "D1", "intentional": True}]}
+        self.assertTrue(list(validator.iter_errors(data)))
+
+    def test_cli_fixture_and_regression_exit_codes(self):
+        for fixture, expected in (("bridge-review.json", 1), ("regression-blocked.json", 1)):
+            with self.subTest(fixture=fixture):
+                result = subprocess.run([sys.executable, str(ROOT / "scripts" / "harness.py"), str(ROOT / "fixtures" / fixture), "--json"], capture_output=True, text=True)
+                self.assertEqual(result.returncode, expected)
+                report = json.loads(result.stdout)
+                self.assertIn("validation_status", report)
+                self.assertIn("reviewer_decision", report)
+                self.assertIn("release_outcome", report)
+
+    def test_cli_accepts_bound_asset_and_reports_digest(self):
+        data = self.load("bridge-review.json")
+        data["provenance"] = {"source_kind": "candidate_image", "created_for_archive": False, "asset_ref": "candidate.bin"}
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            asset = root / "candidate.bin"
+            asset.write_bytes(b"cli asset")
+            data["provenance"]["asset_sha256"] = hashlib.sha256(asset.read_bytes()).hexdigest()
+            manifest = root / "manifest.json"
+            manifest.write_text(json.dumps(data), encoding="utf-8")
+            result = subprocess.run([sys.executable, str(ROOT / "scripts" / "harness.py"), str(manifest), "--json"], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(report["release_outcome"], "accepted")
+            self.assertEqual(report["asset_binding"]["asset_sha256"], data["provenance"]["asset_sha256"])
+
+    def test_cli_malformed_json_has_input_error_exit_code(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manifest = Path(temp_dir) / "manifest.json"
+            manifest.write_text("{invalid", encoding="utf-8")
+            result = subprocess.run([sys.executable, str(ROOT / "scripts" / "harness.py"), str(manifest), "--json"], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("input error:", result.stderr)
 
     def test_complete_fixture_has_no_blockers(self):
         report = validate(self.load("bridge-review.json"))
@@ -82,6 +140,24 @@ class HarnessTests(unittest.TestCase):
                 "created_for_archive": False,
                 "asset_ref": "nested/../candidate.png",
                 "asset_sha256": hashlib.sha256(asset.read_bytes()).hexdigest(),
+            }
+            codes = {x["code"] for x in validate(data, asset_root=root)["findings"]}
+            self.assertIn("ASSET_PATH_INVALID", codes)
+
+    def test_asset_symlink_escape_blocks_acceptance(self):
+        data = self.load("bridge-review.json")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            base = Path(temp_dir)
+            root = base / "manifest"
+            root.mkdir()
+            outside = base / "outside.png"
+            outside.write_bytes(b"outside")
+            (root / "linked.png").symlink_to(outside)
+            data["provenance"] = {
+                "source_kind": "candidate_image",
+                "created_for_archive": False,
+                "asset_ref": "linked.png",
+                "asset_sha256": hashlib.sha256(outside.read_bytes()).hexdigest(),
             }
             codes = {x["code"] for x in validate(data, asset_root=root)["findings"]}
             self.assertIn("ASSET_PATH_INVALID", codes)

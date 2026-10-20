@@ -15,7 +15,7 @@ Use this skill to structure review of a generated image or a series of revisions
 2. Identify the candidate asset and record its normalized slash-separated path relative to the manifest directory and its SHA-256 digest. Keep source images and sensitive metadata in access-controlled storage.
 3. Compare the candidate with the brief, parent generation, approved references, and still-applicable resolved findings. Record concise evidence notes for each required visual check.
 4. Reconcile all technical-claim IDs, exact text, preservation targets, forbidden drift, and intentional deviations.
-5. Run `python3 scripts/harness.py PATH/TO/manifest.json --json` and resolve blockers. Run `python3 -m unittest discover -s tests -v` when modifying this skill or its validator.
+5. Run `python3 scripts/harness.py PATH/TO/manifest.json --json` and resolve blockers. To run the full developer checks, install `requirements-dev.txt`, then run `python3 -m unittest discover -s tests -v`.
 6. Report `validation_status`, `reviewer_decision`, and `release_outcome` separately. A reported verified asset binding confirms byte identity only. A clear result with `accept` remains a human attestation; never describe it as automated visual verification or rights clearance.
 
 Read [the operating guide](references/OPERATING-GUIDE.md) for review-field definitions, [the coverage map](references/COVERAGE-MAP.md) for automated and human responsibilities, and [privacy guidance](references/PRIVACY-PUBLICATION.md) before sharing manifests or assets.

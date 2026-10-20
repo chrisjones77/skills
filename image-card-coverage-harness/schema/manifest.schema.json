@@ -418,7 +418,47 @@
           "$ref": "#/$defs/section"
         },
         "creative_deviations": {
-          "$ref": "#/$defs/section"
+          "type": "object",
+          "required": [
+            "status",
+            "items"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "deviation_id",
+                  "rationale",
+                  "intentional",
+                  "approved_by"
+                ],
+                "properties": {
+                  "deviation_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "intentional": {
+                    "type": "boolean"
+                  },
+                  "approved_by": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "additionalProperties": true
+              }
+            }
+          },
+          "additionalProperties": true
         },
         "reviewer": {
           "type": "string",

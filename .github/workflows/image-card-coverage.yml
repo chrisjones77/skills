@@ -1,0 +1,33 @@
+name: Image and card coverage harness
+
+on:
+  pull_request:
+    paths:
+      - "image-card-coverage-harness/**"
+      - ".github/workflows/image-card-coverage.yml"
+  push:
+    branches: [main]
+    paths:
+      - "image-card-coverage-harness/**"
+      - ".github/workflows/image-card-coverage.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    defaults:
+      run:
+        working-directory: image-card-coverage-harness
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m unittest discover -s tests -v
+      - run: python -m py_compile scripts/harness.py tests/test_harness.py

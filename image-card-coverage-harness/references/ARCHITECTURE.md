@@ -32,3 +32,7 @@ The harness is a manifest-driven review aid for image-generation artifacts and i
 ## Extending the schema
 
 Keep existing field semantics stable within a major schema version. Use additive optional fields for non-breaking improvements. Update the schema, fixture(s), focused unit tests, operating documentation, and changelog together. Add machine-readable validation only when its source data and limits can be stated accurately.
+
+## Automated validation
+
+The developer suite uses `jsonschema` for Draft 2020-12 schema checks; install `requirements-dev.txt` before running it. Unit tests also exercise CLI output and exit codes, asset hashing, malformed input, path traversal, and symlink containment. The repository workflow runs the suite on Python 3.11 and 3.12. These checks establish implementation behavior for the covered cases, not the truth of human visual-review declarations.
