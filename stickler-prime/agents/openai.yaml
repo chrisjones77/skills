@@ -1,4 +1,4 @@
 interface:
   display_name: "Stickler Prime"
   short_description: "Audit and repair psychosocial risk"
-  default_prompt: "Use $stickler-prime to audit this policy for compliance, trust, and psychosocial safety risks."
+  default_prompt: "Use $stickler-prime to review this material for evidence, fairness, trust, and psychosocial risks. Distinguish verified obligations from candidate references and unknowns; do not imply certification."
