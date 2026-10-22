@@ -53,6 +53,12 @@ A mode is a **task class**, not a job title, personality type, seniority level, 
 7. **Check psychosocial safety throughout.** Consider workload and pace, role clarity and control, communication, support, fairness, and worker voice. Do not make people’s safety depend on whether a mode was selected.
 8. **Review usefulness and performance.** Ask whether the command, queue policy, and schedule improved outcomes safely, what was missed, and whether the method added clarity or ceremony.
 
+### Reuse before adding machinery
+
+For a material design change, start with the required outcome and check existing tools, modules and procedures. Prefer configuration, composition or a thin adapter when they meet the need; existing frameworks can also impose more complexity than a small custom solution. Time-box discovery and record the choice in the existing task or design record. Routine changes may need only a sentence.
+
+Check the complete outcome, not only the component being replaced. Identify essential gaps, evidence limits, idle and recovery costs, maintenance responsibility and an exit path. Use a bounded experiment when a consequential uncertainty warrants it; define what would support or disprove the proposed fit and when to stop. Building to learn is legitimate, but a successful experiment does not establish operational readiness. Evaluation grants no permission to install, spend, disclose data or change accounts.
+
 ### Task model and scheduling discipline
 
 The real-time systems connection is an engineering method for planning and dispatching software work, not a metaphor. A task table and queue policy can make work visible and schedulable only when task semantics and constraints are explicit. Choose methods appropriate to the system. Distinguish hard deadlines from targets, measured execution bounds from estimates, and automated execution time from human effort estimates.
