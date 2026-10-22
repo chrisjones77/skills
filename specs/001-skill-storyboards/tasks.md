@@ -30,5 +30,5 @@ Dependencies: source verification precedes packaging; package precedes validatio
 - [x] T012 Run structural validation and meaningful mutation checks; record results in `verification.md`.
 - [ ] T013 Inspect browser rendering at desktop and narrow widths (preview blocked by local-file policy; maintainer check remains pending).
 - [x] T014 Inspect the full staged diff and run `git diff --check`.
-- [ ] T015 Commit and push the named task branch, create a PR and attach it to the chat.
+- [x] T015 Commit and push the named task branch, create [PR #15](https://github.com/chrisjones77/skills/pull/15) and attach it to the chat. CI results are tracked on the PR.
 - [ ] T016 Maintainer review and acceptance (outside author authority; remains pending).
