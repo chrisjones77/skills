@@ -4,6 +4,12 @@
 
 **Mode:** [Review | Implementation | Research]
 
+**Engineering purpose:** [optional 0x1–0xF and concrete command; distinct from dispatch kind]
+
+**Assignment and response:** [stable work reference/revision when used; named recipient and assigner; explicit disposition; acceptance binds the offered revision]
+
+**Runtime compatibility:** [selected implementation/source revision and supported operations, or plain-language workflow; report unsupported fields/transitions]
+
 **Repository and base:** [repository URL or identity, expected branch/commit, exact workspace]
 
 **Task ownership:** [lead/current writer; candidate owner and state verified before dispatch]

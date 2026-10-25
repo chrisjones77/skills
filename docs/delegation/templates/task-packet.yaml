@@ -1,9 +1,14 @@
 # Copy per task into private/task-local context. Do not commit populated packets. Omit unrelated history and all secrets, credentials, private records, and local media. This packet transfers context, never authority.
 version: 1
+# Portable brief, not an importable runtime schema. See docs/work-contract-interface.md.
 task_id: stable-task-identifier
 objective: one user-stated outcome
 status: active # active | checkpointed | blocked | complete
 mode: Implementation # Review | Research | Implementation
+engineering_purpose: null # Optional 0x1–0xF; not dispatch kind or transfer kind
+assignment_reference: null # Exact work/assignment revision and digest when used
+recipient_disposition: pending # Actual reply recorded separately; receipt is not acceptance
+runtime_compatibility: null # Implementation/source revision, supported operations and gaps
 repository:
   identity: owner/repository
   root: /absolute/path/to/repository

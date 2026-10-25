@@ -11,6 +11,13 @@ Use this procedure when a bounded delegation would help with work in a repositor
 
 ## Procedure
 
+When an assignment uses a contract runtime, first read the
+[work contract interface](../../../docs/work-contract-interface.md) and the
+project's adapter. Bind recipient acceptance to the exact offered revision and
+verify workspace ownership separately. A declared handoff procedure does not mean
+the runtime implements contract transfer. If it does not, preserve the record and
+stop dependent writes rather than falling back to a legacy writer or a new ID.
+
 1. Confirm the target repository and expected base from the task. Before action, record actual root, branch, revision, workspace identity, and full status, including untracked files. Compare them with the expected repository/base/workspace. Preserve existing changes. A mismatch or unexpected dirty state means stop and report.
 2. Read the repository's dispatch guide, if present, and use its task-brief template to define one objective, mode, repository/base, exact allowed paths/actions, exclusions, permissions, evidence, and stop condition. For cross-session work or handoff, use a task packet. Keep populated packets private/task-local; omit credentials and unrelated sensitive context.
 3. Select **Review** for audits or validation, **Research** for source-backed investigation, and **Implementation** only when edits are authorized. Keep reviews and research read-only.

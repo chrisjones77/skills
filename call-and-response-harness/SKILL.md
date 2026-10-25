@@ -21,6 +21,16 @@ The response matrix has four binary axes and sixteen possible complete states. �
 
 Read [references/state-matrix.md](references/state-matrix.md) for the bit map, all sixteen combinations, and one-bit contrast examples. Read [references/command-response-guide.md](references/command-response-guide.md) for the 16 × 16 contextual interpretation guide. Read [references/multiparty-responsibility-and-escalation.md](references/multiparty-responsibility-and-escalation.md) for RACI details. Read [references/call-and-response-workflow-protocol.md](references/call-and-response-workflow-protocol.md) for the consolidated workflow and escalation path. Read [references/monitor-and-raci-examples.md](references/monitor-and-raci-examples.md) for worked monitor and responsibility examples.
 
+## When work uses a contract runtime
+
+Use the [skills and work contract interface](../docs/work-contract-interface.md)
+for exact-assignment acceptance and the assigner → worker → human → worker
+clarification loop. Preserve actual replies; keep optional BH posture outside a
+packet that cannot represent it. Check the runtime's supported exits and routes.
+If reoffering or transfer is unsupported, retain the concern and caller-owned
+checkpoint rather than treating the worker's refusal as a protocol fault. The
+runtime records the exchange; it does not create consent or authenticate a label.
+
 ## Axis definitions
 
 | Bit | 0 | 1 | Meaning |
