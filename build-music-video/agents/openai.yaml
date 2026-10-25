@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Music Video"
+  short_description: "Storyboard songs and render verified music videos"
+  default_prompt: "Use $build-music-video to storyboard this song and create a DIY illustrated music video with editable captions."
