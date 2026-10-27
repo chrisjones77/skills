@@ -26,8 +26,9 @@ Human review fields:
 
 ## Decision
 
-Use `accept` only after reviewing the actual candidate and resolving all blockers. Use `revise` for actionable corrections, `reject` when unsuitable, and `hold` when evidence or rights/approval is unresolved. The report shows validation status, reviewer decision, and release outcome separately; only a clear validation with `accept` produces `accepted` and exit status 0. The asset binding confirms byte identity only; the validator cannot know whether a human actually inspected a pixel or whether a review judgment is true. Record honest evidence and retain the reviewed asset.
+Set `reviewer_kind` to `human`, `assistant` or `automated`. Use `accept` only for an actual human decision after reviewing the candidate and resolving all blockers; cite that decision and its candidate/scope in `acceptance_evidence`. Assistant and automated records may be clear but must not claim human acceptance. See [delivery coverage](DELIVERY-COVERAGE.md) for migration from 1.4 and video-specific evidence. Use `revise` for actionable corrections, `reject` when unsuitable, and `hold` when evidence or rights/approval is unresolved. The report shows validation status, reviewer decision, and release outcome separately; only a clear validation with `accept` produces `accepted` and exit status 0. The asset binding confirms byte identity only; the validator cannot know whether a human actually inspected a pixel or whether a review judgment is true. Record honest evidence and retain the reviewed asset.
 
 ## Reproducibility
 
 Run the sample command and unit suite from this directory. Keep the Python version, archive version, manifest, output asset hash, and report together. An identical manifest should produce identical JSON findings under the same harness version.
+
