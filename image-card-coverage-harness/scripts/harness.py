@@ -49,8 +49,8 @@ def validate(data: dict, asset_root: Path | None = None) -> dict:
     if findings:
         return result(data, findings, asset_binding)
 
-    if data.get("schema_version") != "1.4.0":
-        add("SCHEMA_VERSION", "blocker", "schema_version must be 1.4.0.")
+    if data.get("schema_version") != "1.5.0":
+        add("SCHEMA_VERSION", "blocker", "schema_version must be 1.5.0.")
     if not isinstance(data.get("artifact_id"), str) or not data["artifact_id"].strip():
         add("ARTIFACT_ID", "blocker", "artifact_id must be a non-empty string.")
 
@@ -66,7 +66,7 @@ def validate(data: dict, asset_root: Path | None = None) -> dict:
     for key in ("id", "parent_generation_id", "requested_delta", "preservation_targets", "regression_checks"):
         if key not in gen:
             add("LINEAGE_MISSING", "blocker", f"Missing generation field: {key}")
-    for key in ("artifact_type_fit", "canonical_constraints", "forbidden_drift", "regression_review", "minimal_delta", "synthetic_familiarity", "reference_fidelity", "technical_evidence", "typography", "collection_consistency", "creative_deviations", "reviewer", "decision"):
+    for key in ("artifact_type_fit", "canonical_constraints", "forbidden_drift", "regression_review", "minimal_delta", "synthetic_familiarity", "reference_fidelity", "technical_evidence", "typography", "collection_consistency", "creative_deviations", "reviewer", "reviewer_kind", "decision"):
         if key not in review:
             add("REVIEW_MISSING", "blocker", f"Missing review field: {key}")
 
@@ -91,6 +91,14 @@ def validate(data: dict, asset_root: Path | None = None) -> dict:
         add("PARENT_GENERATION_ID", "blocker", "generation.parent_generation_id must be a non-empty string or null.")
     if not isinstance(review.get("reviewer"), str) or not review["reviewer"].strip():
         add("REVIEWER_INVALID", "blocker", "review.reviewer must be a non-empty string.")
+    if not _has_status(review.get("reviewer_kind"), {"human", "assistant", "automated"}):
+        add("REVIEWER_KIND_INVALID", "blocker", "Declare reviewer_kind as human, assistant or automated.")
+    if review.get("decision") == "accept":
+        if review.get("reviewer_kind") != "human":
+            add("HUMAN_ACCEPTANCE_REQUIRED", "blocker", "Only an explicitly recorded human decision may accept a release.")
+        evidence = review.get("acceptance_evidence")
+        if not isinstance(evidence, str) or not evidence.strip():
+            add("ACCEPTANCE_EVIDENCE_REQUIRED", "blocker", "Acceptance needs a reference to the human decision and its scope.")
     source_kind = provenance.get("source_kind")
     if not isinstance(source_kind, str) or not source_kind.strip():
         add("PROVENANCE_SOURCE", "blocker", "provenance.source_kind must be a non-empty string.")
@@ -326,7 +334,7 @@ def validate(data: dict, asset_root: Path | None = None) -> dict:
     elif not _has_status(deviations_status, {"pass", "not_applicable"}):
         add("DEVIATION_REVIEW", "blocker", "Creative deviations have not been reconciled.")
     if not review.get("reviewer"):
-        add("REVIEWER_MISSING", "blocker", "A human reviewer identity or approved pseudonym is required.")
+        add("REVIEWER_MISSING", "blocker", "A reviewer identity or approved pseudonym is required; declare its kind separately.")
     if not _has_status(review.get("decision"), {"accept", "revise", "reject", "hold"}):
         add("DECISION_INVALID", "blocker", "Decision must be accept, revise, reject, or hold.")
     if review.get("decision") == "accept" and any(x["severity"] == "blocker" for x in findings):
@@ -339,7 +347,7 @@ def result(data: dict, findings: list[dict], asset_binding: dict | None = None) 
     accepted = not blockers and reviewer_decision == "accept"
     fixture_only = isinstance(data.get("provenance"), dict) and data["provenance"].get("source_kind") == "synthetic_fixture"
     outcome = "not_accepted" if blockers else ("fixture_only" if fixture_only else ("accepted" if accepted else reviewer_decision))
-    return {"harness": "Image and Card Coverage Harness", "version": "1.4.0", "artifact_id": data.get("artifact_id"), "generation_id": data.get("generation", {}).get("id") if isinstance(data.get("generation"), dict) else None, "asset_binding": asset_binding or {"status": "not_checked", "asset_ref": None, "asset_sha256": None}, "validation_status": "blocked" if blockers else "clear", "reviewer_decision": reviewer_decision, "release_outcome": outcome, "blocker_count": blockers, "findings": findings, "scope_note": "Validates declared coverage, lineage, local asset digest, and evidence-record completeness; does not inspect pixels or establish truth of human observations. A verified asset binding identifies bytes only; review judgments remain human declarations."}
+    return {"harness": "Image and Card Coverage Harness", "version": "1.5.0", "artifact_id": data.get("artifact_id"), "generation_id": data.get("generation", {}).get("id") if isinstance(data.get("generation"), dict) else None, "asset_binding": asset_binding or {"status": "not_checked", "asset_ref": None, "asset_sha256": None}, "validation_status": "blocked" if blockers else "clear", "reviewer_decision": reviewer_decision, "reviewer_kind": data.get("review", {}).get("reviewer_kind") if isinstance(data.get("review"), dict) else None, "release_outcome": outcome, "blocker_count": blockers, "findings": findings, "scope_note": "Validates declared coverage, lineage, local asset digest, and evidence-record completeness; does not inspect pixels or establish truth of human observations. A verified asset binding identifies bytes only; review judgments remain declarations; role and acceptance evidence are recorded, not authenticated."}
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
@@ -364,3 +372,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
