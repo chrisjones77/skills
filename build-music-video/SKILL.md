@@ -17,9 +17,9 @@ Carry the task through storyboard, render, verification, and saved deliverables 
 
 ## 2. Storyboard before rendering
 
-Create roughly 10–20 scene concepts for a full song, adjusting to song structure. Build a shot table with start/end, lyric or instrumental cue, scene reference, camera motion, factual coverage, and continuity constraints. Reprise a visual motif for choruses; show instrumental breaks without stale captions. Keep credits and emotional targets aligned with the source.
+Build a section map and a separate lyric-payoff map before choosing a shot count. Identify lines whose object, action, contradiction or emotional turn needs its own image. Build a shot table with start/end (unset until timed), lyric or instrumental cue, scene reference, camera motion, factual coverage, and continuity constraints. Reprise a visual motif for choruses; show instrumental breaks without stale captions. Keep credits and emotional targets aligned with the source. Read [editorial-coverage.md](references/editorial-coverage.md) for payoff, pace, action and revision checks.
 
-Present a reviewable illustrated storyboard, then continue rendering without adding an approval gate unless the user requested one. Use image-generation tools for art. Specify consistent cast, palette, lighting, age, clothing, and vehicles. Prefer individual scene images for export quality; a contact sheet is a planning artifact and may be cropped only after inspecting its actual boundaries. Do not assume a generated sheet has a uniform grid. Inspect crops for invented damage, extra people, text, wrong handedness, and clipped subjects.
+Present a reviewable illustrated storyboard, then continue rendering without adding an approval gate unless the user requested one. Use image-generation tools for art. Specify consistent cast, palette, lighting, age, clothing, and vehicles. Generate individual production shots in the output aspect ratio; storyboard page orientation is independent. A portrait review sheet does not authorize portrait art in a landscape video. Contact-sheet crops are preview-only unless the user explicitly accepts that compromise after seeing the output-size crop. Inspect subjects, action, text and safe areas at final display size.
 
 Use a portable HTML storyboard with embedded images or a PDF. Keep visual storytelling and captions legible on a phone. Avoid rapid flashes. Distinguish moving still images from generated character animation.
 
@@ -32,6 +32,7 @@ Read [timing-and-review.md](references/timing-and-review.md) before captioning.
 - Verify repeated sections separately. Record unresolved words and estimated intervals; do not silently overwrite the lyric draft.
 - If only estimated timings are possible, label them as estimates. Never claim a listening review based on transcription alone.
 - Export editable SRT or ASS and retain timing provenance. Word-highlight karaoke requires word-level evidence; use line captions when word timing is weak.
+- When the user accepts timing, freeze a baseline: source-audio hash, duration, FPS, section boundaries, approved cut boundaries and protected intervals. Subdivide allowed windows for new shots; retain accepted boundaries unless the user authorizes a timing change. Record what was actually compared; use stream/pixel hashes when claiming identical audio or protected footage.
 
 ## 4. Assemble reproducibly
 
@@ -58,6 +59,7 @@ Fix failures and rerun affected checks. A successful FFmpeg exit or playable fir
 
 Save the storyboard, completed MP4, and a portable project kit using the environment's artifact-persistence workflow. Include art, supplied soundtrack when authorized as part of the project, editable captions, manifest, provenance/review notes, and rebuild instructions. Exclude temporary renders, caches, credentials, and unrelated private materials. Do not publish to social platforms without authorization.
 
-Lead with links and describe the deliverable accurately: runtime, format, moving-stills versus character animation, and material review limits. Include any unresolved caption words without implying the whole video was verified by listening.
+Render the video inline when the host supports it, especially when requested. Put the portable kit and download links after the playable result. Describe runtime, format, moving-stills versus character animation, and material review limits. Include any unresolved caption words without implying the whole video was verified by listening.
 
 Workflow inspiration: https://aituber.app/blog/suno-song-to-music-video/ (DIY scene images, section assembly, motion, lyric timing, export). This skill implements the workflow locally and does not require that service. Consult current official documentation only when making current platform, licensing, or distribution claims; do not infer music rights from possession of an MP3.
+

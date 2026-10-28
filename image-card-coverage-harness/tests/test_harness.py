@@ -17,6 +17,41 @@ except ImportError:
     jsonschema = None
 
 class HarnessTests(unittest.TestCase):
+    def test_accept_requires_human_role_and_evidence(self):
+        for kind in ('assistant', 'automated', None, [], ''):
+            with self.subTest(kind=kind):
+                data = self.load('bridge-review.json')
+                data['review']['reviewer_kind'] = kind
+                report = validate(data)
+                self.assertEqual(report['validation_status'], 'blocked')
+                self.assertNotEqual(report['release_outcome'], 'accepted')
+        for evidence in (None, '', ' ', [], {}):
+            data = self.load('bridge-review.json')
+            data['review']['acceptance_evidence'] = evidence
+            self.assertIn('ACCEPTANCE_EVIDENCE_REQUIRED', {x['code'] for x in validate(data)['findings']})
+
+    def test_assistant_hold_can_be_structurally_clear(self):
+        data = self.load('bridge-review.json')
+        data['review'].update(reviewer_kind='assistant', decision='hold')
+        data['review'].pop('acceptance_evidence')
+        report = validate(data)
+        self.assertEqual(report['validation_status'], 'clear')
+        self.assertEqual(report['reviewer_kind'], 'assistant')
+        self.assertNotEqual(report['release_outcome'], 'accepted')
+
+    def test_schema_blocks_nonhuman_acceptance(self):
+        if jsonschema is None:
+            self.skipTest('install requirements-dev.txt')
+        schema = json.loads((ROOT / 'schema/manifest.schema.json').read_text())
+        validator = jsonschema.Draft202012Validator(schema)
+        for kind in ('assistant', 'automated'):
+            data = self.load('bridge-review.json')
+            data['review']['reviewer_kind'] = kind
+            self.assertTrue(list(validator.iter_errors(data)))
+        data = self.load('bridge-review.json')
+        data['review'].pop('acceptance_evidence')
+        self.assertTrue(list(validator.iter_errors(data)))
+
     def load(self, name):
         return json.loads((ROOT / "fixtures" / name).read_text(encoding="utf-8"))
 
@@ -312,3 +347,4 @@ class HarnessTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

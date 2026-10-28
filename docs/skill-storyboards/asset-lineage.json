@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "record_date": "2026-10-28",
+  "provenance": "Initial prompt strings and edit prompt strings transcribed from this authoring session; hashes recomputed from retained candidate files.",
+  "scope": "Current twelve-skill gallery, including Farmer Jones Victory Garden; prior snapshots and artwork retained. Current entrypoint changes require reconciliation; referenced-document drift remains manual.",
+  "generation_count": 12,
+  "revision_count": 6,
+  "reproducibility": "Prompts and byte lineage are retained; generator outputs are not guaranteed deterministic. Intermediate image bytes are not included in this repository.",
+  "human_acceptance": "pending",
+  "boards": [
+    {
+      "slug": "harnessed-dispatch",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "d0abf5b09ae508e136081c2de517e0a3073a1bbda814c202d64014aadb7107f1",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        }
+      ],
+      "selected_asset": "assets/harnessed-dispatch.png",
+      "selected_asset_sha256": "d0abf5b09ae508e136081c2de517e0a3073a1bbda814c202d64014aadb7107f1"
+    },
+    {
+      "slug": "project-vault-operator",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "493c36f21c11b2cad537dd2341c8bafb82dbb841f07d16aa4759e9a6f8b1b95a",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        }
+      ],
+      "selected_asset": "assets/project-vault-operator.png",
+      "selected_asset_sha256": "493c36f21c11b2cad537dd2341c8bafb82dbb841f07d16aa4759e9a6f8b1b95a"
+    },
+    {
+      "slug": "call-and-response-harness",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "3abe5e34b5d308e026d1dc7d4f73130b8ea6f8051ad37231ad3c18b6fec8460c",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        },
+        {
+          "stage": "revision-1",
+          "parent_sha256": "3abe5e34b5d308e026d1dc7d4f73130b8ea6f8051ad37231ad3c18b6fec8460c",
+          "asset_sha256": "2b299ce340a4e3093f8100d013e906d9da44f3cda997e435c3f3b6f9455e928c",
+          "edit_prompt": "Correct the workflow status details only, preserve this storyboard's layout, design, title, captions and footer. In panel 05 change Response value 'Clarify' to 'Accepted after clarification'. In panel 06 change green 'Call closed' banner to amber 'Review pending · Call open', and its subtext to 'Work shared; caller follow-up remains open.' In panel 06 Summary change Response 'Clarify' to 'Accepted after clarification'. Keep Execution Completed (shared), Review Pending with requester, Follow-up 1 open item. Change panel 06 title from 'Close with acknowledgement' to 'Review before closure'. All other visuals unchanged. No call episode is closed while follow-up is outstanding.",
+          "generator": "OpenAI built-in image_gen",
+          "transparent_background": false
+        }
+      ],
+      "selected_asset": "assets/call-and-response-harness.png",
+      "selected_asset_sha256": "2b299ce340a4e3093f8100d013e906d9da44f3cda997e435c3f3b6f9455e928c"
+    },
+    {
+      "slug": "creative-seed-development",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "a9301a52ef106a390ad65781a38c1111baad9da46a709181465350c4c4648209",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        }
+      ],
+      "selected_asset": "assets/creative-seed-development.png",
+      "selected_asset_sha256": "a9301a52ef106a390ad65781a38c1111baad9da46a709181465350c4c4648209"
+    },
+    {
+      "slug": "egbc-ai-professional-practice",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "ad57cf0580d89ee2a815a0fa9f3c1e2eddf3cf5e78150ff61b85c92f9611c799",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        }
+      ],
+      "selected_asset": "assets/egbc-ai-professional-practice.png",
+      "selected_asset_sha256": "ad57cf0580d89ee2a815a0fa9f3c1e2eddf3cf5e78150ff61b85c92f9611c799"
+    },
+    {
+      "slug": "engineering-work-safety",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "3d4f557db4f9272ef1279be2a0b895f78f97f8699bc6bae9aa11870b327b811b",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        },
+        {
+          "stage": "revision-1",
+          "parent_sha256": "3d4f557db4f9272ef1279be2a0b895f78f97f8699bc6bae9aa11870b327b811b",
+          "asset_sha256": "ca6393494fb9105b5a0efa8c7315124942462bc7826f013bcac2660d61d6144f",
+          "edit_prompt": "Correct illustrative task-code details only, keep design and six panels. Preserve 'Orient · 0x0' and the top-level caption 'Choose 0x1–0xF task class and a concrete command.' Inside all sample UI screens remove invented numeric-to-task mappings: replace every '0x3 Maintain' with 'Selected task class'; remove numeric 0x prefixes from the illustrative option list Operate, Inspect, Maintain, Modify, Test, Decommission, Support, Plan and add label 'Example task labels · consult class map'. In panel 05 replace the interim protection value 'Reduce speed and monitor closely' with 'Pause affected work; follow site procedure'. Remove physical operational instructions on small UI details, keep as planning illustration. All title, layout, footer and other panel captions unchanged.",
+          "generator": "OpenAI built-in image_gen",
+          "transparent_background": false
+        },
+        {
+          "stage": "revision-2",
+          "parent_sha256": "ca6393494fb9105b5a0efa8c7315124942462bc7826f013bcac2660d61d6144f",
+          "asset_sha256": "9f4bc4fc24b35113e74c251e96e0bbdac16cb6e5bae502f04aecb584771d7b8b",
+          "edit_prompt": "Correct this six-panel concept storyboard to reflect the source's actual task taxonomy. Preserve all design, layout, title, panel headings and main captions. Inside panel 02 replace the illustrative list completely with exactly these canonical entries: '0x1 Builder · build', '0x2 Gardener · maintain', '0x3 Doctor · diagnose', '0x4 Explorer · investigate', '0x5 Librarian · record', '0xB Auditor · verify', '0xC Scout · inspect'. Change selected right card title to '0x2 Gardener · maintain'. Change panel 03 small window header exactly to 'Schedule plan · 0x2 Gardener · maintain'. Change panel 04 small work package label 'Selected task class' to '0x2 Gardener · maintain'. Do not leave '0x3 Maintain' anywhere. This is an illustrative workflow, not an operating instruction or implemented software. All other content unchanged.",
+          "generator": "OpenAI built-in image_gen",
+          "transparent_background": false
+        }
+      ],
+      "selected_asset": "assets/engineering-work-safety.png",
+      "selected_asset_sha256": "9f4bc4fc24b35113e74c251e96e0bbdac16cb6e5bae502f04aecb584771d7b8b"
+    },
+    {
+      "slug": "forward-deployed-ai-engineer",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "86aa53f3f16d3f2dd274f597f5a578f4f3b10fe430c3eb27a1b2322640005389",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        }
+      ],
+      "selected_asset": "assets/forward-deployed-ai-engineer.png",
+      "selected_asset_sha256": "86aa53f3f16d3f2dd274f597f5a578f4f3b10fe430c3eb27a1b2322640005389"
+    },
+    {
+      "slug": "image-card-coverage-harness",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "4e9059db48ff8f26708314163b3972b7aba3e7a18d705549b9355129a0bf781e",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        },
+        {
+          "stage": "revision-1",
+          "parent_sha256": "4e9059db48ff8f26708314163b3972b7aba3e7a18d705549b9355129a0bf781e",
+          "asset_sha256": "2ea71f82167d60167975e1dac1443b445d21ef6403215b047029483269a78b2b",
+          "edit_prompt": "Edit this storyboard. Preserve the six-panel layout, typography, title, colors and all panels except the content inside panel 05. Correct panel 05 so it ONLY depicts automated manifest structure and byte identity validation. Replace its validation list with exactly these five rows: 'Manifest schema valid', 'Required review records present', 'Asset path accessible', 'SHA-256 digest matches', 'Claim IDs reconciled'. Replace right annotation with 'Records and byte identity only'. Remove all claims that the validator detects panel count, exact text inside pixels or forbidden visual elements. At bottom of panel 05 add a clear note 'Visual findings are human attestations'. Keep footer 'Hash checks establish byte identity; visual judgments remain human attestations.' Rest of image unchanged.",
+          "generator": "OpenAI built-in image_gen",
+          "transparent_background": false
+        },
+        {
+          "stage": "current-source-refresh",
+          "parent_sha256": "2ea71f82167d60167975e1dac1443b445d21ef6403215b047029483269a78b2b",
+          "asset_sha256": "54feb1763d9346b8c03b5fae7d40024ec6c4da6738604208e20697ed4f21f781",
+          "edit_prompt": "Edit this six-panel storyboard preserving its charcoal/cream/violet/amber design, title, 3-column 2-row layout and panel01/02. Align it with current Image and Card Coverage Harness. Panel03 heading \"Inspect the pixels\", subtitle \"Declared reviewer compares candidate, brief and references.\" Panel04 heading \"Record the review\": explicitly show \"reviewer_kind: assistant\" and \"Human acceptance: pending\", and brief visible checklist \"Geometry · action · text · timing\" as review requirements, not automated detection. Panel05 retain \"Validate the manifest\", checks for schema, record completeness and SHA-256 only, clear annotation \"Records and byte identity only\". Replace human-attestation-only note with \"Checks do not inspect pixels or verify reviewer identity.\" Panel06 heading \"Decide separately\": show \"Validation: clear\", \"Reviewer decision: HOLD\", \"Release: HOLD\", \"Human acceptance evidence: missing\". No Approved or ready-for-release status anywhere. Footer \"Hash checks establish byte identity. Assistant review is not human acceptance.\" Keep legible short text; no actual private data, logos or certification claims. Preserve original other panel meanings; no automatic release implication.",
+          "generator": "OpenAI built-in image_gen"
+        }
+      ],
+      "selected_asset": "assets/image-card-coverage-harness.png",
+      "selected_asset_sha256": "54feb1763d9346b8c03b5fae7d40024ec6c4da6738604208e20697ed4f21f781"
+    },
+    {
+      "slug": "peo-guideline",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "b113414bae1e10eff48dc8f0f5f34bd71a6cdc22e6dbbcdc36979def494a3cd8",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        },
+        {
+          "stage": "revision-1",
+          "parent_sha256": "b113414bae1e10eff48dc8f0f5f34bd71a6cdc22e6dbbcdc36979def494a3cd8",
+          "asset_sha256": "3a6bdca121a50b7e2d71f60262e185d48b01f9b2cac2616e47b02d2fb5b99a0f",
+          "edit_prompt": "Edit only the sample source screens in panels 02, 03 and 05 of this storyboard, preserve all other composition, titles, styling, workflow captions, footer and panels. The illustrated screens must not invent official PEO section numbers or imply November 2020 is confirmed current. In panels 02 and 03 replace all numbered guideline headings, subsection numbers and navigation entries with UNNUMBERED topic labels: 'Competence', 'Professional relationships', 'Confidentiality', 'Evidence', 'Communications'. Document heading 'Confidentiality · Topic preview'. Add prominent badge 'Illustrative topic navigation'. In panel 03 Source check change the current-official-material item to an UNCHECKED box labelled 'Verify current official source' and add badge 'Currentness: not yet verified'. In panel 05 replace 'Relevant principles from section 4' with 'Relevant source passages, once verified'. Do not show any invented clause or section citations. Keep November 2020 identified only as the skill reference date, not a current regulatory determination.",
+          "generator": "OpenAI built-in image_gen",
+          "transparent_background": false
+        }
+      ],
+      "selected_asset": "assets/peo-guideline.png",
+      "selected_asset_sha256": "3a6bdca121a50b7e2d71f60262e185d48b01f9b2cac2616e47b02d2fb5b99a0f"
+    },
+    {
+      "slug": "stickler-prime",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "e8549fbb75f75581727758b8fb603a16bb93beb092c533f21f6b34fdc5a1d103",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        }
+      ],
+      "selected_asset": "assets/stickler-prime.png",
+      "selected_asset_sha256": "e8549fbb75f75581727758b8fb603a16bb93beb092c533f21f6b34fdc5a1d103"
+    },
+    {
+      "slug": "build-music-video",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "8efcc7f838c61571138e6ea6d72e956c878a1b2b1064d8f0b495f7714dbf6400",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        }
+      ],
+      "selected_asset": "assets/build-music-video.png",
+      "selected_asset_sha256": "8efcc7f838c61571138e6ea6d72e956c878a1b2b1064d8f0b495f7714dbf6400"
+    },
+    {
+      "slug": "farmer-jones-victory-garden",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "e1236cf567e67e4a11662f6e311f1052130e5c4a5f1de5289c66aeac7a0cc55f",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        }
+      ],
+      "selected_asset": "assets/farmer-jones-victory-garden.png",
+      "selected_asset_sha256": "e1236cf567e67e4a11662f6e311f1052130e5c4a5f1de5289c66aeac7a0cc55f"
+    }
+  ]
+}

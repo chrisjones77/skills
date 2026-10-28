@@ -16,6 +16,10 @@ Use this skill to structure review of a generated image or a series of revisions
 3. Compare the candidate with the brief, parent generation, approved references, and still-applicable resolved findings. Record concise evidence notes for each required visual check.
 4. Reconcile all technical-claim IDs, exact text, preservation targets, forbidden drift, and intentional deviations.
 5. Run `python3 scripts/harness.py PATH/TO/manifest.json --json` and resolve blockers. To run the full developer checks, install `requirements-dev.txt`, then run `python3 -m unittest discover -s tests -v`.
-6. Report `validation_status`, `reviewer_decision`, and `release_outcome` separately. A reported verified asset binding confirms byte identity only. A clear result with `accept` remains a human attestation; never describe it as automated visual verification or rights clearance.
+6. Declare `review.reviewer_kind` as `human`, `assistant`, or `automated`. Keep assistant inspection and automated checks separate from actual human acceptance. Use `hold` until an actual human decision is available; `accept` requires `human` and a nonempty `acceptance_evidence` reference identifying the candidate and scope. Never fabricate that evidence. The harness checks declarations, not reviewer identity.
+7. Report `validation_status`, `reviewer_decision`, and `release_outcome` separately. A verified asset binding confirms byte identity only. Never describe a clear result as automated visual verification or rights clearance.
+
+For storyboard/video assets, read [delivery coverage](references/DELIVERY-COVERAGE.md). Review intended-use geometry, action coverage, rendered text and timing regressions in addition to image quality. Use existing canonical constraints and regression checks for these requirements; do not treat metadata alone as a completed check.
 
 Read [the operating guide](references/OPERATING-GUIDE.md) for review-field definitions, [the coverage map](references/COVERAGE-MAP.md) for automated and human responsibilities, and [privacy guidance](references/PRIVACY-PUBLICATION.md) before sharing manifests or assets.
+
