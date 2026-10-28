@@ -39,3 +39,11 @@ Dependencies: source verification precedes packaging; package precedes validatio
 - [x] T018 Retain ten initial image hashes, five edit prompts and parent/final digest continuity in `docs/skill-storyboards/asset-lineage.json`.
 - [x] T019 Cross-link the record from the feature packet and galleries; extend structural validation to the lineage record.
 - [ ] T020 Deliver the documentation follow-up to PR #15 after review and verification; record the actual pushed revision and its CI result. Browser and human review remain pending.
+
+## Current-gallery refresh — PR #15
+
+The checked items above record the original ten-board work and its documentation follow-up; they do not establish verification of this refresh.
+
+- [x] T021 Refresh selected gallery records for the current eleven-entrypoint inventory, including Build Music Video, preserving original generation and revision history.
+- [x] T022 Enforce current skill source bindings and inventory-derived board coverage; keep directly referenced-document drift as a manual review concern.
+- [ ] T023 Verify the refreshed package and record actual results separately from historical results; browser and human acceptance remain pending.

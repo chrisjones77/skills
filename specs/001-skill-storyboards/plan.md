@@ -4,14 +4,14 @@
 
 ## Approach
 
-Reuse the ten generated images after source and visual review. Store them with portable provenance in `docs/skill-storyboards/`. Provide a Markdown gallery for GitHub and a plain HTML gallery for local browsing. A small standard-library Python validator checks inventory, hashes, source bindings, transcripts and links; it does not assess pixels or rights.
+Refresh the gallery for the current eleven-entrypoint inventory: the original ten plus Build Music Video. Retain original generation and revision history, updating selected assets after source and visual review where needed. Store them with portable provenance in `docs/skill-storyboards/`. Provide a Markdown gallery for GitHub and a plain HTML gallery for local browsing. A small standard-library Python validator checks current inventory, hashes, source bindings, transcripts and links; it does not assess pixels or rights. Structural refresh validation passed; browser and human acceptance remain pending.
 
 ## Technical context
 
 - Documentation: Markdown, static HTML and JSON; image assets: PNG.
 - Validation: Python 3.11+ standard library, no added package dependencies.
 - Platform: GitHub Markdown and a browser opening a local checkout.
-- Scale: ten boards, no server, storage service, telemetry or application runtime.
+- Scale: eleven current boards, no server, storage service, telemetry or application runtime.
 - Asset provenance: OpenAI built-in image_gen; prompts and revision notes retained.
 
 ## Constitution check
@@ -20,7 +20,7 @@ The source tree has no `.specify/` constitution, Spec Kit scaffold, `AGENTS.md` 
 
 ## Design decisions
 
-1. Keep images together rather than adding assets to ten separate skill directories. This keeps the change explanatory and avoids modifying installed skill packages.
+1. Keep images together rather than adding assets to separate skill directories. This keeps the change explanatory and avoids modifying installed skill packages.
 2. Include Markdown because GitHub does not serve arbitrary repository HTML as a website.
 3. Provide transcripts because image alt text alone cannot convey the six-panel workflow.
 4. Bind both sources and assets. A digest proves byte identity, not correctness or rights.
@@ -49,7 +49,7 @@ specs/001-skill-storyboards/
 
 ## Validation and review
 
-Check portable paths, PNG headers/digests, Git blob SHA bindings, ten-entrypoint coverage, six-step transcripts, gallery source/image links and absence of external resources. Exercise failure cases for changed bytes, missing source coverage and unsafe links in temporary copies. Inspect browser rendering at desktop and narrow widths. Inspect each generated board for main narrative and material contradictions, record corrections, and disclose minor nonauthoritative sample content. Run `git diff --check` before commit.
+Check portable paths, PNG headers/digests, current Git blob SHA bindings, inventory-derived coverage, six-step transcripts, gallery source/image links and absence of external resources. Exercise failure cases for changed bytes, missing source coverage and unsafe links in temporary copies. Inspect browser rendering at desktop and narrow widths. Inspect each generated board for main narrative and material contradictions, record corrections, and disclose minor nonauthoritative sample content. Run `git diff --check` before commit. Historical check results remain historical; record refresh results separately when run.
 
 ## Spec Kit reference
 

@@ -69,11 +69,11 @@ def validate(root):
     require(data.get('schema_version') == 1, 'Unsupported manifest schema')
     require(bool(re.fullmatch(r'[0-9a-f]{40}', data.get('source_revision', ''))), 'Invalid source revision')
     boards = data['boards']
-    require(len(boards) == 10, 'Expected ten boards for this snapshot')
     slugs = [b['slug'] for b in boards]
     require(len(set(slugs)) == len(slugs), 'Duplicate board slug')
     expected = {p.relative_to(root).as_posix() for p in root.rglob('*')
                 if p.is_file() and p.name.lower() == 'skill.md' and '.git' not in p.relative_to(root).parts}
+    require(len(boards) == len(expected), 'Board count differs from current skill inventory')
     actual = [b['source_path'] for b in boards]
     require(len(set(actual)) == len(actual), 'Duplicate source entrypoint')
     require(set(actual) == expected, 'Skill inventory differs: ' + repr(set(actual) ^ expected))
@@ -170,7 +170,7 @@ def main():
         for error in errors:
             print('ERROR: ' + error, file=sys.stderr)
         return 1
-    print('PASS: 10 boards; inventory, source/asset byte bindings, revision lineage, six-step transcripts, links and offline HTML structure.')
+    print('PASS: Current skill inventory, source/asset byte bindings, revision lineage, six-step transcripts, links and offline HTML structure.')
     print('LIMIT: Structural checks do not inspect pixels, establish rights or record human acceptance.')
     return 0
 

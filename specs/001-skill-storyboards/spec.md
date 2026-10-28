@@ -2,12 +2,13 @@
 
 **Feature branch**: `codex/skill-storyboards-spec`
 **Created**: 2026-10-22
-**Status**: Implemented proposal; awaiting PR review
-**Source baseline**: `647e97ad215956b06edc6daa4b4c1c790ebe3b9b`
+**Status**: Current-gallery refresh in progress; verification and PR review pending
+**Original source baseline**: `647e97ad215956b06edc6daa4b4c1c790ebe3b9b`
+**Refresh source baseline**: `a0fd638` (merged into the task branch)
 
 ## Intent and scope
 
-Make the ten confirmed skill entrypoints easier to understand through one six-panel storyboard per skill. The user requested a storyboard for each skill, confirmed the ten-file collection despite its current private visibility, and authorized packaging the result into a PR. This feature adds explanatory documentation and image assets. It does not implement the imagined interfaces or change skill behavior.
+Make the current eleven skill entrypoints easier to understand through one six-panel storyboard per skill: the original ten plus Build Music Video. The user selected a current-gallery refresh for PR #15. Preserve the original generation and revision history while binding selected boards to current skill sources. This feature adds explanatory documentation and image assets. It does not implement the imagined interfaces or change skill behavior.
 
 ## User Scenarios & Testing
 
@@ -17,7 +18,7 @@ A reader selects a skill and follows its six main steps without needing to inter
 
 **Independent check**: Open the Markdown gallery and inspect one complete board and its transcript.
 
-1. Given the pinned ten-skill inventory, when the reader browses the gallery, then every skill has exactly one board with a stable slug and six textual steps.
+1. Given the current eleven-skill inventory, when the reader browses the gallery, then every skill has exactly one board with a stable slug and six textual steps.
 2. Given an image is unavailable or difficult to read, when the reader uses the transcript, then the main sequence and limitation remain available as selectable text.
 3. Given an illustration depicts sample results or controls, when it is viewed in context, then it is identified as illustrative rather than evidence of an implemented tool.
 
@@ -43,7 +44,7 @@ A reader opens the gallery from a checkout and navigates to individual images an
 
 ## Requirements
 
-- **FR-001**: Cover every skill entrypoint at the pinned revision, including `.agents/skills/*/SKILL.md` and `peo-guideline/skill.md`; no duplicate boards.
+- **FR-001**: Cover every current skill entrypoint, including `.agents/skills/*/SKILL.md`, `peo-guideline/skill.md` and Build Music Video; no duplicate boards.
 - **FR-002**: Supply one PNG and six-step text transcript per skill, with canonical source links and limitations.
 - **FR-003**: Preserve important distinctions: receipt/acceptance/authority, completion/review/closure, evidence/interpretation, structural checks/visual judgment, guidance/obligation, and task class/command.
 - **FR-004**: Record source revision, source blob SHA, final asset SHA-256, generation method, prompts, revision notes and review status.
@@ -65,13 +66,13 @@ A reader opens the gallery from a checkout and navigates to individual images an
 ## Key entities
 
 - **Board**: stable slug, display title, source path/blob SHA, asset path/SHA-256, six-step transcript, limitation, prompt and review record.
-- **Source snapshot**: repository name and revision identifying the ten-file collection.
+- **Source snapshot**: repository name and revision identifying the selected current collection; original generation snapshots remain in provenance history.
 - **Review record**: method, observed limits, status and human acceptance; no inferred approval.
 
 ## Success criteria
 
-- **SC-001**: Ten unique boards cover all ten pinned entrypoints.
-- **SC-002**: All ten PNG hashes and source blob bindings match their manifest records.
+- **SC-001**: Eleven unique boards cover all eleven current entrypoints; validation derives expected coverage from the checkout inventory.
+- **SC-002**: All selected PNG hashes and current source blob bindings match their manifest records.
 - **SC-003**: Every board has six text steps and reachable source/asset links; all gallery local links resolve inside the checkout.
 - **SC-004**: The gallery contains no external executable or presentation dependency and no local absolute paths.
 - **SC-005**: Visual inspection records meaningful corrections and does not claim human acceptance or current regulatory verification.
@@ -79,4 +80,4 @@ A reader opens the gallery from a checkout and navigates to individual images an
 
 ## Assumptions and exclusions
 
-The ten-entrypoint collection is the agreed scope. Hosting, public release, changing repository visibility, installing Spec Kit into the repository, rewriting skills and merging the PR are outside this change. This is a manually authored Spec Kit-style feature packet, following its specification → plan → tasks → implementation → verification structure; no CLI run is claimed.
+The current eleven-entrypoint collection is the agreed scope. Current skill source bindings are enforced structurally; drift in directly referenced documents remains a manual review concern. Original generation and revision history is retained. Hosting, public release, changing repository visibility, installing Spec Kit into the repository, rewriting skills and merging the PR are outside this change. This is a manually authored Spec Kit-style feature packet, following its specification → plan → tasks → implementation → verification structure; no CLI run is claimed.

@@ -1,12 +1,10 @@
 # Skill workflow storyboards
 
-Ten six-panel concept illustrations explain the skills at source revision `647e97ad215956b06edc6daa4b4c1c790ebe3b9b`. Start with a workflow below, read the text transcript, then follow its canonical skill link.
+Eleven six-panel concept illustrations cover the current eleven-skill inventory at source revision `a0fd63828396401bc28998069bf31664bc4090de`. Refreshed 2026-10-28; later source changes require reconciliation. The original ten-board manifest, prompts, lineage and prior coverage-board image remain in [revision history](revisions/20261022/README.md).
 
-These are AI-generated illustrations of instructions, not screenshots of implemented tools. Sample names, results, metrics, dates and UI controls are fictional. Text transcripts summarize the workflow; the linked skill and its references take precedence. Professional-practice boards are educational workflow summaries, not current legal or regulatory advice or regulator endorsement.
+These are AI-generated illustrations, not implemented products. All sample UI data, including file sizes, timing and frame counts, are fictional and are not technical calculations or evidence. Canonical skill sources and their references take precedence. Human acceptance remains pending.
 
-[Local HTML gallery](index.html) · [Source and asset manifest](manifest.json) · [Generation prompts and revision notes](generation.json) · [Asset lineage and edit prompts](asset-lineage.json) · [Feature specification](../../specs/001-skill-storyboards/spec.md) · [Work and safety record](../../specs/001-skill-storyboards/work-and-safety.md)
-
-For the HTML view, open `docs/skill-storyboards/index.html` from a local checkout. GitHub renders the Markdown gallery below directly. No hosting, build or network connection is needed for the local gallery.
+[Local HTML gallery](index.html) · [Source and asset manifest](manifest.json) · [Generation record](generation.json) · [Asset lineage](asset-lineage.json) · [Feature specification](../../specs/001-skill-storyboards/spec.md) · [Work and safety record](../../specs/001-skill-storyboards/work-and-safety.md)
 
 - [Harnessed Dispatch](#harnessed-dispatch)
 - [Project Vault Operator](#project-vault-operator)
@@ -18,6 +16,7 @@ For the HTML view, open `docs/skill-storyboards/index.html` from a local checkou
 - [Image and Card Coverage Harness](#image-card-coverage-harness)
 - [PEO Practice Guideline Reference](#peo-guideline)
 - [Stickler Prime](#stickler-prime)
+- [Build Music Video](#build-music-video)
 
 <a id="harnessed-dispatch"></a>
 
@@ -36,6 +35,8 @@ For the HTML view, open `docs/skill-storyboards/index.html` from a local checkou
 
 Delegation supports verification; it does not transfer authority.
 
+Human acceptance: pending.
+
 <a id="project-vault-operator"></a>
 
 ## Project Vault Operator
@@ -52,6 +53,8 @@ Delegation supports verification; it does not transfer authority.
 6. Return with evidence — cite source and preserve local/private boundaries.
 
 Navigate canonical documents; keep personal vault state private.
+
+Human acceptance: pending.
 
 <a id="call-and-response-harness"></a>
 
@@ -70,7 +73,7 @@ Navigate canonical documents; keep personal vault state private.
 
 Recipient choice remains theirs; optional codes never score people.
 
-Review note: Changed the final example to an open call pending review and follow-up; acceptance after clarification is distinct from receipt.
+Human acceptance: pending.
 
 <a id="creative-seed-development"></a>
 
@@ -89,6 +92,8 @@ Review note: Changed the final example to an open call pending review and follow
 
 Creative development supports distinct expression; it is not legal clearance.
 
+Human acceptance: pending.
+
 <a id="egbc-ai-professional-practice"></a>
 
 ## EGBC AI Professional Practice
@@ -105,6 +110,8 @@ Creative development supports distinct expression; it is not legal clearance.
 6. Record and revisit — decision, disclosure, monitoring and change triggers.
 
 Illustrates the skill workflow; professional responsibility stays with the professional.
+
+Human acceptance: pending.
 
 <a id="engineering-work-safety"></a>
 
@@ -123,7 +130,7 @@ Illustrates the skill workflow; professional responsibility stays with the profe
 
 Worker safety is a baseline; this reflection tool is not a safety case.
 
-Review note: Replaced invented class mappings with canonical class/command entries, including 0x2 Gardener / maintain. Physical-work screens are conceptual illustrations, not site instructions.
+Human acceptance: pending.
 
 <a id="forward-deployed-ai-engineer"></a>
 
@@ -142,6 +149,8 @@ Review note: Replaced invented class mappings with canonical class/command entri
 
 Minimum Responsible Methodology · Scale rigor to the actual consequence.
 
+Human acceptance: pending.
+
 <a id="image-card-coverage-harness"></a>
 
 ## Image and Card Coverage Harness
@@ -152,14 +161,14 @@ Minimum Responsible Methodology · Scale rigor to the actual consequence.
 
 1. Define the brief — required elements, exact text and forbidden drift.
 2. Bind the candidate — asset path, version and SHA-256 digest.
-3. Inspect the pixels — human compares image, brief and approved references.
-4. Record the review — coverage, technical claims, regressions and lineage.
+3. Inspect the pixels — declared reviewer compares the candidate, brief and references.
+4. Record the review — identify reviewer kind; cover geometry, action, text and timing.
 5. Validate the manifest — run structural and asset-binding checks; resolve blockers.
-6. Decide separately — validation status, reviewer decision and release outcome.
+6. Decide separately — assistant review stays HOLD until actual human acceptance evidence exists.
 
-Hash checks establish byte identity; visual judgments remain human attestations.
+Hash checks establish byte identity. Assistant review is not human acceptance.
 
-Review note: Panel 05 was edited to limit automated validation to manifest records and byte identity. Pixel findings remain human attestations.
+Human acceptance: pending.
 
 <a id="peo-guideline"></a>
 
@@ -178,7 +187,7 @@ Review note: Panel 05 was edited to limit automated validation to manifest recor
 
 Educational reference workflow · No regulator endorsement or legal determination.
 
-Review note: Removed invented section numbers and marked currentness not yet verified. November 2020 identifies the skill reference, not confirmed current law or guidance.
+Human acceptance: pending.
 
 <a id="stickler-prime"></a>
 
@@ -196,3 +205,24 @@ Review note: Removed invented section numbers and marked currentness not yet ver
 6. Check effectiveness — retain unresolved concerns and report evidence limits.
 
 Evidence and dignity together · Review support is not certification.
+
+Human acceptance: pending.
+
+<a id="build-music-video"></a>
+
+## Build Music Video
+
+[Canonical skill](../../build-music-video/SKILL.md) · [Full PNG](assets/build-music-video.png)
+
+![Build Music Video: six-panel concept illustration](assets/build-music-video.png)
+
+1. Anchor the recording — retain supplied soundtrack identity, sources and corrections.
+2. Map the story — connect sections, lyric payoffs and continuity before choosing shots.
+3. Create scene art — use the output geometry and inspect subjects, action and safe areas.
+4. Align the performance — separate lyric draft, performed transcript and editable captions; label estimated timing.
+5. Render and inspect — distinguish structural checks from watching, listening and final-frame review.
+6. Deliver editable kit — retain movie, captions, artwork, manifest and rebuild instructions.
+
+Preserve the recording · Timing needs evidence · Publication needs authorization. Sample durations, file sizes and frame counts in the image are fictional and must not be used as calculations.
+
+Human acceptance: pending.

@@ -3,19 +3,25 @@
 **Date**: 2026-10-22
 **Author method**: AI source review, AI visual inspection and local structural checks.
 **Human acceptance**: Pending PR review.
-**Release**: Proposed documentation on a task branch; no merge or deployment.
+**Release**: Proposed documentation on a task branch; no merge or deployment of this proposal is recorded here.
 
 [Full work and safety record](work-and-safety.md) · [Asset lineage and edit prompts](../../docs/skill-storyboards/asset-lineage.json)
 
-## Source and scope
+## Current-gallery refresh status
+
+The user selected a current-gallery refresh for PR #15. Its target inventory is eleven skill entrypoints: the original ten plus Build Music Video. The task branch incorporates `origin/main` at `a0fd638` through merge `74979a0`. Original generation and revision history is retained; selected records are to bind to current skill sources. The validator derives expected board coverage from the checkout inventory and retains dynamic lineage generation/revision counts. Directly referenced-document drift remains a manual review concern.
+
+Refresh structural validation, refreshed-image review, browser checks, delivery and CI results are pending and are not established by the historical results below. Human acceptance remains pending.
+
+## Historical source and scope — 2026-10-22
 
 The repository reported private visibility at inspection. Its main revision was `647e97ad215956b06edc6daa4b4c1c790ebe3b9b`. The recursive tree was complete and contained ten skill entrypoints, including the two hidden `.agents/skills` entries and lowercase PEO file. The isolated checkout was clean before work. No repository constitution, Spec Kit scaffold, AGENTS.md or contribution guide was present. Existing skill files were not modified.
 
-## Results
+## Historical results — original ten-board package
 
 | Check | Result | Evidence and limits |
 |---|---|---|
-| FR-001 / SC-001 inventory | Pass | Ten distinct records match all ten current entrypoints. |
+| FR-001 / SC-001 inventory | Pass | Ten distinct records matched all ten entrypoints at the original inspection. |
 | FR-004 / SC-002 bindings | Pass | Source Git blob SHAs and final PNG SHA-256 values match. This establishes byte identity only. |
 | FR-002 / SC-003 transcripts and links | Pass | Six text steps per board; HTML and Markdown local links resolve within the checkout. |
 | FR-005 portable records | Pass | Distributed text contains no local absolute-path markers or credential markers checked by the validator. This is a bounded check, not a secret-scanner certification. |
@@ -25,7 +31,7 @@ The repository reported private visibility at inspection. Its main revision was 
 | Full staged diff / whitespace | Pass | Inspected the task-only staged change and corrected Markdown hard-break whitespace; `git diff --cached --check` passes. |
 | Follow-up lineage record | Recorded | Ten initial image digests and five parent/child revisions were recomputed from retained candidates. Final digests match the selected package. The validator checks record continuity and final bindings, not omitted intermediate pixels. |
 
-## Commands and negative checks
+## Historical commands and negative checks
 
 `python3 scripts/validate_storyboards.py` passed locally using Python 3.14. The committed CI workflow targets Python 3.11; its result is recorded by GitHub, not inferred from the local run.
 
@@ -59,3 +65,14 @@ The follow-up reran the passing baseline and the five original mutations, and ad
 ## Remaining review
 
 A maintainer should inspect full-size images and transcripts, verify the HTML in a browser at desktop and narrow widths, and decide whether the documentation is ready to merge. Small generated UI text can contain imperfections. Canonical source documents take precedence. Approval, rights determinations and professional reliance are not established by this packet.
+
+## Current-gallery refresh observed — 2026-10-28
+
+Current source snapshot: a0fd63828396401bc28998069bf31664bc4090de. Eleven boards now cover eleven current entrypoints. Added Build Music Video; refreshed Coverage Harness for declared assistant review, delivery geometry/action/text/timing, and explicit HOLD without human acceptance. Original records and prior coverage PNG remain byte-identical in revisions/20261022.
+
+- `python3 scripts/validate_storyboards.py`: passed current inventory, source/asset hashes, lineage, transcript/link/offline checks.
+- Coverage records for both new assets: verified SHA-256, validation clear, assistant decision hold, release hold, zero manifest blockers. Harness exit status 1 reflects the intended non-accepted hold, not a clear validation failure. These checks do not inspect pixels or authenticate acceptance.
+- Primary and independent assistant inspected both images. Video UI sample numbers are fictional and inconsistent as real calculations; prominent gallery text excludes technical reliance.
+- Independent source review found two stale ten-board scope strings; corrected to eleven. No other substantive findings.
+- `git diff --check`: passed. No automated test suite or new mutation tests run for this refresh.
+- Actual desktop/narrow browser and human visual acceptance remain pending; no prior browser restriction was bypassed. No merge, installation or publication acceptance is claimed.
