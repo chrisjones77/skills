@@ -1,0 +1,35 @@
+name: Skill storyboard documentation
+
+on:
+  pull_request:
+    paths:
+      - "docs/skill-storyboards/**"
+      - "specs/001-skill-storyboards/**"
+      - "scripts/validate_storyboards.py"
+      - ".github/workflows/skill-storyboards.yml"
+      - "**/SKILL.md"
+      - "**/skill.md"
+      - "README.md"
+  push:
+    branches: [main]
+    paths:
+      - "docs/skill-storyboards/**"
+      - "specs/001-skill-storyboards/**"
+      - "scripts/validate_storyboards.py"
+      - ".github/workflows/skill-storyboards.yml"
+      - "**/SKILL.md"
+      - "**/skill.md"
+      - "README.md"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python scripts/validate_storyboards.py
