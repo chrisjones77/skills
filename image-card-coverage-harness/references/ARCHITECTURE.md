@@ -2,13 +2,13 @@
 
 ## Purpose and limits
 
-The harness is a manifest-driven review aid for image-generation artifacts and iterative card/cover series. It represents requirements, lineage, human review declarations, and blockers in portable JSON. It does not generate images, perform computer vision, identify people, establish rights, or determine whether a reviewer’s declaration is true.
+The harness is a manifest-driven review aid for image-generation artifacts and iterative card/cover series. It represents requirements, lineage, attributed review declarations, and blockers in portable JSON. It does not generate images, perform computer vision, identify people, establish rights, or determine whether a reviewer’s declaration is true.
 
 ## Data flow
 
 1. Author a brief with stable artifact ID, type, constraints, forbidden drift, exact text, technical claims, and deviation policy.
 2. Record each generation with a unique ID, parent ID, requested delta, preservation targets, and regression checks.
-3. A human inspects the candidate and records review statuses plus evidence notes.
+3. Record the actual reviewer kind and inspection evidence. Only an explicitly attributed human decision with acceptance evidence may accept the candidate.
 4. Run `harness.py` to catch missing review coverage and declared failures.
 5. Bind each non-fixture manifest to a normalized relative asset path and SHA-256 digest; the command-line validator rehashes the file before acceptance and includes the verified binding in its report.
 
@@ -27,7 +27,7 @@ The harness is a manifest-driven review aid for image-generation artifacts and i
 
 ## Findings and decision semantics
 
-`blocker` means the record is incomplete, failed, or internally inconsistent. It means do not accept this generation based on the manifest. Reports separate `validation_status` (`clear` or `blocked`), `reviewer_decision` (`accept`, `revise`, `reject`, or `hold`), and `release_outcome`. Only a clear validation with reviewer decision `accept` and a non-fixture asset binding yields `release_outcome: accepted` and exit status 0. A clear synthetic fixture yields `fixture_only`; a blocked fixture yields `not_accepted`. A clear validation does not mean the artifact is safe, correct, suitable, rights-cleared, or visually verified. The asset binding confirms byte identity only; the review remains a human declaration. JSON Schema provides structural validation; cross-field checks and asset verification require the executable harness. The current implementation emits blockers only.
+`blocker` means the record is incomplete, failed, or internally inconsistent. It means do not accept this generation based on the manifest. Reports separate `validation_status` (`clear` or `blocked`), `reviewer_decision` (`accept`, `revise`, `reject`, or `hold`), and `release_outcome`. Only a clear validation with reviewer decision `accept` and a non-fixture asset binding yields `release_outcome: accepted` and exit status 0. A clear synthetic fixture yields `fixture_only`; a blocked fixture yields `not_accepted`. A clear validation does not mean the artifact is safe, correct, suitable, rights-cleared, or visually verified. The asset binding confirms byte identity only; review judgments remain declarations; role and evidence are recorded, not authenticated. JSON Schema provides structural validation; cross-field checks and asset verification require the executable harness. The current implementation emits blockers only.
 
 ## Extending the schema
 
@@ -36,3 +36,4 @@ Keep existing field semantics stable within a major schema version. Use additive
 ## Automated validation
 
 The developer suite uses `jsonschema` for Draft 2020-12 schema checks; install `requirements-dev.txt` before running it. Unit tests also exercise CLI output and exit codes, asset hashing, malformed input, path traversal, and symlink containment. The repository workflow runs the suite on Python 3.11 and 3.12. These checks establish implementation behavior for the covered cases, not the truth of human visual-review declarations.
+
