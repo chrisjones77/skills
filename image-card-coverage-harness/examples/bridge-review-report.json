@@ -1,6 +1,6 @@
 {
   "harness": "Image and Card Coverage Harness",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "artifact_id": "DEMO-IMAGE-CARD-001",
   "generation_id": "G-002",
   "asset_binding": {
@@ -10,8 +10,9 @@
   },
   "validation_status": "clear",
   "reviewer_decision": "accept",
+  "reviewer_kind": "human",
   "release_outcome": "fixture_only",
   "blocker_count": 0,
   "findings": [],
-  "scope_note": "Validates declared coverage, lineage, local asset digest, and evidence-record completeness; does not inspect pixels or establish truth of human observations. A verified asset binding identifies bytes only; review judgments remain human declarations."
+  "scope_note": "Validates declared coverage, lineage, local asset digest, and evidence-record completeness; does not inspect pixels or establish truth of human observations. A verified asset binding identifies bytes only; review judgments remain declarations; role and acceptance evidence are recorded, not authenticated."
 }

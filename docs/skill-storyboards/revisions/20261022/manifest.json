@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "source_repository": "chrisjones77/skills",
+  "source_revision": "647e97ad215956b06edc6daa4b4c1c790ebe3b9b",
+  "created": "2026-10-22",
+  "generator": "OpenAI built-in image_gen",
+  "asset_status": "AI-generated concept illustrations",
+  "scope": "All 10 skill entrypoints at the pinned revision, including .agents/skills and lowercase peo-guideline/skill.md.",
+  "boards": [
+    {
+      "slug": "harnessed-dispatch",
+      "title": "Harnessed Dispatch",
+      "source_path": ".agents/skills/harnessed-dispatch/SKILL.md",
+      "source_blob_sha": "5d04d4a54407bc623b8cceaafc42ec049ab8a9ce",
+      "asset": "assets/harnessed-dispatch.png",
+      "asset_sha256": "d0abf5b09ae508e136081c2de517e0a3073a1bbda814c202d64014aadb7107f1",
+      "transcript": [
+        "01 Verify the workspace \u2014 inspect repository, branch, revision and existing changes.",
+        "02 Bound the task \u2014 one objective, allowed paths, permissions and stop condition.",
+        "03 Select the mode \u2014 Review, Research or authorized Implementation.",
+        "04 Dispatch with ownership \u2014 one writer; isolated implementation workspace; worker may pause.",
+        "05 Inspect the return \u2014 evidence, findings, changed files and unresolved questions.",
+        "06 Verify and hand back \u2014 primary checks claims and reports remaining limits."
+      ],
+      "limitation": "Delegation supports verification; it does not transfer authority.",
+      "prompt": "Use case: ui-mockup. Render one polished six-panel storyboard image titled \"Harnessed Dispatch\". Subtitle \"Skill workflow \u00b7 Illustrative storyboard\". Landscape board, exactly three columns and two rows with six numbered panels read left to right. Match the visual series: charcoal-black desktop interfaces, cream editorial typography, violet connectors and restrained amber highlights, fine pencil annotations and directional arrows, elegant generous gutters. Each panel shows a concrete screen or desk interaction that enacts its step, NOT just a text card. Use legible short headings and concise captions. Detailed yet uncluttered diagrams, source notes, workflow cards and evidence panels appropriate to this skill. These are illustrative interfaces for instructions, not existing products. Exact narrative steps: 01 Verify the workspace \u2014 inspect repository, branch, revision and existing changes.\n02 Bound the task \u2014 one objective, allowed paths, permissions and stop condition.\n03 Select the mode \u2014 Review, Research or authorized Implementation.\n04 Dispatch with ownership \u2014 one writer; isolated implementation workspace; worker may pause.\n05 Inspect the return \u2014 evidence, findings, changed files and unresolved questions.\n06 Verify and hand back \u2014 primary checks claims and reports remaining limits. Footer verbatim \"Delegation supports verification; it does not transfer authority.\" Small series credit \"chrisjones77/skills \u00b7 Concept illustration\". Do not include WRBG, personal details, actual project names, invented citations, regulator logos, official seals, compliance certification badges or claims of automated visual verification. Preserve distinctions and choices described in the steps. Strong visual storytelling and readable typography.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "Six panels and main workflow inspected. Sample UI content is illustrative. The linked skill and references remain authoritative."
+      }
+    },
+    {
+      "slug": "project-vault-operator",
+      "title": "Project Vault Operator",
+      "source_path": ".agents/skills/project-vault-operator/SKILL.md",
+      "source_blob_sha": "162e721737af73f304bdbb3a3e69378f9c11822e",
+      "asset": "assets/project-vault-operator.png",
+      "asset_sha256": "493c36f21c11b2cad537dd2341c8bafb82dbb841f07d16aa4759e9a6f8b1b95a",
+      "transcript": [
+        "01 Open the map \u2014 start at the project documentation index.",
+        "02 Follow the links \u2014 navigate to specifications, runbooks and code.",
+        "03 Read the canonical source \u2014 map is navigation, source holds the content.",
+        "04 Check current status \u2014 use issues, pull requests and CI.",
+        "05 Repair a stale link \u2014 verify destination, make a requested focused edit.",
+        "06 Return with evidence \u2014 cite source and preserve local/private boundaries."
+      ],
+      "limitation": "Navigate canonical documents; keep personal vault state private.",
+      "prompt": "Use case: ui-mockup. Render one polished six-panel storyboard image titled \"Project Vault Operator\". Subtitle \"Skill workflow \u00b7 Illustrative storyboard\". Landscape board, exactly three columns and two rows with six numbered panels read left to right. Match the visual series: charcoal-black desktop interfaces, cream editorial typography, violet connectors and restrained amber highlights, fine pencil annotations and directional arrows, elegant generous gutters. Each panel shows a concrete screen or desk interaction that enacts its step, NOT just a text card. Use legible short headings and concise captions. Detailed yet uncluttered diagrams, source notes, workflow cards and evidence panels appropriate to this skill. These are illustrative interfaces for instructions, not existing products. Exact narrative steps: 01 Open the map \u2014 start at the project documentation index.\n02 Follow the links \u2014 navigate to specifications, runbooks and code.\n03 Read the canonical source \u2014 map is navigation, source holds the content.\n04 Check current status \u2014 use issues, pull requests and CI.\n05 Repair a stale link \u2014 verify destination, make a requested focused edit.\n06 Return with evidence \u2014 cite source and preserve local/private boundaries. Footer verbatim \"Navigate canonical documents; keep personal vault state private.\" Small series credit \"chrisjones77/skills \u00b7 Concept illustration\". Do not include WRBG, personal details, actual project names, invented citations, regulator logos, official seals, compliance certification badges or claims of automated visual verification. Preserve distinctions and choices described in the steps. Strong visual storytelling and readable typography.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "Six panels and main workflow inspected. Sample UI content is illustrative. The linked skill and references remain authoritative."
+      }
+    },
+    {
+      "slug": "call-and-response-harness",
+      "title": "Gentle Boss \u00b7 Call and Response",
+      "source_path": "call-and-response-harness/SKILL.md",
+      "source_blob_sha": "c88d6ce38d64de4ff582f21bd202681e64e81f98",
+      "asset": "assets/call-and-response-harness.png",
+      "asset_sha256": "2b299ce340a4e3093f8100d013e906d9da44f3cda997e435c3f3b6f9455e928c",
+      "transcript": [
+        "01 Frame the call \u2014 show requester, recipient, scope, constraints and task.",
+        "02 Receive the call \u2014 acknowledgement means receipt only.",
+        "03 Choose a response \u2014 accept, clarify, limit, pause, defer or decline.",
+        "04 Clarify together \u2014 caller owns follow-up; understanding is distinct from acceptance.",
+        "05 Track the work \u2014 separate response, execution and review states.",
+        "06 Review before closure \u2014 keep the call open while required review or follow-up remains outstanding; silence is not consent."
+      ],
+      "limitation": "Recipient choice remains theirs; optional codes never score people.",
+      "prompt": "Use case: ui-mockup. Render one polished six-panel storyboard image titled \"Gentle Boss \u00b7 Call and Response\". Subtitle \"Skill workflow \u00b7 Illustrative storyboard\". Landscape board, exactly three columns and two rows with six numbered panels read left to right. Match the visual series: charcoal-black desktop interfaces, cream editorial typography, violet connectors and restrained amber highlights, fine pencil annotations and directional arrows, elegant generous gutters. Each panel shows a concrete screen or desk interaction that enacts its step, NOT just a text card. Use legible short headings and concise captions. Detailed yet uncluttered diagrams, source notes, workflow cards and evidence panels appropriate to this skill. These are illustrative interfaces for instructions, not existing products. Exact narrative steps: 01 Frame the call \u2014 show requester, recipient, scope, constraints and task.\n02 Receive the call \u2014 acknowledgement means receipt only.\n03 Choose a response \u2014 accept, clarify, limit, pause, defer or decline.\n04 Clarify together \u2014 caller owns follow-up; understanding is distinct from acceptance.\n05 Track the work \u2014 separate response, execution and review states.\n06 Close with acknowledgement \u2014 keep unresolved follow-up visible; silence is not consent. Footer verbatim \"Recipient choice remains theirs; optional codes never score people.\" Small series credit \"chrisjones77/skills \u00b7 Concept illustration\". Do not include WRBG, personal details, actual project names, invented citations, regulator logos, official seals, compliance certification badges or claims of automated visual verification. Preserve distinctions and choices described in the steps. Strong visual storytelling and readable typography.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "Six panels and main workflow inspected. Sample UI content is illustrative. The linked skill and references remain authoritative."
+      }
+    },
+    {
+      "slug": "creative-seed-development",
+      "title": "Creative Seed Development",
+      "source_path": "creative-seed-development/SKILL.md",
+      "source_blob_sha": "ee19a8738e0e5696af6a0f740e9e14d30cf5d76c",
+      "asset": "assets/creative-seed-development.png",
+      "asset_sha256": "a9301a52ef106a390ad65781a38c1111baad9da46a709181465350c4c4648209",
+      "transcript": [
+        "01 Name the intended effect \u2014 tone, audience, stakes and dramatic function.",
+        "02 Examine the premise \u2014 identify recognizable bundles of expression.",
+        "03 Build independent choices \u2014 new causes, values, setting and visual logic.",
+        "04 Write the seed \u2014 premise, conflict, motives and a fresh sample scene.",
+        "05 Adapt across media \u2014 prose, screen, game and visual concept stay coherent.",
+        "06 Review and revise \u2014 record provenance, unresolved concerns and draft status."
+      ],
+      "limitation": "Creative development supports distinct expression; it is not legal clearance.",
+      "prompt": "Use case: ui-mockup. Render one polished six-panel storyboard image titled \"Creative Seed Development\". Subtitle \"Skill workflow \u00b7 Illustrative storyboard\". Landscape board, exactly three columns and two rows with six numbered panels read left to right. Match the visual series: charcoal-black desktop interfaces, cream editorial typography, violet connectors and restrained amber highlights, fine pencil annotations and directional arrows, elegant generous gutters. Each panel shows a concrete screen or desk interaction that enacts its step, NOT just a text card. Use legible short headings and concise captions. Detailed yet uncluttered diagrams, source notes, workflow cards and evidence panels appropriate to this skill. These are illustrative interfaces for instructions, not existing products. Exact narrative steps: 01 Name the intended effect \u2014 tone, audience, stakes and dramatic function.\n02 Examine the premise \u2014 identify recognizable bundles of expression.\n03 Build independent choices \u2014 new causes, values, setting and visual logic.\n04 Write the seed \u2014 premise, conflict, motives and a fresh sample scene.\n05 Adapt across media \u2014 prose, screen, game and visual concept stay coherent.\n06 Review and revise \u2014 record provenance, unresolved concerns and draft status. Footer verbatim \"Creative development supports distinct expression; it is not legal clearance.\" Small series credit \"chrisjones77/skills \u00b7 Concept illustration\". Do not include WRBG, personal details, actual project names, invented citations, regulator logos, official seals, compliance certification badges or claims of automated visual verification. Preserve distinctions and choices described in the steps. Strong visual storytelling and readable typography.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "Six panels and main workflow inspected. Sample UI content is illustrative. The linked skill and references remain authoritative."
+      }
+    },
+    {
+      "slug": "egbc-ai-professional-practice",
+      "title": "EGBC AI Professional Practice",
+      "source_path": "egbc-ai-professional-practice/SKILL.md",
+      "source_blob_sha": "1f279c4b8209343a424b68ab2d912c5fd1285e33",
+      "asset": "assets/egbc-ai-professional-practice.png",
+      "asset_sha256": "ad57cf0580d89ee2a815a0fa9f3c1e2eddf3cf5e78150ff61b85c92f9611c799",
+      "transcript": [
+        "01 Define the use \u2014 specific tool, version, task, data and consequence.",
+        "02 Establish context \u2014 jurisdiction, current guidance and project requirements.",
+        "03 Check competence \u2014 can the responsible professional challenge and verify output?",
+        "04 Assess the risks \u2014 hazards, information rights, controls, owners and unknowns.",
+        "05 Validate the result \u2014 independent methods, test evidence and competent review.",
+        "06 Record and revisit \u2014 decision, disclosure, monitoring and change triggers."
+      ],
+      "limitation": "Illustrates the skill workflow; professional responsibility stays with the professional.",
+      "prompt": "Use case: ui-mockup. Render one polished six-panel storyboard image titled \"EGBC AI Professional Practice\". Subtitle \"Skill workflow \u00b7 Illustrative storyboard\". Landscape board, exactly three columns and two rows with six numbered panels read left to right. Match the visual series: charcoal-black desktop interfaces, cream editorial typography, violet connectors and restrained amber highlights, fine pencil annotations and directional arrows, elegant generous gutters. Each panel shows a concrete screen or desk interaction that enacts its step, NOT just a text card. Use legible short headings and concise captions. Detailed yet uncluttered diagrams, source notes, workflow cards and evidence panels appropriate to this skill. These are illustrative interfaces for instructions, not existing products. Exact narrative steps: 01 Define the use \u2014 specific tool, version, task, data and consequence.\n02 Establish context \u2014 jurisdiction, current guidance and project requirements.\n03 Check competence \u2014 can the responsible professional challenge and verify output?\n04 Assess the risks \u2014 hazards, information rights, controls, owners and unknowns.\n05 Validate the result \u2014 independent methods, test evidence and competent review.\n06 Record and revisit \u2014 decision, disclosure, monitoring and change triggers. Footer verbatim \"Illustrates the skill workflow; professional responsibility stays with the professional.\" Small series credit \"chrisjones77/skills \u00b7 Concept illustration\". Do not include WRBG, personal details, actual project names, invented citations, regulator logos, official seals, compliance certification badges or claims of automated visual verification. Preserve distinctions and choices described in the steps. Strong visual storytelling and readable typography.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "Six panels and main workflow inspected. Sample UI content is illustrative. The linked skill and references remain authoritative."
+      }
+    },
+    {
+      "slug": "engineering-work-safety",
+      "title": "Engineering Work and Safety",
+      "source_path": "engineering-work-safety/SKILL.md",
+      "source_blob_sha": "5b79188121dce989d9603fd7004c77c8315ff3a9",
+      "asset": "assets/engineering-work-safety.png",
+      "asset_sha256": "9f4bc4fc24b35113e74c251e96e0bbdac16cb6e5bae502f04aecb584771d7b8b",
+      "transcript": [
+        "01 Orient \u00b7 0x0 \u2014 purpose, outcome, constraints and affected people.",
+        "02 Classify the task \u2014 use the canonical 0x1\u20130xF class and command map; the maintenance example is 0x2 Gardener / maintain.",
+        "03 Bound the schedule \u2014 dependencies, capacity, timing and overload response.",
+        "04 Exchange call and response \u2014 receipt, acceptance and start are distinct.",
+        "05 Respond to concerns \u2014 owner, interim protection, next action and revisit.",
+        "06 Review the outcome \u2014 completion, review and closure remain separate."
+      ],
+      "limitation": "Worker safety is a baseline; this reflection tool is not a safety case.",
+      "prompt": "Use case: ui-mockup. Render one polished six-panel storyboard image titled \"Engineering Work and Safety\". Subtitle \"Skill workflow \u00b7 Illustrative storyboard\". Landscape board, exactly three columns and two rows with six numbered panels read left to right. Match the visual series: charcoal-black desktop interfaces, cream editorial typography, violet connectors and restrained amber highlights, fine pencil annotations and directional arrows, elegant generous gutters. Each panel shows a concrete screen or desk interaction that enacts its step, NOT just a text card. Use legible short headings and concise captions. Detailed yet uncluttered diagrams, source notes, workflow cards and evidence panels appropriate to this skill. These are illustrative interfaces for instructions, not existing products. Exact narrative steps: 01 Orient \u00b7 0x0 \u2014 purpose, outcome, constraints and affected people.\n02 Classify the task \u2014 choose 0x1\u20130xF task class and a concrete command.\n03 Bound the schedule \u2014 dependencies, capacity, timing and overload response.\n04 Exchange call and response \u2014 receipt, acceptance and start are distinct.\n05 Respond to concerns \u2014 owner, interim protection, next action and revisit.\n06 Review the outcome \u2014 completion, review and closure remain separate. Footer verbatim \"Worker safety is a baseline; this reflection tool is not a safety case.\" Small series credit \"chrisjones77/skills \u00b7 Concept illustration\". Do not include WRBG, personal details, actual project names, invented citations, regulator logos, official seals, compliance certification badges or claims of automated visual verification. Preserve distinctions and choices described in the steps. Strong visual storytelling and readable typography.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "Six panels and main workflow inspected. Sample UI content is illustrative. The linked skill and references remain authoritative."
+      }
+    },
+    {
+      "slug": "forward-deployed-ai-engineer",
+      "title": "Forward-Deployed AI Engineer",
+      "source_path": "forward-deployed-ai-engineer/SKILL.md",
+      "source_blob_sha": "7d1b05464142c7fe02e00c1dffcfb94a9ac1b9fd",
+      "asset": "assets/forward-deployed-ai-engineer.png",
+      "asset_sha256": "86aa53f3f16d3f2dd274f597f5a578f4f3b10fe430c3eb27a1b2322640005389",
+      "transcript": [
+        "01 Scope the workflow \u2014 actor, purpose, data, authority and affected systems.",
+        "02 Discover requirements \u2014 current environment, constraints and evidence gaps.",
+        "03 Assess consequence \u2014 uncertainty, reversibility and blast radius.",
+        "04 Match existing controls \u2014 REUSE, ADAPT, REDESIGN or BUILD.",
+        "05 Test a bounded intervention \u2014 independent evidence and clear operating limits.",
+        "06 Operate and revisit \u2014 accountable owner, recovery and reassessment triggers."
+      ],
+      "limitation": "Minimum Responsible Methodology \u00b7 Scale rigor to the actual consequence.",
+      "prompt": "Use case: ui-mockup. Render one polished six-panel storyboard image titled \"Forward-Deployed AI Engineer\". Subtitle \"Skill workflow \u00b7 Illustrative storyboard\". Landscape board, exactly three columns and two rows with six numbered panels read left to right. Match the visual series: charcoal-black desktop interfaces, cream editorial typography, violet connectors and restrained amber highlights, fine pencil annotations and directional arrows, elegant generous gutters. Each panel shows a concrete screen or desk interaction that enacts its step, NOT just a text card. Use legible short headings and concise captions. Detailed yet uncluttered diagrams, source notes, workflow cards and evidence panels appropriate to this skill. These are illustrative interfaces for instructions, not existing products. Exact narrative steps: 01 Scope the workflow \u2014 actor, purpose, data, authority and affected systems.\n02 Discover requirements \u2014 current environment, constraints and evidence gaps.\n03 Assess consequence \u2014 uncertainty, reversibility and blast radius.\n04 Match existing controls \u2014 REUSE, ADAPT, REDESIGN or BUILD.\n05 Test a bounded intervention \u2014 independent evidence and clear operating limits.\n06 Operate and revisit \u2014 accountable owner, recovery and reassessment triggers. Footer verbatim \"Minimum Responsible Methodology \u00b7 Scale rigor to the actual consequence.\" Small series credit \"chrisjones77/skills \u00b7 Concept illustration\". Do not include WRBG, personal details, actual project names, invented citations, regulator logos, official seals, compliance certification badges or claims of automated visual verification. Preserve distinctions and choices described in the steps. Strong visual storytelling and readable typography.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "Six panels and main workflow inspected. Sample UI content is illustrative. The linked skill and references remain authoritative."
+      }
+    },
+    {
+      "slug": "image-card-coverage-harness",
+      "title": "Image and Card Coverage Harness",
+      "source_path": "image-card-coverage-harness/SKILL.md",
+      "source_blob_sha": "4c03a24130df36e2bc6437b5f6895e12c0a6b17c",
+      "asset": "assets/image-card-coverage-harness.png",
+      "asset_sha256": "2ea71f82167d60167975e1dac1443b445d21ef6403215b047029483269a78b2b",
+      "transcript": [
+        "01 Define the brief \u2014 required elements, exact text and forbidden drift.",
+        "02 Bind the candidate \u2014 asset path, version and SHA-256 digest.",
+        "03 Inspect the pixels \u2014 human compares image, brief and approved references.",
+        "04 Record the review \u2014 coverage, technical claims, regressions and lineage.",
+        "05 Validate the manifest \u2014 run structural and asset-binding checks; resolve blockers.",
+        "06 Decide separately \u2014 validation status, reviewer decision and release outcome."
+      ],
+      "limitation": "Hash checks establish byte identity; visual judgments remain human attestations.",
+      "prompt": "Use case: ui-mockup. Render one polished six-panel storyboard image titled \"Image and Card Coverage Harness\". Subtitle \"Skill workflow \u00b7 Illustrative storyboard\". Landscape board, exactly three columns and two rows with six numbered panels read left to right. Match the visual series: charcoal-black desktop interfaces, cream editorial typography, violet connectors and restrained amber highlights, fine pencil annotations and directional arrows, elegant generous gutters. Each panel shows a concrete screen or desk interaction that enacts its step, NOT just a text card. Use legible short headings and concise captions. Detailed yet uncluttered diagrams, source notes, workflow cards and evidence panels appropriate to this skill. These are illustrative interfaces for instructions, not existing products. Exact narrative steps: 01 Define the brief \u2014 required elements, exact text and forbidden drift.\n02 Bind the candidate \u2014 asset path, version and SHA-256 digest.\n03 Inspect the pixels \u2014 human compares image, brief and approved references.\n04 Record the review \u2014 coverage, technical claims, regressions and lineage.\n05 Validate the manifest \u2014 run structural and asset-binding checks; resolve blockers.\n06 Decide separately \u2014 validation status, reviewer decision and release outcome. Footer verbatim \"Hash checks establish byte identity; visual judgments remain human attestations.\" Small series credit \"chrisjones77/skills \u00b7 Concept illustration\". Do not include WRBG, personal details, actual project names, invented citations, regulator logos, official seals, compliance certification badges or claims of automated visual verification. Preserve distinctions and choices described in the steps. Strong visual storytelling and readable typography.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "Six panels and main workflow inspected. Sample UI content is illustrative. The linked skill and references remain authoritative."
+      }
+    },
+    {
+      "slug": "peo-guideline",
+      "title": "PEO Practice Guideline Reference",
+      "source_path": "peo-guideline/skill.md",
+      "source_blob_sha": "70cc9cefa21ecf648da2e61ba3343754ba90e4ae",
+      "asset": "assets/peo-guideline.png",
+      "asset_sha256": "3a6bdca121a50b7e2d71f60262e185d48b01f9b2cac2616e47b02d2fb5b99a0f",
+      "transcript": [
+        "01 Frame the question \u2014 scope, professional context and intended decision.",
+        "02 Find the section \u2014 navigate the skill's November 2020 guideline reference.",
+        "03 Verify the source \u2014 check current official material and its applicability.",
+        "04 Examine the facts \u2014 competence, relationships, confidentiality and evidence.",
+        "05 Explain with limits \u2014 source-grounded guidance and unresolved questions.",
+        "06 Record the next step \u2014 responsible professional decides; seek qualified advice where needed."
+      ],
+      "limitation": "Educational reference workflow \u00b7 No regulator endorsement or legal determination.",
+      "prompt": "Use case: ui-mockup. Render one polished six-panel storyboard image titled \"PEO Practice Guideline Reference\". Subtitle \"Skill workflow \u00b7 Illustrative storyboard\". Landscape board, exactly three columns and two rows with six numbered panels read left to right. Match the visual series: charcoal-black desktop interfaces, cream editorial typography, violet connectors and restrained amber highlights, fine pencil annotations and directional arrows, elegant generous gutters. Each panel shows a concrete screen or desk interaction that enacts its step, NOT just a text card. Use legible short headings and concise captions. Detailed yet uncluttered diagrams, source notes, workflow cards and evidence panels appropriate to this skill. These are illustrative interfaces for instructions, not existing products. Exact narrative steps: 01 Frame the question \u2014 scope, professional context and intended decision.\n02 Find the section \u2014 navigate the skill's November 2020 guideline reference.\n03 Verify the source \u2014 check current official material and its applicability.\n04 Examine the facts \u2014 competence, relationships, confidentiality and evidence.\n05 Explain with limits \u2014 source-grounded guidance and unresolved questions.\n06 Record the next step \u2014 responsible professional decides; seek qualified advice where needed. Footer verbatim \"Educational reference workflow \u00b7 No regulator endorsement or legal determination.\" Small series credit \"chrisjones77/skills \u00b7 Concept illustration\". Do not include WRBG, personal details, actual project names, invented citations, regulator logos, official seals, compliance certification badges or claims of automated visual verification. Preserve distinctions and choices described in the steps. Strong visual storytelling and readable typography.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "Six panels and main workflow inspected. Sample UI content is illustrative. The linked skill and references remain authoritative."
+      }
+    },
+    {
+      "slug": "stickler-prime",
+      "title": "Stickler Prime",
+      "source_path": "stickler-prime/SKILL.md",
+      "source_blob_sha": "c2fc9f9b430b7ad7a835329966850a499e65a6e9",
+      "asset": "assets/stickler-prime.png",
+      "asset_sha256": "e8549fbb75f75581727758b8fb603a16bb93beb092c533f21f6b34fdc5a1d103",
+      "transcript": [
+        "01 Define the review \u2014 audience, scope, criteria and source material.",
+        "02 Select the lens \u2014 Audit and Defense, Repair and Reform, document or procurement.",
+        "03 Separate the evidence \u2014 facts, reports, inference and unknowns.",
+        "04 Identify the concern \u2014 fair process, trust, workload and missing controls.",
+        "05 Plan a repair \u2014 accountable owner, agency, interim protection and revisit.",
+        "06 Check effectiveness \u2014 retain unresolved concerns and report evidence limits."
+      ],
+      "limitation": "Evidence and dignity together \u00b7 Review support is not certification.",
+      "prompt": "Use case: ui-mockup. Render one polished six-panel storyboard image titled \"Stickler Prime\". Subtitle \"Skill workflow \u00b7 Illustrative storyboard\". Landscape board, exactly three columns and two rows with six numbered panels read left to right. Match the visual series: charcoal-black desktop interfaces, cream editorial typography, violet connectors and restrained amber highlights, fine pencil annotations and directional arrows, elegant generous gutters. Each panel shows a concrete screen or desk interaction that enacts its step, NOT just a text card. Use legible short headings and concise captions. Detailed yet uncluttered diagrams, source notes, workflow cards and evidence panels appropriate to this skill. These are illustrative interfaces for instructions, not existing products. Exact narrative steps: 01 Define the review \u2014 audience, scope, criteria and source material.\n02 Select the lens \u2014 Audit and Defense, Repair and Reform, document or procurement.\n03 Separate the evidence \u2014 facts, reports, inference and unknowns.\n04 Identify the concern \u2014 fair process, trust, workload and missing controls.\n05 Plan a repair \u2014 accountable owner, agency, interim protection and revisit.\n06 Check effectiveness \u2014 retain unresolved concerns and report evidence limits. Footer verbatim \"Evidence and dignity together \u00b7 Review support is not certification.\" Small series credit \"chrisjones77/skills \u00b7 Concept illustration\". Do not include WRBG, personal details, actual project names, invented citations, regulator logos, official seals, compliance certification badges or claims of automated visual verification. Preserve distinctions and choices described in the steps. Strong visual storytelling and readable typography.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "Six panels and main workflow inspected. Sample UI content is illustrative. The linked skill and references remain authoritative."
+      }
+    }
+  ]
+}

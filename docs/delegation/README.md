@@ -30,6 +30,10 @@ Default to Review for requests to review, audit, assess, or validate. Do not inf
 
 ## Task brief requirements
 
+The [brief template](templates/dispatch-brief.md) groups its fields under Situation, Task, Intent and Limitations, adapted from a user-supplied STIL example. STILwaterAI’s [public training outline](https://stilwater.ai/services/ai-awareness-and-readiness/) supplies context, not a public definition of the four components or verification of the complete framework. The grouping clarifies context, deliverable, purpose and boundaries without replacing the requirements below. It adds no schema, runtime or contract activation.
+
+On the next genuine bounded task, try this structure and record whether it reduced ambiguity, rework or operator effort, with concrete examples and any missing information. Treat the result as a local observation, not proof of effectiveness. Do not invent a task or activate an optional contract just to complete a trial.
+
 Every dispatch states:
 
 - **Objective**: one concrete answer or deliverable.

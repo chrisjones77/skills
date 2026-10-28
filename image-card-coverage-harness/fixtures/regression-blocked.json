@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.4.0",
+  "schema_version": "1.5.0",
   "artifact_id": "DEMO-BRIDGE-REGRESSION-001",
   "artifact_type": "infrastructure_card",
   "brief": {
@@ -85,7 +85,8 @@
       "items": []
     },
     "reviewer": "fixture",
-    "decision": "revise"
+    "decision": "revise",
+    "reviewer_kind": "human"
   },
   "provenance": {
     "source_kind": "synthetic_fixture",

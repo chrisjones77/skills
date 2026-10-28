@@ -1,0 +1,145 @@
+{
+  "schema_version": "1.5.0",
+  "artifact_id": "CURRENT-GALLERY-build-music-video",
+  "artifact_type": "illustration",
+  "brief": {
+    "subject": "Build Music Video six-panel illustrative workflow",
+    "canonical_constraints": [
+      {
+        "constraint_id": "WORKFLOW",
+        "statement": "Six ordered panels summarize the linked current skill without asserting real execution or acceptance.",
+        "source": "build-music-video/SKILL.md blob 1b75bbe1b01b3d0f38298107c7e2bb9990c18a43",
+        "mutability": "immutable"
+      }
+    ],
+    "forbidden_drift": [
+      "human acceptance or actual release inferred from assistant review"
+    ],
+    "required_text": [
+      {
+        "text_id": "TITLE",
+        "exact": "Build Music Video",
+        "case_sensitive": true
+      }
+    ],
+    "technical_claims": [
+      {
+        "claim_id": "SAMPLE-UI",
+        "text": "UI data and results are fictional illustrative examples, not verified calculations.",
+        "status": "fictional_labelled",
+        "evidence_ref": "README.md"
+      }
+    ],
+    "creative_deviations_policy": "Generated sample interface details are illustrative; source skills take precedence."
+  },
+  "generation": {
+    "id": "build-music-video-20261028",
+    "parent_generation_id": null,
+    "requested_delta": [
+      "Add current video workflow"
+    ],
+    "preservation_targets": [
+      "six-panel sequence",
+      "charcoal cream violet amber series"
+    ],
+    "regression_checks": [
+      {
+        "check_id": "BOUNDARY",
+        "requirement": "No real acceptance implied",
+        "status": "pass",
+        "evidence_note": "Assistant inspected six panels and framing/timing/continuity distinctions. Source identity, lyric/performance separation, estimated captions, structural versus listening checks and editable deliverables are visible. Generated sample numeric metadata is illustrative, not internally verified; no listening or human acceptance."
+      }
+    ]
+  },
+  "review": {
+    "artifact_type_fit": {
+      "status": "pass",
+      "note": "Illustrative skill workflow, not functioning software."
+    },
+    "canonical_constraints": [
+      {
+        "constraint_id": "WORKFLOW",
+        "status": "pass",
+        "evidence_note": "Assistant inspected six panels and framing/timing/continuity distinctions. Source identity, lyric/performance separation, estimated captions, structural versus listening checks and editable deliverables are visible. Generated sample numeric metadata is illustrative, not internally verified; no listening or human acceptance."
+      }
+    ],
+    "forbidden_drift": [
+      {
+        "item": "human acceptance or actual release inferred from assistant review",
+        "status": "pass",
+        "evidence_note": "Gallery states pending; coverage board shows HOLD, video panel separates watching and listening."
+      }
+    ],
+    "regression_review": {
+      "status": "pass",
+      "compared_to": [
+        "current skill",
+        "retained series baseline"
+      ],
+      "note": "Assistant inspected six panels and framing/timing/continuity distinctions. Source identity, lyric/performance separation, estimated captions, structural versus listening checks and editable deliverables are visible. Generated sample numeric metadata is illustrative, not internally verified; no listening or human acceptance."
+    },
+    "minimal_delta": {
+      "status": "pass",
+      "preserved_target_ids": [
+        "six-panel sequence",
+        "charcoal cream violet amber series"
+      ],
+      "note": "Series palette and six ordered panels retained."
+    },
+    "synthetic_familiarity": {
+      "status": "pass",
+      "unrequested_recurring_elements_checked": [
+        "private project lore",
+        "regulator seals"
+      ],
+      "note": "No private lore or endorsement observed."
+    },
+    "reference_fidelity": {
+      "status": "not_applicable",
+      "reference_ids": [],
+      "deidentification_review": "not_applicable"
+    },
+    "technical_evidence": {
+      "status": "pass",
+      "included_claim_ids": [],
+      "excluded_claim_ids": [],
+      "fictional_labelled_claim_ids": [
+        "SAMPLE-UI"
+      ]
+    },
+    "typography": {
+      "status": "pass",
+      "items": [
+        {
+          "text_id": "TITLE",
+          "status": "pass",
+          "observed_text": "Build Music Video"
+        }
+      ]
+    },
+    "collection_consistency": {
+      "status": "pass",
+      "collection_id": "SKILL-STORYBOARDS",
+      "baseline_ref": "revisions/20261022/README.md",
+      "dimensions_checked": [
+        "palette",
+        "sequence",
+        "type hierarchy"
+      ]
+    },
+    "creative_deviations": {
+      "status": "not_applicable",
+      "items": []
+    },
+    "reviewer": "Codex assistant",
+    "reviewer_kind": "assistant",
+    "decision": "hold",
+    "acceptance_evidence": null
+  },
+  "provenance": {
+    "source_kind": "generated_image",
+    "created_for_archive": false,
+    "asset_ref": "assets/build-music-video.png",
+    "asset_sha256": "8efcc7f838c61571138e6ea6d72e956c878a1b2b1064d8f0b495f7714dbf6400"
+  }
+}
