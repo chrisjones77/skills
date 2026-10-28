@@ -11,7 +11,7 @@
       "slug": "harnessed-dispatch",
       "title": "Harnessed Dispatch",
       "source_path": ".agents/skills/harnessed-dispatch/SKILL.md",
-      "source_blob_sha": "5d04d4a54407bc623b8cceaafc42ec049ab8a9ce",
+      "source_blob_sha": "d45c0fb3359b0e1f9e8cf557e18cb5e8d4c2f8f8",
       "asset": "assets/harnessed-dispatch.png",
       "asset_sha256": "d0abf5b09ae508e136081c2de517e0a3073a1bbda814c202d64014aadb7107f1",
       "transcript": [
@@ -59,7 +59,7 @@
       "slug": "call-and-response-harness",
       "title": "Gentle Boss · Call and Response",
       "source_path": "call-and-response-harness/SKILL.md",
-      "source_blob_sha": "c88d6ce38d64de4ff582f21bd202681e64e81f98",
+      "source_blob_sha": "a4cf24e8336bea73392b740aa527ae935e24835b",
       "asset": "assets/call-and-response-harness.png",
       "asset_sha256": "2b299ce340a4e3093f8100d013e906d9da44f3cda997e435c3f3b6f9455e928c",
       "transcript": [
@@ -131,7 +131,7 @@
       "slug": "engineering-work-safety",
       "title": "Engineering Work and Safety",
       "source_path": "engineering-work-safety/SKILL.md",
-      "source_blob_sha": "5b79188121dce989d9603fd7004c77c8315ff3a9",
+      "source_blob_sha": "7647350a84f484fa0ad32c460b7eeb256b83a898",
       "asset": "assets/engineering-work-safety.png",
       "asset_sha256": "9f4bc4fc24b35113e74c251e96e0bbdac16cb6e5bae502f04aecb584771d7b8b",
       "transcript": [
@@ -155,7 +155,7 @@
       "slug": "forward-deployed-ai-engineer",
       "title": "Forward-Deployed AI Engineer",
       "source_path": "forward-deployed-ai-engineer/SKILL.md",
-      "source_blob_sha": "7d1b05464142c7fe02e00c1dffcfb94a9ac1b9fd",
+      "source_blob_sha": "a0f80cf6c2678afa340da93f0b72c09965cff474",
       "asset": "assets/forward-deployed-ai-engineer.png",
       "asset_sha256": "86aa53f3f16d3f2dd274f597f5a578f4f3b10fe430c3eb27a1b2322640005389",
       "transcript": [

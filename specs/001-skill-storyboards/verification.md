@@ -82,3 +82,20 @@ Current source snapshot: a0fd63828396401bc28998069bf31664bc4090de. Eleven boards
 Twelve-entrypoint inventory and Farmer Jones Victory Garden illustration integrated; existing selected assets preserved. Assistant inspected evidence labels, measured/estimated distinction and preservation HOLD boundary. No actual recipe, site-specific physical-work procedure or private configuration is included. Current validation/review and CI results recorded on PR #17; desktop/narrow human acceptance of this new board remains unreported.
 
 Current twelve-board validator and whitespace checks passed. The gardening coverage manifest reports verified asset binding, clear validation, assistant HOLD, release HOLD and zero manifest blockers. Independent read-only review found no blockers; it confirmed all twelve source/asset bindings and preservation of the prior eleven records/assets. These are source and declaration checks, not actual recipe or human browser acceptance.
+
+## PR18 source reconciliation — 2026-10-28
+
+The four entrypoints below gained an optional work-contract interface and portable
+local reference links. Their existing six-step text transcripts still describe
+the general workflows; they do not depict assignment-revision acceptance, contract
+clarification exits, or adapter capabilities. No image was regenerated or newly
+visually accepted. Updated byte bindings identify the reviewed entrypoints only,
+not full visual coverage of the new interface. Existing image provenance and
+human-acceptance limitations remain unchanged. Git retains the previous manifest.
+
+| Board | Previous source blob | Reconciled source blob |
+| --- | --- | --- |
+| harnessed-dispatch | `5d04d4a54407bc623b8cceaafc42ec049ab8a9ce` | `d45c0fb3359b0e1f9e8cf557e18cb5e8d4c2f8f8` |
+| call-and-response-harness | `c88d6ce38d64de4ff582f21bd202681e64e81f98` | `a4cf24e8336bea73392b740aa527ae935e24835b` |
+| engineering-work-safety | `5b79188121dce989d9603fd7004c77c8315ff3a9` | `7647350a84f484fa0ad32c460b7eeb256b83a898` |
+| forward-deployed-ai-engineer | `7d1b05464142c7fe02e00c1dffcfb94a9ac1b9fd` | `a0f80cf6c2678afa340da93f0b72c09965cff474` |

@@ -29,7 +29,7 @@ These are linked event dimensions, not one required linear sequence. Understandi
 
 ## Basic call episode
 
-For a machine-recorded exchange, apply the [work contract interface](../../docs/work-contract-interface.md). The runtime supplies only its demonstrated subset of this protocol. Resolve versions and capabilities before mapping replies or transferring state; retain the actual reply and any unrepresented fields in the authorized source record. A silent timeout remains caller-owned follow-up even if the runtime stores it alongside dispositions.
+For a machine-recorded exchange, apply the [work contract interface](work-contract-interface.md). The runtime supplies only its demonstrated subset of this protocol. Resolve versions and capabilities before mapping replies or transferring state; retain the actual reply and any unrepresented fields in the authorized source record. A silent timeout remains caller-owned follow-up even if the runtime stores it alongside dispositions.
 
 ```text
 orient/frame → issue call → receive reply → clarify if needed → record disposition

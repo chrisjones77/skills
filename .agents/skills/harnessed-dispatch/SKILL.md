@@ -12,7 +12,7 @@ Use this procedure when a bounded delegation would help with work in a repositor
 ## Procedure
 
 When an assignment uses a contract runtime, first read the
-[work contract interface](../../../docs/work-contract-interface.md) and the
+[work contract interface](references/work-contract-interface.md) and the
 project's adapter. Bind recipient acceptance to the exact offered revision and
 verify workspace ownership separately. A declared handoff procedure does not mean
 the runtime implements contract transfer. If it does not, preserve the record and

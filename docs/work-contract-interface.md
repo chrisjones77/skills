@@ -118,3 +118,11 @@ different runtime, merged base, installed skill revision or operating envelope.
 These are review scenarios, not a new executable schema or validated measure of
 worker outcomes. Project overlays own exact commands, field mappings, pinned
 implementation sources and remaining capability gaps.
+
+## Packaging maintenance
+
+The four participating skills bundle an identical copy of this interface in
+`references/work-contract-interface.md` so directory-only installation works.
+When this canonical guide changes, refresh those copies and verify byte equality;
+repository documentation continues to link here. No installation is performed
+by this guidance.

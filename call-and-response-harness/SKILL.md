@@ -23,7 +23,7 @@ Read [references/state-matrix.md](references/state-matrix.md) for the bit map, a
 
 ## When work uses a contract runtime
 
-Use the [skills and work contract interface](../docs/work-contract-interface.md)
+Use the [skills and work contract interface](references/work-contract-interface.md)
 for exact-assignment acceptance and the assigner → worker → human → worker
 clarification loop. Preserve actual replies; keep optional BH posture outside a
 packet that cannot represent it. Check the runtime's supported exits and routes.

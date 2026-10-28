@@ -23,7 +23,7 @@ Read [references/framework.md](references/framework.md) for the task-class and c
 
 ## When work uses a contract runtime
 
-Use the [skills and work contract interface](../docs/work-contract-interface.md)
+Use the [skills and work contract interface](references/work-contract-interface.md)
 to supply orientation, engineering purpose, a concrete outcome and evidence
 criterion, and material concerns. Keep purpose separate from dispatch kind and
 transfer kind. Confirm which checks the selected implementation actually supports;

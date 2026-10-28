@@ -111,7 +111,7 @@ This record is a planning aid. Formal scheduling guarantees require an appropria
 
 ### Response lifecycle and half-duplex handoff
 
-When a runtime records this lifecycle, use the [work contract interface](../../docs/work-contract-interface.md) and the project's declared adapter. This framework describes the broader coordination practice; a particular implementation may support only part of it. Keep unsupported scheduling, intake, posture or transfer facts in the existing authorized record, and report a missing mapping before dependent effects. A mode code never supplies an executable operation or permission.
+When a runtime records this lifecycle, use the [work contract interface](work-contract-interface.md) and the project's declared adapter. This framework describes the broader coordination practice; a particular implementation may support only part of it. Keep unsupported scheduling, intake, posture or transfer facts in the existing authorized record, and report a missing mapping before dependent effects. A mode code never supplies an executable operation or permission.
 
 Use this lifecycle when work is explicitly dispatched. It is a coordination aid, not a required ceremony for ordinary collaboration.
 

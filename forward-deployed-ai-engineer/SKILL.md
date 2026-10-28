@@ -252,7 +252,7 @@ If completing the assignment requires authority not granted, request it with jus
 ## Contract runtime boundary
 
 When the assignment uses a contract runtime, apply the
-[work contract interface](../docs/work-contract-interface.md). Supply the
+[work contract interface](references/work-contract-interface.md). Supply the
 proportionate method, authoritative inputs, evidence criteria and revisit
 conditions; use the runtime for its supported record/transition checks. A
 consistent assignment does not establish that its method, authority or evidence
