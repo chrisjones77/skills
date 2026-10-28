@@ -4,7 +4,7 @@ Ten six-panel concept illustrations explain the skills at source revision `647e9
 
 These are AI-generated illustrations of instructions, not screenshots of implemented tools. Sample names, results, metrics, dates and UI controls are fictional. Text transcripts summarize the workflow; the linked skill and its references take precedence. Professional-practice boards are educational workflow summaries, not current legal or regulatory advice or regulator endorsement.
 
-[Local HTML gallery](index.html) · [Source and asset manifest](manifest.json) · [Generation prompts and revision notes](generation.json) · [Feature specification](../../specs/001-skill-storyboards/spec.md)
+[Local HTML gallery](index.html) · [Source and asset manifest](manifest.json) · [Generation prompts and revision notes](generation.json) · [Asset lineage and edit prompts](asset-lineage.json) · [Feature specification](../../specs/001-skill-storyboards/spec.md) · [Work and safety record](../../specs/001-skill-storyboards/work-and-safety.md)
 
 For the HTML view, open `docs/skill-storyboards/index.html` from a local checkout. GitHub renders the Markdown gallery below directly. No hosting, build or network connection is needed for the local gallery.
 

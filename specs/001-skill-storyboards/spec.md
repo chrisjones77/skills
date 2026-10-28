@@ -52,6 +52,7 @@ A reader opens the gallery from a checkout and navigates to individual images an
 - **FR-007**: Keep the existing skill files unchanged. Treat generated screens as fictional examples and source references as authoritative.
 - **FR-008**: Validate coverage, source/asset bindings, local link containment and offline resources. Do not label structural checks as automated visual verification.
 - **FR-009**: Record unresolved limitations and human acceptance honestly. Creating a PR does not approve, merge or deploy the work.
+- **FR-010**: Preserve a work and safety record covering authority, actions, evidence limits, affected people/systems, concern ownership, review capacity, escalation, recovery and remaining review gates. Retain all five edit prompts and their parent/final asset digests for the ten-board series.
 
 ## Edge cases
 
@@ -74,6 +75,7 @@ A reader opens the gallery from a checkout and navigates to individual images an
 - **SC-003**: Every board has six text steps and reachable source/asset links; all gallery local links resolve inside the checkout.
 - **SC-004**: The gallery contains no external executable or presentation dependency and no local absolute paths.
 - **SC-005**: Visual inspection records meaningful corrections and does not claim human acceptance or current regulatory verification.
+- **SC-006**: The [work and safety record](work-and-safety.md) and [asset lineage](../../docs/skill-storyboards/asset-lineage.json) trace the ten initial images, five revisions and unresolved decisions without machine paths or invented acceptance.
 
 ## Assumptions and exclusions
 

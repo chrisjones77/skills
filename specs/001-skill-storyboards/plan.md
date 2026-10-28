@@ -35,6 +35,7 @@ docs/skill-storyboards/
   index.html
   manifest.json
   generation.json
+  asset-lineage.json
   assets/*.png
 scripts/validate_storyboards.py
 .github/workflows/skill-storyboards.yml
@@ -43,6 +44,7 @@ specs/001-skill-storyboards/
   plan.md
   tasks.md
   verification.md
+  work-and-safety.md
 ```
 
 ## Validation and review
@@ -50,5 +52,7 @@ specs/001-skill-storyboards/
 Check portable paths, PNG headers/digests, Git blob SHA bindings, ten-entrypoint coverage, six-step transcripts, gallery source/image links and absence of external resources. Exercise failure cases for changed bytes, missing source coverage and unsafe links in temporary copies. Inspect browser rendering at desktop and narrow widths. Inspect each generated board for main narrative and material contradictions, record corrections, and disclose minor nonauthoritative sample content. Run `git diff --check` before commit.
 
 ## Spec Kit reference
+
+The user subsequently requested full work/safety documentation. [work-and-safety.md](work-and-safety.md) records authority, scheduling limits, affected people/systems, evidence chronology, concerns, escalation and remaining review. `asset-lineage.json` records initial/parent/final hashes and the five exact edit prompts. The validator checks parent continuity and final-manifest binding; it cannot reconstruct or inspect omitted intermediate image bytes. Referenced-document drift remains a manual review concern rather than an automated source-binding claim.
 
 This packet adapts the structure described by [GitHub Spec Kit](https://github.com/github/spec-kit) and its [specification](https://github.com/github/spec-kit/blob/main/templates/spec-template.md), [plan](https://github.com/github/spec-kit/blob/main/templates/plan-template.md) and [task](https://github.com/github/spec-kit/blob/main/templates/tasks-template.md) templates, consulted 2026-10-22. It is a manual adaptation, not output attributed to unrun Spec Kit commands.

@@ -101,6 +101,37 @@ def validate(root):
         require(b['review'].get('method') == 'AI visual inspection against source and brief', 'Unlabelled review method: ' + label)
         require(b['review'].get('human_acceptance') == 'pending', 'Unsubstantiated human acceptance: ' + label)
     require({p.relative_to(gallery).as_posix() for p in (gallery / 'assets').glob('*.png')} == {b['asset'] for b in boards}, 'Untracked/extra PNG in gallery')
+    lineage = json.loads((gallery / 'asset-lineage.json').read_text())
+    require(lineage.get('schema_version') == 1, 'Unsupported lineage schema')
+    generation = json.loads((gallery / 'generation.json').read_text())
+    initial_prompts = generation.get('initial_prompts', [])
+    history = lineage['boards']
+    require(len(history) == len(boards) and {b['slug'] for b in history} == set(slugs), 'Lineage inventory differs')
+    require(lineage.get('human_acceptance') == 'pending', 'Unsubstantiated lineage acceptance')
+    revisions = 0
+    for record in history:
+        stages = record['stages']
+        selected = next((b for b in boards if b['slug'] == record['slug']), None)
+        if selected is None:
+            require(False, 'Unknown lineage board: ' + record['slug'])
+            continue
+        if not stages:
+            require(False, 'Missing initial lineage stage: ' + record['slug'])
+            continue
+        require(stages[0]['stage'] == 'initial', 'Missing initial lineage stage: ' + record['slug'])
+        require(stages[0].get('prompt_record') == 'generation.json: initial_prompts entry with matching slug', 'Invalid initial prompt pointer: ' + record['slug'])
+        matching_prompts = [p for p in initial_prompts if p.get('slug') == record['slug']]
+        require(len(matching_prompts) == 1 and isinstance(matching_prompts[0].get('prompt'), str) and bool(matching_prompts[0]['prompt'].strip()), 'Missing or ambiguous initial prompt: ' + record['slug'])
+        for index, stage in enumerate(stages):
+            require(bool(re.fullmatch(r'[0-9a-f]{64}', stage.get('asset_sha256', ''))), 'Invalid lineage digest: ' + record['slug'])
+            if index:
+                require(stage.get('parent_sha256') == stages[index - 1]['asset_sha256'], 'Broken lineage parent: ' + record['slug'])
+                require(bool(stage.get('edit_prompt', '').strip()), 'Missing edit prompt: ' + record['slug'])
+                revisions += 1
+        require(record['selected_asset'] == selected['asset'], 'Lineage asset differs: ' + record['slug'])
+        require(stages[-1]['asset_sha256'] == record['selected_asset_sha256'] == selected['asset_sha256'], 'Lineage final binding differs: ' + record['slug'])
+    require(lineage.get('generation_count') == len(history), 'Lineage initial generation count differs')
+    require(lineage.get('revision_count') == revisions, 'Lineage revision count differs')
     parser = GalleryParser()
     html = (gallery / 'index.html').read_text()
     parser.feed(html)
@@ -139,7 +170,7 @@ def main():
         for error in errors:
             print('ERROR: ' + error, file=sys.stderr)
         return 1
-    print('PASS: 10 boards; inventory, source/asset byte bindings, six-step transcripts, links and offline HTML structure.')
+    print('PASS: 10 boards; inventory, source/asset byte bindings, revision lineage, six-step transcripts, links and offline HTML structure.')
     print('LIMIT: Structural checks do not inspect pixels, establish rights or record human acceptance.')
     return 0
 

@@ -5,6 +5,8 @@
 **Human acceptance**: Pending PR review.
 **Release**: Proposed documentation on a task branch; no merge or deployment.
 
+[Full work and safety record](work-and-safety.md) · [Asset lineage and edit prompts](../../docs/skill-storyboards/asset-lineage.json)
+
 ## Source and scope
 
 The repository reported private visibility at inspection. Its main revision was `647e97ad215956b06edc6daa4b4c1c790ebe3b9b`. The recursive tree was complete and contained ten skill entrypoints, including the two hidden `.agents/skills` entries and lowercase PEO file. The isolated checkout was clean before work. No repository constitution, Spec Kit scaffold, AGENTS.md or contribution guide was present. Existing skill files were not modified.
@@ -21,6 +23,7 @@ The repository reported private visibility at inspection. Its main revision was 
 | FR-003 / SC-005 visual review | Reviewed with limits | Each rendered image was inspected for its main six-panel narrative. Material corrections are recorded below. This was AI inspection, not independent human acceptance. |
 | Desktop/narrow browser rendering | Not verified | Local HTTP serving was denied by the execution sandbox; direct local-file preview was rejected by browser URL policy. No alternate preview was attempted after the browser rejection. Static checks do not prove rendered accessibility or responsive behavior. |
 | Full staged diff / whitespace | Pass | Inspected the task-only staged change and corrected Markdown hard-break whitespace; `git diff --cached --check` passes. |
+| Follow-up lineage record | Recorded | Ten initial image digests and five parent/child revisions were recomputed from retained candidates. Final digests match the selected package. The validator checks record continuity and final bindings, not omitted intermediate pixels. |
 
 ## Commands and negative checks
 
@@ -35,6 +38,8 @@ An author-side scratch copy exercised five mutations. Each produced the expected
 5. Added an eleventh skill entrypoint → inventory mismatch.
 
 The scratch harness is not part of the repository feature. It modified temporary copies only.
+
+The follow-up reran the passing baseline and the five original mutations, and added a sixth mutation: corrupting a revision's parent digest produced the expected `Broken lineage parent` error. All six negative cases passed in temporary copies. CI evidence for the initial proposal and delivery checkpoint is linked in the work/safety record; current-head results remain on PR #15. A completed validation job and an aggregate run status can differ at observation time, and neither is substituted for human acceptance.
 
 ## Visual corrections
 

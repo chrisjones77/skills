@@ -32,3 +32,10 @@ Dependencies: source verification precedes packaging; package precedes validatio
 - [x] T014 Inspect the full staged diff and run `git diff --check`.
 - [x] T015 Commit and push the named task branch, create [PR #15](https://github.com/chrisjones77/skills/pull/15) and attach it to the chat. CI results are tracked on the PR.
 - [ ] T016 Maintainer review and acceptance (outside author authority; remains pending).
+
+## Follow-up — Document the work and safety
+
+- [x] T017 Record authority, execution chronology, affected people/systems, task/scheduling boundaries, concern ownership and escalation in `work-and-safety.md`.
+- [x] T018 Retain ten initial image hashes, five edit prompts and parent/final digest continuity in `docs/skill-storyboards/asset-lineage.json`.
+- [x] T019 Cross-link the record from the feature packet and galleries; extend structural validation to the lineage record.
+- [ ] T020 Deliver the documentation follow-up to PR #15 after review and verification; record the actual pushed revision and its CI result. Browser and human review remain pending.
