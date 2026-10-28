@@ -6,6 +6,12 @@ A delegated task is not an ownership transfer. Verify a candidate worker's actua
 
 ## Modes
 
+The [work contract interface](../work-contract-interface.md) distinguishes skill
+guidance from runtime capabilities. Here, "mode" means dispatch kind. An optional
+0xF engineering purpose and any ownership-transfer kind are separate. If a
+contract runtime lacks transfer or reoffer support, preserve the source record
+and report the gap before continuing dependent work.
+
 - **Review**: read-only inspection, findings first, no edits.
 - **Implementation**: one bounded patch in an isolated agent workspace. The primary agent integrates and verifies it.
 - **Research**: read-only investigation with source-backed conclusions.

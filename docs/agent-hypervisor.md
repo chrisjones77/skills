@@ -30,6 +30,12 @@ Use the native tool exposed by the active harness. In the Codex runtime document
 
 ## Task packet
 
+Use the [work contract interface](work-contract-interface.md) to distinguish
+assignment identity, engineering purpose, dispatch kind, recipient disposition and
+runtime capabilities. The sketch below is a portable description, not a runtime
+import schema. An implementation's stricter contract and unsupported transitions
+must be checked before transferring or continuing work.
+
 Use a portable Markdown or JSON packet with these fields. The repository's [task-packet YAML template](delegation/templates/task-packet.yaml) is one fill-in format. Omit sensitive or irrelevant history; include exact paths and identifiers when they are needed to resume safely. Populate packets in task-local/private context and do not commit them by default.
 
 ```yaml
@@ -38,7 +44,7 @@ task_id: stable-local-identifier
 objective: user-stated outcome
 status: active
 owner: hypervisor | agent-name
-mode: clean-handoff | takeover
+mode: Review | Research | Implementation # Dispatch kind; transfer kind belongs in handoff
 workspace:
   repository: path-or-repo-identity
   branch_or_revision: exact-value

@@ -21,6 +21,16 @@ Use this framework to discuss engineering work across **silicon, flesh, and in b
 
 Read [references/framework.md](references/framework.md) for the task-class and command map, task model and scheduling prompts, worker-dispatch response lifecycle, half-duplex handoff rules, worked scenarios, concern-response path, and lightweight records.
 
+## When work uses a contract runtime
+
+Use the [skills and work contract interface](references/work-contract-interface.md)
+to supply orientation, engineering purpose, a concrete outcome and evidence
+criterion, and material concerns. Keep purpose separate from dispatch kind and
+transfer kind. Confirm which checks the selected implementation actually supports;
+do not infer acceptance, authority or a safe workplace from a valid packet.
+Scheduling judgment and the safety baseline remain with the work's responsible
+people and process. Ordinary work does not require a Hypervisor installation.
+
 When a named standard informs the discussion, record its identifier, title, edition, and the topic it informs. State whether it is used as inspiration or under a separately established conformity obligation. If applicability is unresolved, mark it as a candidate for review; do not assume it is mandatory or optional. Use the [standards lens record](references/framework.md#standards-lens-record) or reference an existing equivalent record. Keep clause-level evidence and compliance decisions in the separate assessment process.
 
 ## Safety commitments

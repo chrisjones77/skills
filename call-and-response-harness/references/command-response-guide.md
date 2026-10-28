@@ -58,7 +58,7 @@ For any command–response pairing, use the relevant anchor to identify what wou
 | Record | The information to capture, its source, the record location, and whether the record was actually made. |
 | Communicate | The content, intended audience, channel, and whether the message was sent or received. |
 | Design | The design artifact, constraints, alternatives, and required review or decision. |
-| Represent | The subject represented, the chosen model or view, provenance, and fidelity or validation limits. |
+| Represent | The affected people or interests, the basis and limits of representation, the needs or concerns raised, and their disposition or named follow-up owner. |
 | Prioritize | The options, criteria, ordering, rationale, and authority for setting that order. |
 | Teach | The topic, audience, materials or activity, and evidence of learning; attendance alone is not comprehension. |
 | Verify | The criterion, method or test, evidence, result, and any unresolved criteria. |

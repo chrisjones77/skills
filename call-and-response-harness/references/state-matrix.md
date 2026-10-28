@@ -31,7 +31,7 @@ Use otherwise matched situations to check whether the axes remain interpretable 
 |---|---|---|---|---|
 | Stance | A straightforward request could use a small improvement; recipient is ready to proceed. | BH-0: act toward the improvement. | BH-8: contemplate the same opportunity, poised to take a bounded step. | Stance only. |
 | Direction | A complex request is safe to examine, but scope can be reduced. | BH-A: contemplate and engage interdependencies. | BH-E: contemplate and simplify, withdraw, or hand off. | Direction only. |
-| Complexity | Recipient contemplates deepening the request and is ready for a bounded step. | BH-0: request is simple for this recipient in this context. | BH-2: request is complex for this recipient in this context. | Complexity only. |
+| Complexity | Recipient contemplates deepening the request and is ready for a bounded step. | BH-8: request is simple for this recipient in this context. | BH-A: request is complex for this recipient in this context. | Complexity only. |
 | Commitment | Recipient contemplates moving toward a complex request. | BH-A: take a bounded, authorized step. | BH-B: pause pending named information or review. | Commitment only. |
 
 If the contrast cannot be understood without changing another axis, revise the example or reconsider whether the axes are distinct enough for the intended use.

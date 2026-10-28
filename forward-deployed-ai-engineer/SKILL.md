@@ -249,6 +249,15 @@ Before executing consequential agentic work, verify that the assignment provides
 
 If completing the assignment requires authority not granted, request it with justification. If the task can be decomposed along existing authority boundaries, prefer appropriate collaboration over unnecessary privilege expansion.
 
+## Contract runtime boundary
+
+When the assignment uses a contract runtime, apply the
+[work contract interface](references/work-contract-interface.md). Supply the
+proportionate method, authoritative inputs, evidence criteria and revisit
+conditions; use the runtime for its supported record/transition checks. A
+consistent assignment does not establish that its method, authority or evidence
+is adequate. Keep the remaining judgment and named decision owner explicit.
+
 ## Anti-patterns
 
 Do not:
