@@ -8,7 +8,7 @@
 
 ## Intent and scope
 
-Make the current eleven skill entrypoints easier to understand through one six-panel storyboard per skill: the original ten plus Build Music Video. The user selected a current-gallery refresh for PR #15. Preserve the original generation and revision history while binding selected boards to current skill sources. This feature adds explanatory documentation and image assets. It does not implement the imagined interfaces or change skill behavior.
+Make the current twelve skill entrypoints easier to understand through one six-panel storyboard per skill: the original ten plus Build Music Video and Farmer Jones Victory Garden. The user selected a current-gallery refresh for PR #15. Preserve the original generation and revision history while binding selected boards to current skill sources. This feature adds explanatory documentation and image assets. It does not implement the imagined interfaces or change skill behavior.
 
 ## User Scenarios & Testing
 
@@ -18,7 +18,7 @@ A reader selects a skill and follows its six main steps without needing to inter
 
 **Independent check**: Open the Markdown gallery and inspect one complete board and its transcript.
 
-1. Given the current eleven-skill inventory, when the reader browses the gallery, then every skill has exactly one board with a stable slug and six textual steps.
+1. Given the current twelve-skill inventory, when the reader browses the gallery, then every skill has exactly one board with a stable slug and six textual steps.
 2. Given an image is unavailable or difficult to read, when the reader uses the transcript, then the main sequence and limitation remain available as selectable text.
 3. Given an illustration depicts sample results or controls, when it is viewed in context, then it is identified as illustrative rather than evidence of an implemented tool.
 
@@ -71,7 +71,7 @@ A reader opens the gallery from a checkout and navigates to individual images an
 
 ## Success criteria
 
-- **SC-001**: Eleven unique boards cover all eleven current entrypoints; validation derives expected coverage from the checkout inventory.
+- **SC-001**: Twelve unique boards cover all twelve current entrypoints; validation derives expected coverage from the checkout inventory.
 - **SC-002**: All selected PNG hashes and current source blob bindings match their manifest records.
 - **SC-003**: Every board has six text steps and reachable source/asset links; all gallery local links resolve inside the checkout.
 - **SC-004**: The gallery contains no external executable or presentation dependency and no local absolute paths.
@@ -80,4 +80,8 @@ A reader opens the gallery from a checkout and navigates to individual images an
 
 ## Assumptions and exclusions
 
-The current eleven-entrypoint collection is the agreed scope. Current skill source bindings are enforced structurally; drift in directly referenced documents remains a manual review concern. Original generation and revision history is retained. Hosting, public release, changing repository visibility, installing Spec Kit into the repository, rewriting skills and merging the PR are outside this change. This is a manually authored Spec Kit-style feature packet, following its specification → plan → tasks → implementation → verification structure; no CLI run is claimed.
+The current twelve-entrypoint collection is the agreed scope. Current skill source bindings are enforced structurally; drift in directly referenced documents remains a manual review concern. Original generation and revision history is retained. Hosting, public release, changing repository visibility, installing Spec Kit into the repository, rewriting skills and merging the PR are outside this change. This is a manually authored Spec Kit-style feature packet, following its specification → plan → tasks → implementation → verification structure; no CLI run is claimed.
+
+## Gardening admission — 2026-10-28
+
+PR #17 adds the twelfth skill and its source-bound illustration without modifying the eleven existing selected boards. Original records/assets remain intact. Private garden configuration is excluded. Owner accepted the sequence to reconcile and review this coverage before merging public #17 then private #10; that authorization does not establish physical safety, recipe validation or unperformed browser checks.

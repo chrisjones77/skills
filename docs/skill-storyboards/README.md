@@ -1,6 +1,6 @@
 # Skill workflow storyboards
 
-Eleven six-panel concept illustrations cover the current eleven-skill inventory at source revision `a0fd63828396401bc28998069bf31664bc4090de`. Refreshed 2026-10-28; later source changes require reconciliation. The original ten-board manifest, prompts, lineage and prior coverage-board image remain in [revision history](revisions/20261022/README.md).
+Twelve six-panel concept illustrations cover the current twelve-skill inventory at source revision `c8f77a86170d72836c47116fa0c2eeffa42a0497`. Refreshed 2026-10-28; later source changes require reconciliation. The original ten-board manifest, prompts, lineage and prior coverage-board image remain in [revision history](revisions/20261022/README.md).
 
 These are AI-generated illustrations, not implemented products. All sample UI data, including file sizes, timing and frame counts, are fictional and are not technical calculations or evidence. Canonical skill sources and their references take precedence. Human acceptance remains pending.
 
@@ -17,6 +17,8 @@ These are AI-generated illustrations, not implemented products. All sample UI da
 - [PEO Practice Guideline Reference](#peo-guideline)
 - [Stickler Prime](#stickler-prime)
 - [Build Music Video](#build-music-video)
+
+- [Farmer Jones Victory Garden](#farmer-jones-victory-garden)
 
 <a id="harnessed-dispatch"></a>
 
@@ -224,5 +226,24 @@ Human acceptance: pending.
 6. Deliver editable kit — retain movie, captions, artwork, manifest and rebuild instructions.
 
 Preserve the recording · Timing needs evidence · Publication needs authorization. Sample durations, file sizes and frame counts in the image are fictional and must not be used as calculations.
+
+Human acceptance: pending.
+
+<a id="farmer-jones-victory-garden"></a>
+
+## Farmer Jones Victory Garden
+
+[Canonical skill](../../farmer-jones-victory-garden/SKILL.md) · [Full PNG](assets/farmer-jones-victory-garden.png)
+
+![Farmer Jones Victory Garden: six-panel concept illustration](assets/farmer-jones-victory-garden.png)
+
+1. Establish context — climate, season, sunlight, soil, labour and equipment.
+2. Observe before diagnosing — separate observed, measured, reported, inferred and unknown.
+3. Prioritize useful work — distinguish urgent, beneficial and optional actions.
+4. Record the harvest — keep measurements and estimates separate, with source and method.
+5. Verify preservation — use an exact authoritative tested recipe; hold unsupported changes.
+6. Review and plan — turn season evidence into bounded next-season experiments.
+
+Observe honestly · Preserve provenance · Tested recipes govern canning. Illustration is not field inspection, recipe validation or safety certification.
 
 Human acceptance: pending.

@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "source_repository": "chrisjones77/skills",
-  "source_revision": "a0fd63828396401bc28998069bf31664bc4090de",
+  "source_revision": "c8f77a86170d72836c47116fa0c2eeffa42a0497",
   "created": "2026-10-22",
   "generator": "OpenAI built-in image_gen",
   "asset_status": "AI-generated concept illustrations",
-  "scope": "Current eleven-skill gallery; original ten-board snapshot preserved in revisions/20261022. Current entrypoint changes require source and board reconciliation; referenced-document drift remains manual.",
+  "scope": "Current twelve-skill gallery, including Farmer Jones Victory Garden; prior snapshots and artwork retained. Current entrypoint changes require reconciliation; referenced-document drift remains manual.",
   "boards": [
     {
       "slug": "harnessed-dispatch",
@@ -269,6 +269,30 @@
         "status": "reviewed-with-limits",
         "human_acceptance": "pending",
         "notes": "Assistant inspected six panels and framing/timing/continuity distinctions. Source identity, lyric/performance separation, estimated captions, structural versus listening checks and editable deliverables are visible. Generated sample numeric metadata is illustrative, not internally verified; no listening or human acceptance."
+      }
+    },
+    {
+      "slug": "farmer-jones-victory-garden",
+      "title": "Farmer Jones Victory Garden",
+      "source_path": "farmer-jones-victory-garden/SKILL.md",
+      "source_blob_sha": "8129ef2b7ed0f61516edf17f019f0f04c09ffd61",
+      "asset": "assets/farmer-jones-victory-garden.png",
+      "asset_sha256": "e1236cf567e67e4a11662f6e311f1052130e5c4a5f1de5289c66aeac7a0cc55f",
+      "transcript": [
+        "01 Establish context — climate, season, sunlight, soil, labour and equipment.",
+        "02 Observe before diagnosing — separate observed, measured, reported, inferred and unknown.",
+        "03 Prioritize useful work — distinguish urgent, beneficial and optional actions.",
+        "04 Record the harvest — keep measurements and estimates separate, with source and method.",
+        "05 Verify preservation — use an exact authoritative tested recipe; hold unsupported changes.",
+        "06 Review and plan — turn season evidence into bounded next-season experiments."
+      ],
+      "limitation": "Observe honestly · Preserve provenance · Tested recipes govern canning. Illustration is not field inspection, recipe validation or safety certification.",
+      "prompt": "Create one polished six-panel LANDSCAPE storyboard titled \"Farmer Jones Victory Garden\" subtitle \"Skill workflow · Illustrative storyboard\". Exactly THREE COLUMNS and TWO ROWS, numbered01-06 left to right. Match a documentation series: charcoal-black desktop UI, cream editorial typography, violet connectors, restrained amber highlights, generous gutters. Blend garden observation illustrations with clear fictional records, NOT just text cards. Panel01 \"Establish context\": generic garden sketch with sunlight, climate and soil notes, no real address. Panel02 \"Observe before diagnosing\": compare real-looking plant photo and source-labelled notes \"Observed / Reported / Unknown\"; do not confidently identify cultivar. Panel03 \"Prioritize useful work\": practical harvest/weather/action cards, a person making choices, no invented metric. Panel04 \"Record the harvest\": separate \"Measured\" from \"Estimated\" crates and ledger, do not combine totals; no numeric totals needed. Panel05 \"Verify preservation\": exact tested recipe alongside documented batch, visible \"HOLD — unvalidated change\"; no recipes, jar sealing claim, processing times, temperatures or chemical advice. Panel06 \"Review and plan\": season notes become bounded next-season experiments; operator chooses next action. Footer verbatim \"Observe honestly · Preserve provenance · Tested recipes govern canning.\" Small credit \"chrisjones77/skills · Concept illustration\". No private owner, family, place, recipe names, likeness, household details, WRBG lore, seals, certification, PASS declaration or unsafe physical-work instruction. Source methodology is general-purpose. Readable large headings; omit unnecessary tiny labels.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "Assistant inspected six ordered panels, evidence labels, measured/estimated separation and HOLD for an unvalidated preservation change. No private family/property/recipe details or canning schedule intended or authorized. Generated UI examples are fictional; human acceptance and actual browser checks remain pending."
       }
     }
   ],

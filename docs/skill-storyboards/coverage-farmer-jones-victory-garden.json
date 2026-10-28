@@ -1,0 +1,145 @@
+{
+  "schema_version": "1.5.0",
+  "artifact_id": "CURRENT-GALLERY-farmer-jones-victory-garden",
+  "artifact_type": "illustration",
+  "brief": {
+    "subject": "Farmer Jones Victory Garden six-panel illustrative workflow",
+    "canonical_constraints": [
+      {
+        "constraint_id": "WORKFLOW",
+        "statement": "Six ordered panels summarize the linked current skill without asserting real execution or acceptance.",
+        "source": "farmer-jones-victory-garden/SKILL.md blob 8129ef2b7ed0f61516edf17f019f0f04c09ffd61",
+        "mutability": "immutable"
+      }
+    ],
+    "forbidden_drift": [
+      "human acceptance or actual release inferred from assistant review"
+    ],
+    "required_text": [
+      {
+        "text_id": "TITLE",
+        "exact": "Farmer Jones Victory Garden",
+        "case_sensitive": true
+      }
+    ],
+    "technical_claims": [
+      {
+        "claim_id": "SAMPLE-UI",
+        "text": "UI data and results are fictional illustrative examples, not verified calculations.",
+        "status": "fictional_labelled",
+        "evidence_ref": "README.md"
+      }
+    ],
+    "creative_deviations_policy": "Generated sample interface details are illustrative; source skills take precedence."
+  },
+  "generation": {
+    "id": "farmer-jones-victory-garden-20261028",
+    "parent_generation_id": null,
+    "requested_delta": [
+      "Add general-purpose gardening workflow without private configuration"
+    ],
+    "preservation_targets": [
+      "six-panel sequence",
+      "charcoal cream violet amber series"
+    ],
+    "regression_checks": [
+      {
+        "check_id": "BOUNDARY",
+        "requirement": "No real acceptance implied",
+        "status": "pass",
+        "evidence_note": "Assistant inspected six ordered panels, evidence labels, measured/estimated separation and HOLD for an unvalidated preservation change. No private family/property/recipe details or canning schedule intended or authorized. Generated UI examples are fictional; human acceptance and actual browser checks remain pending."
+      }
+    ]
+  },
+  "review": {
+    "artifact_type_fit": {
+      "status": "pass",
+      "note": "Illustrative skill workflow, not functioning software."
+    },
+    "canonical_constraints": [
+      {
+        "constraint_id": "WORKFLOW",
+        "status": "pass",
+        "evidence_note": "Assistant inspected six ordered panels, evidence labels, measured/estimated separation and HOLD for an unvalidated preservation change. No private family/property/recipe details or canning schedule intended or authorized. Generated UI examples are fictional; human acceptance and actual browser checks remain pending."
+      }
+    ],
+    "forbidden_drift": [
+      {
+        "item": "human acceptance or actual release inferred from assistant review",
+        "status": "pass",
+        "evidence_note": "Illustrative workflow only; panel05 holds unvalidated preservation changes, no actual recipe validation or approval."
+      }
+    ],
+    "regression_review": {
+      "status": "pass",
+      "compared_to": [
+        "current skill",
+        "retained series baseline"
+      ],
+      "note": "Assistant inspected six ordered panels, evidence labels, measured/estimated separation and HOLD for an unvalidated preservation change. No private family/property/recipe details or canning schedule intended or authorized. Generated UI examples are fictional; human acceptance and actual browser checks remain pending."
+    },
+    "minimal_delta": {
+      "status": "pass",
+      "preserved_target_ids": [
+        "six-panel sequence",
+        "charcoal cream violet amber series"
+      ],
+      "note": "Series palette and six ordered panels retained."
+    },
+    "synthetic_familiarity": {
+      "status": "pass",
+      "unrequested_recurring_elements_checked": [
+        "private project lore",
+        "regulator seals"
+      ],
+      "note": "No private lore or endorsement observed."
+    },
+    "reference_fidelity": {
+      "status": "not_applicable",
+      "reference_ids": [],
+      "deidentification_review": "not_applicable"
+    },
+    "technical_evidence": {
+      "status": "pass",
+      "included_claim_ids": [],
+      "excluded_claim_ids": [],
+      "fictional_labelled_claim_ids": [
+        "SAMPLE-UI"
+      ]
+    },
+    "typography": {
+      "status": "pass",
+      "items": [
+        {
+          "text_id": "TITLE",
+          "status": "pass",
+          "observed_text": "Farmer Jones Victory Garden"
+        }
+      ]
+    },
+    "collection_consistency": {
+      "status": "pass",
+      "collection_id": "SKILL-STORYBOARDS",
+      "baseline_ref": "revisions/20261022/README.md",
+      "dimensions_checked": [
+        "palette",
+        "sequence",
+        "type hierarchy"
+      ]
+    },
+    "creative_deviations": {
+      "status": "not_applicable",
+      "items": []
+    },
+    "reviewer": "Codex assistant",
+    "reviewer_kind": "assistant",
+    "decision": "hold",
+    "acceptance_evidence": null
+  },
+  "provenance": {
+    "source_kind": "generated_image",
+    "created_for_archive": false,
+    "asset_ref": "assets/farmer-jones-victory-garden.png",
+    "asset_sha256": "e1236cf567e67e4a11662f6e311f1052130e5c4a5f1de5289c66aeac7a0cc55f"
+  }
+}
