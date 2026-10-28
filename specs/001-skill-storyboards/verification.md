@@ -76,3 +76,9 @@ Current source snapshot: a0fd63828396401bc28998069bf31664bc4090de. Eleven boards
 - Independent source review found two stale ten-board scope strings; corrected to eleven. No other substantive findings.
 - `git diff --check`: passed. No automated test suite or new mutation tests run for this refresh.
 - Actual desktop/narrow browser and human visual acceptance remain pending; no prior browser restriction was bypassed. No merge, installation or publication acceptance is claimed.
+
+## Gardening admission — 2026-10-28
+
+Twelve-entrypoint inventory and Farmer Jones Victory Garden illustration integrated; existing selected assets preserved. Assistant inspected evidence labels, measured/estimated distinction and preservation HOLD boundary. No actual recipe, site-specific physical-work procedure or private configuration is included. Current validation/review and CI results recorded on PR #17; desktop/narrow human acceptance of this new board remains unreported.
+
+Current twelve-board validator and whitespace checks passed. The gardening coverage manifest reports verified asset binding, clear validation, assistant HOLD, release HOLD and zero manifest blockers. Independent read-only review found no blockers; it confirmed all twelve source/asset bindings and preservation of the prior eleven records/assets. These are source and declaration checks, not actual recipe or human browser acceptance.

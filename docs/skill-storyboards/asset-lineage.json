@@ -2,8 +2,8 @@
   "schema_version": 1,
   "record_date": "2026-10-28",
   "provenance": "Initial prompt strings and edit prompt strings transcribed from this authoring session; hashes recomputed from retained candidate files.",
-  "scope": "Current eleven-skill gallery; original ten-board snapshot preserved in revisions/20261022. Current entrypoint changes require source and board reconciliation; referenced-document drift remains manual.",
-  "generation_count": 11,
+  "scope": "Current twelve-skill gallery, including Farmer Jones Victory Garden; prior snapshots and artwork retained. Current entrypoint changes require reconciliation; referenced-document drift remains manual.",
+  "generation_count": 12,
   "revision_count": 6,
   "reproducibility": "Prompts and byte lineage are retained; generator outputs are not guaranteed deterministic. Intermediate image bytes are not included in this repository.",
   "human_acceptance": "pending",
@@ -197,6 +197,19 @@
       ],
       "selected_asset": "assets/build-music-video.png",
       "selected_asset_sha256": "8efcc7f838c61571138e6ea6d72e956c878a1b2b1064d8f0b495f7714dbf6400"
+    },
+    {
+      "slug": "farmer-jones-victory-garden",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "e1236cf567e67e4a11662f6e311f1052130e5c4a5f1de5289c66aeac7a0cc55f",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        }
+      ],
+      "selected_asset": "assets/farmer-jones-victory-garden.png",
+      "selected_asset_sha256": "e1236cf567e67e4a11662f6e311f1052130e5c4a5f1de5289c66aeac7a0cc55f"
     }
   ]
 }
