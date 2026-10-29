@@ -7,6 +7,8 @@ description: Storyboard a supplied song and create a DIY illustrated music video
 
 Carry the task through storyboard, render, verification, and saved deliverables when the user requests a video. For storyboard-only requests, stop at the storyboard. Treat a supplied recording as the soundtrack source; do not silently replace it with generated music.
 
+For a quick rendition or an end-to-end review cut with planning up front, read the [one-shot review method](references/one-shot-review.md). It defines a bounded production pass, reference recovery, defect corrections, phone delivery and preservation; use it without changing the user’s requested approval boundary.
+
 ## 1. Establish the source and continuity
 
 - Resolve the supplied audio, latest lyrics, reference art, and corrections. Use connected storage for referenced files; use local paths when supplied. Inspect actual audio metadata with FFprobe.
@@ -21,7 +23,7 @@ Build a section map and a separate lyric-payoff map before choosing a shot count
 
 Present a reviewable illustrated storyboard, then continue rendering without adding an approval gate unless the user requested one. Use image-generation tools for art. Specify consistent cast, palette, lighting, age, clothing, and vehicles. Generate individual production shots in the output aspect ratio; storyboard page orientation is independent. A portrait review sheet does not authorize portrait art in a landscape video. Contact-sheet crops are preview-only unless the user explicitly accepts that compromise after seeing the output-size crop. Inspect subjects, action, text and safe areas at final display size.
 
-Use a portable HTML storyboard with embedded images or a PDF. Keep visual storytelling and captions legible on a phone. Avoid rapid flashes. Distinguish moving still images from generated character animation.
+Treat the illustrated treatment as a deliverable in its own right. Use a portable HTML storyboard with embedded images or a PDF. Keep visual storytelling and captions legible on a phone. Avoid rapid flashes. Distinguish moving still images from generated character animation.
 
 ## 3. Establish timing honestly
 
