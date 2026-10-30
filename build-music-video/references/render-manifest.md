@@ -31,3 +31,9 @@ python /path/to/skill/scripts/verify_video.py video.mp4 --audio song.mp3 --width
 
 Both commands return nonzero on failure. The renderer does not overwrite the output until the new video passes structural checks. The validator prints a JSON report; preserve it in the project review notes. It does not validate story facts, caption semantics or aesthetic quality.
 
+
+## Review derivatives and retained versions
+
+The manifest describes one edit. Keep a phone encode’s actual dimensions, file hash, encoding recipe and verification report in a separate export receipt; do not silently change the master manifest to describe it. Run the same full-duration validator with the derivative’s real geometry, and inspect its exported text/crops. See the [one-shot review method](one-shot-review.md) for delivery and preservation.
+
+Preserve prior accepted manifests and portable kits as historical artifacts. Append receipts for new exports, publication or retained copies, rather than rewriting old evidence to make its status look current. Source-file identity, encoded-stream identity and decoded-signal similarity are separate observations.

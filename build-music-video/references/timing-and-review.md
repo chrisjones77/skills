@@ -3,6 +3,8 @@
 ## Sources
 Keep `lyrics-source.txt` unchanged. Store raw ASR with word start/end and confidence, then create reviewed display captions separately. Track each changed word and its basis: listening, user correction, model agreement, or unresolved. Agreement between two ASR models is supporting evidence, not human verification.
 
+A field that looks like a production brief or style prompt may itself be performed text. Use explicit owner clarification or performance evidence to establish that relationship; neither a page field name nor ASR alone settles it. Record the basis without silently reclassifying the canonical source. Owner confirmation of sung wording does not establish exact cue timing or a completed listening review.
+
 A local optional route is faster-whisper with word timestamps. If its media decoder rejects an argument, decode via FFmpeg to mono 16 kHz float32 PCM, load as a NumPy array, and pass that array to the model. Do not call decoding an audio listening review. Model downloads require network access; use available transcription capabilities or labelled estimates if unavailable.
 
 ## Alignment

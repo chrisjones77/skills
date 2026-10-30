@@ -2,6 +2,8 @@
 
 Use two maps: sections establish the song's arc; lyric payoffs establish what each memorable line needs the viewer to see. A shot of a musician does not automatically cover a line about a control panel, missing object or transformation.
 
+Interpret creative shorthand from the conversation before generating: “gems” may mean standout lyric lines, not objects. Carry the resolved meaning into the payoff map and later corrections.
+
 For each payoff record the cue, intended meaning, shot/asset IDs, required visible state or action, pace, and inspection result. Classify the requirement as `state` (one frame can show it), `sequence` (before/after states are needed), or `animation` (motion itself matters). A still of a hand on a button shows contact, not a proven press; show a second state or animate the action when the payoff depends on it.
 
 Choose pace locally: sustained for emotional space, conversational for line-by-line exchanges, montage for accumulation, and brief rapid bursts for dense enumerations or musical accents. These are editorial choices, not universal duration thresholds. Hold text and visual gags long enough to read at output size. Leave quiet verses and bridges quiet unless this song calls for escalation. Avoid repeated black fades on short rapid shots; use clean cuts.
