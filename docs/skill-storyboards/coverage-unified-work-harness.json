@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.5.0",
+  "artifact_id": "CURRENT-GALLERY-unified-work-harness",
+  "artifact_type": "illustration",
+  "brief": {
+    "subject": "Unified Work Harness six-panel illustrative workflow",
+    "canonical_constraints": [
+      {"constraint_id": "WORKFLOW", "statement": "Six ordered panels summarize the read-only contract-to-executor workflow with review pending.", "source": "unified-work-harness/SKILL.md blob 8eee7e27fca6d904c31edb9c0f8a177719c61852", "mutability": "immutable"},
+      {"constraint_id": "GEOMETRY", "statement": "Landscape three-column, two-row illustration remains readable in the linked full-size gallery image.", "source": "docs/skill-storyboards/README.md", "mutability": "immutable"}
+    ],
+    "forbidden_drift": ["human acceptance or operating-system isolation claimed as established"],
+    "required_text": [{"text_id": "TITLE", "exact": "Unified Work Harness", "case_sensitive": true}],
+    "technical_claims": [{"claim_id": "SAMPLE-UI", "text": "Pictured UI, filenames, progress and hashes are fictional examples, not verified execution.", "status": "fictional_labelled", "evidence_ref": "README.md"}],
+    "creative_deviations_policy": "Generated sample interface details are illustrative; the skill and receipt format take precedence."
+  },
+  "generation": {
+    "id": "unified-work-harness-20261104-revision-1",
+    "parent_generation_id": "unified-work-harness-20261104-initial",
+    "requested_delta": ["Remove invented limits and the false read-only mount; show a temporary clone and pending human review."],
+    "preservation_targets": ["six-panel sequence", "charcoal cream violet series"],
+    "regression_checks": [{"check_id": "BOUNDARY", "requirement": "No actual human acceptance or OS isolation established by the image.", "status": "pass", "evidence_note": "Assistant inspection saw human review pending; the accompanying gallery text explicitly denies any OS-isolation or acceptance claim."}]
+  },
+  "review": {
+    "artifact_type_fit": {"status": "pass", "note": "Landscape concept illustration for the linked full-size gallery, not a functioning UI."},
+    "canonical_constraints": [
+      {"constraint_id": "WORKFLOW", "status": "pass", "evidence_note": "Assistant inspected six sequential headings, temporary-clone text, scoped worker tools and human-review-pending marker; no live run is depicted."},
+      {"constraint_id": "GEOMETRY", "status": "pass", "evidence_note": "Assistant inspected the 1536 by 1024 landscape output at full size; large panel headings are legible. Phone browser rendering remains unverified."}
+    ],
+    "forbidden_drift": [{"item": "human acceptance or operating-system isolation claimed as established", "status": "pass", "evidence_note": "Panel 06 shows human review pending; gallery disclaimer explicitly states the image does not establish isolation."}],
+    "regression_review": {"status": "pass", "compared_to": ["initial image", "current skill"], "note": "The revised image removes the initial simulated read-only mount and numeric file limits; fictional interface artifacts remain labelled as illustrative in the gallery."},
+    "minimal_delta": {"status": "pass", "preserved_target_ids": ["six-panel sequence", "charcoal cream violet series"], "note": "Six headings and palette remain; text changes are recorded in the lineage."},
+    "synthetic_familiarity": {"status": "pass", "unrequested_recurring_elements_checked": ["private information", "certification seals"], "note": "No private names or certification seal observed."},
+    "reference_fidelity": {"status": "not_applicable", "reference_ids": [], "deidentification_review": "not_applicable"},
+    "technical_evidence": {"status": "pass", "included_claim_ids": [], "excluded_claim_ids": [], "fictional_labelled_claim_ids": ["SAMPLE-UI"]},
+    "typography": {"status": "pass", "items": [{"text_id": "TITLE", "status": "pass", "observed_text": "Unified Work Harness"}]},
+    "collection_consistency": {"status": "pass", "collection_id": "SKILL-STORYBOARDS", "baseline_ref": "revisions/20261022/README.md", "dimensions_checked": ["palette", "sequence", "type hierarchy"]},
+    "creative_deviations": {"status": "not_applicable", "items": []},
+    "reviewer": "Codex assistant", "reviewer_kind": "assistant", "decision": "hold", "acceptance_evidence": null
+  },
+  "provenance": {"source_kind": "generated_image", "created_for_archive": false, "asset_ref": "assets/unified-work-harness.png", "asset_sha256": "87db9e7f5fdda57ac95b2aeca8e1cdde4dcb2e623924aef238140169931cc2ec"}
+}
