@@ -18,6 +18,15 @@ the temporary files were removed at the end of the test.
   conflict was fixed and one after. Both failed the exact-format criterion.
   The later report-the-token case had a different acceptance criterion and does
   not retroactively pass those trials.
+- A clearer prompt yielded two exact-token passes followed by a failure that
+  added quotation marks. Prompting alone is not enforcement. An opt-in
+  `single_ascii_token` contract now rejects nonconforming output without
+  rewriting it; a subsequent live strict run passed, including an independent
+  check against the synthetic token. Receipt digest:
+  `8f529ff50971357e6118241c46a73492636257e3d83af76678cd8a4a449cd444`.
+  A first implementation attempt raised a ReferenceError and was rejected;
+  the error was corrected before the passing run. Shape validation cannot prove
+  correctness, and the small sample does not establish model reliability.
 - The previously installed `tev1:latest` explicitly rejected chat; the harness
   failed closed. The runtime now rejects explicitly advertised missing tool
   capability before launching the worker when capability metadata is present.

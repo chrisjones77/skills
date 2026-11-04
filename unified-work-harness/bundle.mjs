@@ -883,7 +883,8 @@ export function validateAssignment(value) {
     checkString(errors, value.supervision.feedback_route, "supervision.feedback_route");
   }
 
-  if (checkKeys(errors, value.acceptance, "acceptance", ["checks", "reviewer", "require_changes"])) {
+  if (checkKeys(errors, value.acceptance, "acceptance", ["checks", "reviewer", "require_changes"], ["checks", "reviewer", "require_changes", "response_format"])) {
+    if (value.acceptance.response_format !== undefined && (value.acceptance.response_format !== "single_ascii_token" || value.authority?.mode !== "read_only" || (value.worker?.adapter ?? "opencode") !== "opencode")) errors.push("acceptance.response_format is supported only as single_ascii_token for read_only OpenCode assignments");
     if (!Array.isArray(value.acceptance.checks) || value.acceptance.checks.length < 1 || value.acceptance.checks.length > 12) {
       errors.push("acceptance.checks must contain between 1 and 12 checks");
     } else {
@@ -1005,6 +1006,7 @@ export function buildAgentPrompt(assignment) {
       instructions.push("TERSE JSON PROFILE: omit filler, greetings, narration, hedging, repeated instructions, and conclusions. Use short fragments. Preserve paths, symbols, JSON keys, code, and quoted UI text byte-for-byte. Spend output only on the required JSON artifact.");
     }
   }
+  if (assignment.acceptance.response_format === "single_ascii_token") instructions.push("OUTPUT CONSTRAINT: Return one unquoted ASCII token only, using letters, digits, periods, underscores, or hyphens. No other words or punctuation. If unable to comply safely, report uncertainty; the supervisor will reject the result.");
   if (assignment.authority.mode === "defect_reproduction") {
     instructions.push(
       "This is a test-only defect reproduction. Add the smallest focused test that demonstrates the claimed failure against unchanged production code. Do not edit production files or propose a fix. A compile error, unrelated failure, or assertion of a different contract is not valid proof.",
@@ -1023,7 +1025,7 @@ export function buildAgentPrompt(assignment) {
   instructions.push(
     `Stop and report uncertainty when any of these occur:\n- ${assignment.escalation.stop_conditions.join("\n- ")}`,
     assignment.authority.mode === "read_only"
-      ? "Respond in the format requested by the outcome after the required reads. The supervisor independently reviews the response."
+      ? "After the required reads, respond in the exact format requested by the outcome. If it requests only a value, output only that value: no introduction, label, quotes, explanation, or closing text. Do not guess or suppress uncertainty; stop and report it when required. The supervisor independently reviews the response."
       : "Finish with a concise summary of candidate work. The supervisor independently validates all changes.",
   );
   if (assignment.authority.mode === "candidate_edit") {
@@ -1597,6 +1599,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
   let answerAfterRead = false;
   let timedOut = false;
   let proposalText = "";
+  let responseText = "";
   let finishReason = null;
   let usage = null;
   const permittedTools = new Set(["read"]);
@@ -1636,6 +1639,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
       if (event.type === "text" && assignment.authority.mode === "structured_proposal") {
         proposalText += String(event.part?.text ?? "");
       }
+      if (event.type === "text" && assignment.acceptance.response_format === "single_ascii_token") responseText += String(event.part?.text ?? "");
       if (event.type === "text" && readCalls > 0 && String(event.part?.text ?? "").trim()) answerAfterRead = true;
       if (event.type === "step_finish") {
         finishReason = event.part?.reason ?? null;
@@ -1672,6 +1676,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
   });
   clearTimeout(timer);
   inspectLine(stdoutBuffer);
+  if (assignment.acceptance.response_format === "single_ascii_token" && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(responseText.trim())) violations.push("response violates single_ascii_token format");
   writeFileSync(path.join(artifactDirectory, "events.ndjson"), `${events.map((event) => JSON.stringify(event)).join("\n")}\n`);
   return {
     ...result,

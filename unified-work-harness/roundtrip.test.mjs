@@ -4,7 +4,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, rmSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { contractRoundtrip, hypervisor, sha256, rejectExplicitlyUnsupportedTools, buildOpenCodeConfig } from "./bundle.mjs";
+import { contractRoundtrip, hypervisor, sha256, rejectExplicitlyUnsupportedTools, buildOpenCodeConfig, buildAgentPrompt } from "./bundle.mjs";
 
 test("explicit model capability metadata rejects non-tool models without guessing absent metadata", () => {
   assert.throws(() => rejectExplicitlyUnsupportedTools({capabilities:["decision"]}), /does not advertise tool calling/);
@@ -42,6 +42,9 @@ test("accepted Hypervisor contract reaches the actual scheduling executor and re
       escalation:{stop_conditions:["Stop when scope is unclear."],contact:"owner"},
     };
     const assignmentPath = path.join(temp, "assignment.json");
+    const prompt = buildAgentPrompt(assignment);
+    assert.match(prompt, /output only that value/);
+    assert.match(prompt, /stop and report it when required/);
     const source = JSON.stringify(assignment);
     const permission = buildOpenCodeConfig(assignment, "http://127.0.0.1:11434/v1").permission;
     assert.equal(permission.glob, "deny");
@@ -70,6 +73,22 @@ test("accepted Hypervisor contract reaches the actual scheduling executor and re
     assert.equal(JSON.stringify(packet), before);
     assert.equal(git("status", "--porcelain"), "");
     assert.equal(git("rev-parse", "HEAD"), revision);
+    const constrained = structuredClone(assignment);
+    constrained.acceptance.response_format = "single_ascii_token";
+    const constrainedSource = JSON.stringify(constrained);
+    writeFileSync(assignmentPath, constrainedSource);
+    let constrainedPacket = hypervisor.createPacket({id:"work-roundtrip",objective:constrained.outcome,owner:"worker",mode:"Review",workspace:{root,identity:`${root}#${branch}`,revision,status_digest:sha256("")},authorization:["execute-read-only"],grantedBy:"synthetic owner"});
+    constrainedPacket.authorization.prohibited.push("write-source", "external-network");
+    constrainedPacket = hypervisor.offerAssignment(constrainedPacket,{scope:JSON.stringify({kind:"dutyweave-readonly-v1",assignment_sha256:sha256(constrainedSource)}),acceptanceEvidence:"Review source and executor evidence",engineeringPurpose:"0xB",assigner:"owner",reviewer:"reviewer"});
+    constrainedPacket = hypervisor.acceptAssignment(constrainedPacket,{by:"worker",assignmentDigest:hypervisor.currentAssignment(constrainedPacket).digest,note:"Accept constrained assignment"});
+    constrainedPacket.status = "active"; constrainedPacket.handoff.current_writer = "worker";
+    constrainedPacket.checkpoints.push({at:constrainedPacket.work_contract.acceptance.at,kind:"resumed",note:"Synthetic resume",owner:"worker",workspace:constrainedPacket.workspace.identity,reconciled:false});
+    await assert.rejects(contractRoundtrip({packet:constrainedPacket, assignmentPath, endpointCheck:async () => ({})}), /read-only candidate/);
+    writeFileSync(fake, `#!/usr/bin/env node\nfor (const e of ${JSON.stringify([{type:"tool_use",part:{tool:"read",state:{status:"completed",input:{filePath:"source.txt"},output:"synthetic"}}},{type:"text",part:{text:'"token-123"'}}])}) console.log(JSON.stringify(e));\n`);
+    await assert.rejects(contractRoundtrip({packet:constrainedPacket, assignmentPath, endpointCheck:async () => ({})}), /read-only candidate/);
+    writeFileSync(fake, `#!/usr/bin/env node\nfor (const e of ${JSON.stringify([{type:"tool_use",part:{tool:"read",state:{status:"completed",input:{filePath:"source.txt"},output:"synthetic"}}},{type:"text",part:{text:"token-123"}}])}) console.log(JSON.stringify(e));\n`);
+    assert.equal((await contractRoundtrip({packet:constrainedPacket, assignmentPath, endpointCheck:async () => ({})})).executor_evidence.disposition, "candidate");
+    writeFileSync(assignmentPath, source);
     writeFileSync(fake, `#!/usr/bin/env node\nconsole.log(JSON.stringify({type:'step_finish',timestamp:3,part:{reason:'stop',tokens:{total:10}}}));\n`);
     await assert.rejects(contractRoundtrip({packet, assignmentPath, endpointCheck:async () => ({})}), /read-only candidate/);
     writeFileSync(fake, `#!/usr/bin/env node\nconsole.log(JSON.stringify({type:'tool_use',timestamp:2,part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'synthetic public source'}}}));\nconsole.log(JSON.stringify({type:'step_finish',timestamp:3,part:{reason:'stop',tokens:{total:10}}}));\n`);

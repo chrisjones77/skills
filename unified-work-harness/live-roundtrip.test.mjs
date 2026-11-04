@@ -30,7 +30,7 @@ test("live local model processes an explicitly synthetic read-only assignment", 
       data:{classification:"public",contains_phi:false,contains_secrets:false,external_processing_allowed:false},
       resources:{base_ref:revision,timeout_seconds:120,max_steps:4,max_output_bytes:1048576,max_completion_tokens:1024},
       supervision:{priority:"normal",target_date:null,available_effort_minutes:10,dependencies:[],decision_owner:"synthetic owner",may_pause:true,feedback_route:"Report failure to the synthetic reviewer."},
-      acceptance:{checks:[{command:"node",args:["--version"],timeout_seconds:10,expected_result:"zero"}],reviewer:"synthetic reviewer",require_changes:false},
+      acceptance:{checks:[{command:"node",args:["--version"],timeout_seconds:10,expected_result:"zero"}],reviewer:"synthetic reviewer",require_changes:false,...(strictFormat ? {response_format:"single_ascii_token"} : {})},
       escalation:{stop_conditions:["Stop if access is denied or the task is unclear."],contact:"synthetic owner"},
     };
     const source = JSON.stringify(assignment);
