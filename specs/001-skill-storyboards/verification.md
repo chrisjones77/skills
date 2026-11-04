@@ -114,3 +114,7 @@ to `a881187680439bc1655d8ea8a9290bc074a12965` after comparing the source changes
 with the retained six-panel image and transcript. The new optional one-shot
 review method and additional deliverable guidance are not depicted; the gallery
 now states that limitation. The image was not regenerated or newly human accepted.
+
+The subsequent live-smoke-test instructions, scoped-read restriction, and
+source-read/response gates do not change the six-step visual workflow; its source
+binding was updated without regenerating the image or implying a new human review.

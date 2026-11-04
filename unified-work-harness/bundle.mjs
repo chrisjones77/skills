@@ -966,9 +966,9 @@ export function buildOpenCodeConfig(assignment, endpoint) {
     permission: {
       "*": "deny",
       read: readPermission,
-      glob: assignment.assignee.processing === "external_cloud" ? "deny" : "allow",
-      grep: assignment.assignee.processing === "external_cloud" ? "deny" : "allow",
-      list: assignment.assignee.processing === "external_cloud" ? "deny" : "allow",
+      glob: "deny",
+      grep: "deny",
+      list: "deny",
       edit: editPermission,
       bash: "deny",
       task: "deny",
@@ -1022,7 +1022,9 @@ export function buildAgentPrompt(assignment) {
   }
   instructions.push(
     `Stop and report uncertainty when any of these occur:\n- ${assignment.escalation.stop_conditions.join("\n- ")}`,
-    "Finish with a concise summary of candidate work. The supervisor independently validates all changes.",
+    assignment.authority.mode === "read_only"
+      ? "Respond in the format requested by the outcome after the required reads. The supervisor independently reviews the response."
+      : "Finish with a concise summary of candidate work. The supervisor independently validates all changes.",
   );
   if (assignment.authority.mode === "candidate_edit") {
     instructions.push(
@@ -1353,7 +1355,13 @@ export function assertLoopbackEndpoint(endpoint) {
   if (!parsed.pathname.endsWith("/v1")) throw new Error("model endpoint must end in /v1");
 }
 
-async function checkModelEndpoint(endpoint, modelId, provider) {
+export function rejectExplicitlyUnsupportedTools(tag) {
+  if (Array.isArray(tag?.capabilities) && !tag.capabilities.includes("tools")) {
+    throw new Error("local model explicitly does not advertise tool calling; choose a local chat model with tool support");
+  }
+}
+
+async function checkModelEndpoint(endpoint, modelId, provider, requiresTools = false) {
   const response = await fetch(`${endpoint}/models`, { signal: AbortSignal.timeout(5_000) });
   if (!response.ok) throw new Error(`${provider} model endpoint returned HTTP ${response.status}`);
   const payload = await response.json();
@@ -1364,6 +1372,8 @@ async function checkModelEndpoint(endpoint, modelId, provider) {
   const root = new URL(endpoint);
   const versionURL = new URL("/api/version", root);
   const tagsURL = new URL("/api/tags", root);
+  let modelTag;
+  let serverVersion = null;
   try {
     const [versionResponse, tagsResponse] = await Promise.all([
       fetch(versionURL, { signal: AbortSignal.timeout(5_000) }),
@@ -1371,16 +1381,15 @@ async function checkModelEndpoint(endpoint, modelId, provider) {
     ]);
     const versionPayload = versionResponse.ok ? await versionResponse.json() : {};
     const tagsPayload = tagsResponse.ok ? await tagsResponse.json() : {};
-    const tag = Array.isArray(tagsPayload?.models)
+    modelTag = Array.isArray(tagsPayload?.models)
       ? tagsPayload.models.find((item) => item?.name === modelId || item?.model === modelId)
       : undefined;
-    return {
-      server_version: typeof versionPayload?.version === "string" ? versionPayload.version : null,
-      model_digest: typeof tag?.digest === "string" ? tag.digest : null,
-    };
+    serverVersion = typeof versionPayload?.version === "string" ? versionPayload.version : null;
   } catch {
     return { server_version: null, model_digest: null };
   }
+  if (requiresTools) rejectExplicitlyUnsupportedTools(modelTag);
+  return {server_version:serverVersion, model_digest:typeof modelTag?.digest === "string" ? modelTag.digest : null};
 }
 
 function modelEvidence(assignment, runtime = {}) {
@@ -1585,11 +1594,12 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
   let steps = 0;
   let toolCalls = 0;
   let readCalls = 0;
+  let answerAfterRead = false;
   let timedOut = false;
   let proposalText = "";
   let finishReason = null;
   let usage = null;
-  const permittedTools = new Set(["read", "glob", "grep", "list"]);
+  const permittedTools = new Set(["read"]);
   if (["candidate_edit", "defect_reproduction"].includes(assignment.authority.mode)) {
     ["edit", "write", "patch", "apply_patch"].forEach((tool) => permittedTools.add(tool));
   }
@@ -1610,12 +1620,23 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
       if (event.type === "tool_use") {
         toolCalls += 1;
         const tool = event.part?.tool ?? "unknown";
-        if (tool === "read" && event.part?.state?.status === "completed") readCalls += 1;
+        if (tool === "read" && event.part?.state?.status === "completed") {
+          const rawPath = event.part?.state?.input?.filePath;
+          try {
+            if (typeof rawPath !== "string") throw new Error("missing path");
+            const relativePath = path.isAbsolute(rawPath) ? path.relative(worktree, rawPath) : rawPath;
+            if (!validatePathAccess(assignment, relativePath, "read", worktree).allowed) throw new Error("outside scope");
+            readCalls += 1;
+          } catch {
+            stop("completed read was missing a valid in-scope path");
+          }
+        }
         if (!permittedTools.has(tool)) stop(`prohibited tool requested: ${tool}`);
       }
       if (event.type === "text" && assignment.authority.mode === "structured_proposal") {
         proposalText += String(event.part?.text ?? "");
       }
+      if (event.type === "text" && readCalls > 0 && String(event.part?.text ?? "").trim()) answerAfterRead = true;
       if (event.type === "step_finish") {
         finishReason = event.part?.reason ?? null;
         usage = event.part?.tokens ?? null;
@@ -1659,6 +1680,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
     steps,
     tool_calls: toolCalls,
     read_calls: readCalls,
+    answer_after_read: answerAfterRead,
     finish_reason: finishReason,
     usage,
     timed_out: timedOut,
@@ -1887,7 +1909,7 @@ export async function runHarness({
   endpoint ??= PROVIDER_PROFILES[assignment.assignee.provider].defaultEndpoint;
   if (!isCodex) assertLoopbackEndpoint(endpoint);
   const projectRoot = await resolveProjectRoot(cwd);
-  const modelRuntime = isCodex ? {} : await endpointCheck(endpoint, assignment.assignee.model_id, assignment.assignee.provider) ?? {};
+  const modelRuntime = isCodex ? {} : await endpointCheck(endpoint, assignment.assignee.model_id, assignment.assignee.provider, (assignment.worker?.adapter ?? "opencode") === "opencode") ?? {};
 
   const runId = `${assignment.assignment_id}-${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID().slice(0, 8)}`;
   const artifactDirectory = path.resolve(outputRoot ?? path.join(projectRoot, "outputs", "agent-runs"), runId);
@@ -1933,6 +1955,12 @@ export async function runHarness({
     const { proposal_text: proposalText, ...agentEvidence } = agentResult;
     const changedFiles = await collectChangedFiles(worktree);
     const policyViolations = evaluateChangedFiles(assignment, changedFiles);
+    if (assignment.authority.mode === "read_only" && agentResult.read_calls < 1) {
+      policyViolations.push("read-only work produced no completed source read");
+    }
+    if (assignment.authority.mode === "read_only" && adapter === "opencode" && !agentResult.answer_after_read) {
+      policyViolations.push("read-only work produced no response after a completed source read");
+    }
     const proposalViolations = [];
     let proposal = null;
     if (assignment.authority.mode === "structured_proposal" && agentResult.code === 0 && agentResult.violations.length === 0) {
@@ -2081,7 +2109,16 @@ export async function contractRoundtrip({ packet, assignmentPath, endpoint, outp
     if (result.code !== 0) throw new Error("isolated checkout creation failed");
     const run = await runHarness({assignmentPath:pinnedAssignmentPath, cwd:clone, endpoint, outputRoot:outputRoot ?? path.join(temporaryRoot, "evidence"), ...(endpointCheck ? {endpointCheck} : {}), ...(completionRequest ? {completionRequest} : {})});
     if (run.evidence.assignment_hash !== scope.assignment_sha256 || run.evidence.base_commit !== revision) throw new Error("executor evidence does not bind the accepted assignment and revision");
-    if (run.evidence.disposition !== "candidate" || run.evidence.changed_files.length) throw new Error("executor did not return an unchanged read-only candidate");
+    if (run.evidence.disposition !== "candidate" || run.evidence.changed_files.length) {
+      const reasons = [];
+      if (run.evidence.agent.code !== 0) reasons.push("worker or provider failed");
+      if (run.evidence.agent.read_calls < 1) reasons.push("no completed source read");
+      if (!run.evidence.agent.answer_after_read) reasons.push("no response after source read");
+      if (run.evidence.changed_files.length) reasons.push("workspace changed");
+      if (run.evidence.violations.length) reasons.push("policy violation");
+      if (!run.evidence.acceptance.every(item => item.passed)) reasons.push("acceptance check failed");
+      throw new Error(`executor did not return an unchanged read-only candidate (${reasons.join(", ") || "check evidence"})`);
+    }
     const receipt = {schema_version:"unified.contract-executor-receipt.v1", work_id:offered.work_id, assignment_revision:offered.revision, assignment_digest:offered.digest, executor_assignment_sha256:scope.assignment_sha256, workspace_revision:revision, executor_evidence:run.evidence, review_status:"pending", packet_status_unchanged:true};
     return {...receipt, receipt_sha256:sha256(JSON.stringify(receipt))};
   } finally {

@@ -22,4 +22,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: node --test unified-work-harness/roundtrip.test.mjs
+      - run: node --test unified-work-harness/roundtrip.test.mjs unified-work-harness/live-roundtrip.test.mjs
