@@ -1,0 +1,4 @@
+interface:
+  display_name: "Unified Work Harness"
+  short_description: "Route and verify bounded read-only work."
+  default_prompt: "Use the unified work harness to prepare and verify a bounded read-only assignment."

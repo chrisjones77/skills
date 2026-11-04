@@ -1,0 +1,25 @@
+name: Unified work harness
+
+on:
+  pull_request:
+    paths:
+      - "unified-work-harness/**"
+      - ".github/workflows/unified-work-harness.yml"
+  push:
+    branches: [main]
+    paths:
+      - "unified-work-harness/**"
+      - ".github/workflows/unified-work-harness.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test unified-work-harness/roundtrip.test.mjs

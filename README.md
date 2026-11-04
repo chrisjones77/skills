@@ -5,6 +5,10 @@ The [skills and work contract interface](docs/work-contract-interface.md) explai
 how the core skills supply methods, boundaries and responses to an optional
 coordination runtime, without treating its checks as authority or judgment.
 
+The [unified work harness](unified-work-harness/SKILL.md) bundles a Hypervisor
+contract validator and a narrowly gated, read-only scheduling-derived executor.
+It preserves the accepted contract and leaves review to a human.
+
 ## Workflow storyboards
 
 [Browse twelve illustrated skill workflows](docs/skill-storyboards/README.md), with text transcripts, canonical source links and generation provenance. The images are concept illustrations; the skills remain authoritative.
