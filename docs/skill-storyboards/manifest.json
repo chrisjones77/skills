@@ -299,7 +299,7 @@
       "slug": "unified-work-harness",
       "title": "Unified Work Harness",
       "source_path": "unified-work-harness/SKILL.md",
-      "source_blob_sha": "f88d32983aeedcf84f7d71a74debc01e20286bc3",
+      "source_blob_sha": "d8945f07ad839ea6130a344f33d3daabd7c77b47",
       "asset": "assets/unified-work-harness.png",
       "asset_sha256": "87db9e7f5fdda57ac95b2aeca8e1cdde4dcb2e623924aef238140169931cc2ec",
       "transcript": [
@@ -307,7 +307,7 @@
         "02 Bind assignment — review exact executor assignment and bind its hash to contract scope.",
         "03 Explicit acceptance — recipient accepts the exact contract revision and explicitly resumes.",
         "04 Verify workspace — check clean workspace, branch and commit against the packet.",
-        "05 Execute in a temporary clone — run the approved local read-only worker within its declared scope.",
+        "05 Execute in a temporary clone — run the approved local read-only agent within its declared scope.",
         "06 Preserve evidence — return hash-only evidence and leave substantive human review pending."
       ],
       "limitation": "Concept illustration only: the pictured UI, progress, files and hashes are fictional; it does not depict an implemented interface or prove OS isolation, authorization, model locality or human review.",

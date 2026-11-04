@@ -12,7 +12,7 @@ test("explicit model capability metadata rejects non-tool models without guessin
   assert.doesNotThrow(() => rejectExplicitlyUnsupportedTools({}));
 });
 
-test("accepted Hypervisor contract reaches the actual scheduling executor and returns evidence", async () => {
+test("accepted Hypervisor contract reaches the bundled agent executor and returns evidence", async () => {
   const temp = mkdtempSync(path.join(tmpdir(), "unified-test-"));
   const previous = process.env.DUTYWEAVE_SUBAGENT_OPENCODE_BIN;
   const previousMarker = process.env.UNIFIED_TEST_SECRET;
@@ -45,6 +45,7 @@ test("accepted Hypervisor contract reaches the actual scheduling executor and re
     const prompt = buildAgentPrompt(assignment);
     assert.match(prompt, /output only that value/);
     assert.match(prompt, /stop and report it when required/);
+    assert.match(prompt, /person's fitness or eligibility, operational feasibility, mandatory-constraint validity, or publication authority/);
     const source = JSON.stringify(assignment);
     const permission = buildOpenCodeConfig(assignment, "http://127.0.0.1:11434/v1").permission;
     assert.equal(permission.glob, "deny");

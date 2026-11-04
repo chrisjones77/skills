@@ -33,7 +33,7 @@ These are AI-generated illustrations, not implemented products. All sample UI da
 2. Bind assignment — review exact executor assignment and bind its hash to contract scope.
 3. Explicit acceptance — recipient accepts the exact contract revision and explicitly resumes.
 4. Verify workspace — check clean workspace, branch and commit against the packet.
-5. Execute in a temporary clone — run the approved local read-only worker within its declared scope.
+5. Execute in a temporary clone — run the approved local read-only agent within its declared scope.
 6. Preserve evidence — return hash-only evidence and leave substantive human review pending.
 
 Concept illustration only: the pictured UI, progress, files and hashes are fictional; it does not depict an implemented interface or prove OS isolation, authorization, model locality or human review.

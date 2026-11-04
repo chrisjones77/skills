@@ -992,7 +992,7 @@ export function buildAgentPrompt(assignment) {
     `Allowed read paths: ${assignment.authority.allowed_read_paths.join(", ")}`,
     `Allowed edit paths: ${assignment.authority.allowed_paths.join(", ") || "none"}`,
     "Never use shell, network, subagents, external directories, secrets, or PHI.",
-    "Do not assess clinical fitness, scheduling feasibility, hard-constraint validity, or publication authority.",
+    "Do not assess a person's fitness or eligibility, operational feasibility, mandatory-constraint validity, or publication authority.",
     "Do not alter tests unless the assignment explicitly permits test changes.",
   ];
   if (delegation) {

@@ -6,7 +6,7 @@ how the core skills supply methods, boundaries and responses to an optional
 coordination runtime, without treating its checks as authority or judgment.
 
 The [unified work harness](unified-work-harness/SKILL.md) bundles a Hypervisor
-contract validator and a narrowly gated, read-only scheduling-derived executor.
+contract validator and a narrowly gated, read-only agent executor.
 It preserves the accepted contract and leaves review to a human.
 
 ## Workflow storyboards

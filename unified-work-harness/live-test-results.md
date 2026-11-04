@@ -30,6 +30,9 @@ the temporary files were removed at the end of the test.
 - The previously installed `tev1:latest` explicitly rejected chat; the harness
   failed closed. The runtime now rejects explicitly advertised missing tool
   capability before launching the worker when capability metadata is present.
+- After the executor prompt was made domain-neutral, a further strict synthetic
+  round trip passed with the correct token and review pending. Receipt SHA-256:
+  `149e3056905474cce83d82388ac07f3bf030f9911a7eb51c85aeecf8873cc8bc`.
 
 This is a small smoke test, not a reliability benchmark. The receipt's candidate
 disposition is not substantive approval, and hash-only evidence alone cannot
