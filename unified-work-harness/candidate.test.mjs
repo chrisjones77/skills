@@ -260,3 +260,25 @@ test('candidate rechecks a new destination if an ignored file appears during the
   assert.deepEqual(readdirSync(results), []);
   assert.equal(readFileSync(path.join(root,'new.txt'),'utf8'), 'owner file');
 });
+
+for (const policy of ['resultPolicy','invocationPolicy']) {
+  test('refuse in-checkout private storage before provider or claim: ' + policy, async t => {
+    const {request,source,accept} = await fixture(t);
+    const root = request.workspace.root;
+    const upperRoot = path.join(path.dirname(root),'REPO');
+    // On case-sensitive volumes use a symlink alias for the same physical tree.
+    if (!existsSync(upperRoot)) symlinkSync(root,upperRoot);
+    const relative = policy === 'resultPolicy' ? 'private-results' : '.git/private-ledger';
+    const inside = path.join(root,relative);
+    mkdirSync(inside,{mode:0o700});
+    const destinations = [inside, path.join(upperRoot,relative)];
+    for (const directory of destinations) {
+      request[policy].directory = directory;
+      await assert.rejects(candidateRoundtrip({request, packet:accept()}), /directory rejected/);
+      assert.deepEqual(readdirSync(inside), []);
+      assert.deepEqual(readdirSync(request.resultPolicy.directory), []);
+      assert.deepEqual(readdirSync(request.invocationPolicy.directory), []);
+      assert.deepEqual(source.requests, []);
+    }
+  });
+}

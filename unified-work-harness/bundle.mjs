@@ -20,6 +20,8 @@ import {
   readSync,
   realpathSync,
   rmSync,
+  rmdirSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -721,6 +723,32 @@ function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+// Only a reclaimer removes another owner's directory. Serialize reclaimers
+// outside the replaceable lease, then check that the observed owner still holds it.
+function reclaimDeadProviderLease(lockDirectory) {
+  const ownerPath = path.join(lockDirectory, "owner.json");
+  let owner;
+  try { owner = JSON.parse(readFileSync(ownerPath, "utf8")); }
+  catch { return false; } // A new owner may still be writing its receipt.
+  if (!Number.isSafeInteger(owner?.pid) || owner.pid <= 0 || typeof owner.token !== "string" || !owner.token) return false;
+  try { process.kill(owner.pid, 0); return false; }
+  catch (error) { if (error.code !== "ESRCH") return false; }
+
+  const guard = lockDirectory + ".recovery";
+  try { mkdirSync(guard, {mode:0o700}); }
+  catch (error) { if (error.code === "EEXIST") return false; throw error; }
+  try {
+    let current;
+    try { current = JSON.parse(readFileSync(ownerPath, "utf8")); }
+    catch { return false; }
+    if (current?.token !== owner.token || current.pid !== owner.pid) return false;
+    rmSync(lockDirectory, {recursive:true});
+    return true;
+  } finally {
+    rmdirSync(guard);
+  }
+}
+
 export async function acquireProviderLease(endpoint, timeoutMs, { pollMs = 25 } = {}) {
   assertLoopbackEndpoint(endpoint);
   const lockDirectory = path.join(tmpdir(), `unified-harness-agent-provider-${sha256(endpoint).slice(0, 20)}.lock`);
@@ -749,21 +777,7 @@ export async function acquireProviderLease(endpoint, timeoutMs, { pollMs = 25 } 
       };
     } catch (error) {
       if (error?.code !== "EEXIST") throw error;
-      try {
-        const owner = JSON.parse(readFileSync(ownerPath, "utf8"));
-        if (Number.isInteger(owner.pid)) {
-          try {
-            process.kill(owner.pid, 0);
-          } catch (signalError) {
-            if (signalError?.code === "ESRCH") {
-              rmSync(lockDirectory, { recursive: true, force: true });
-              continue;
-            }
-          }
-        }
-      } catch {
-        // The current owner may still be creating its receipt. Do not steal it.
-      }
+      if (reclaimDeadProviderLease(lockDirectory)) continue;
       if (Date.now() >= deadline) throw new Error(`provider lease wait exceeded ${timeoutMs} ms`);
       await delay(Math.min(pollMs, Math.max(1, deadline - Date.now())));
     }
@@ -2494,13 +2508,36 @@ function validateResultPolicy(policy) {
   if (!policy || Object.keys(policy).sort().join() !== "directory,retention" || typeof policy.directory !== "string" || !path.isAbsolute(policy.directory) || path.normalize(policy.directory) !== policy.directory || policy.retention !== "owner_managed") throw new Error("Invalid private result policy.");
 }
 
+// Compare filesystem identities, including the directory itself. A lexical
+// prefix can miss the same checkout reached under a different spelling.
+export function assertOutsideSource(directory, sourceRoot) {
+  const source = statSync(sourceRoot, {bigint:true});
+  let current = realpathSync.native(directory);
+  for (;;) {
+    const ancestor = statSync(current, {bigint:true});
+    if (ancestor.dev === source.dev && ancestor.ino === source.ino) {
+      throw new Error("Place private storage outside the source checkout.");
+    }
+    const parent = path.dirname(current);
+    if (parent === current) return;
+    current = parent;
+  }
+}
+
+function privateDirectoryIdentity(directory) {
+  const stat = lstatSync(directory);
+  if (!process.getuid || !stat.isDirectory() || stat.uid !== process.getuid() ||
+      (stat.mode & 0o777) !== 0o700 || realpathSync.native(directory) !== directory) {
+    throw new Error("Private result directory rejected.");
+  }
+  return {dev:stat.dev, ino:stat.ino};
+}
+
 function checkResultDirectory(policy, sourceRoot) {
   try {
     validateResultPolicy(policy);
-    const directory = policy.directory;
-    const stat = lstatSync(directory);
-    if (!process.getuid || !stat.isDirectory() || stat.isSymbolicLink() || stat.uid !== process.getuid() || (stat.mode & 0o777) !== 0o700 || realpathSync(directory) !== directory || directory === sourceRoot || directory.startsWith(`${sourceRoot}${path.sep}`)) throw new Error();
-    return { dev: stat.dev, ino: stat.ino };
+    assertOutsideSource(policy.directory, sourceRoot);
+    return privateDirectoryIdentity(policy.directory);
   } catch { throw new Error("Private result directory rejected."); }
 }
 
@@ -2548,7 +2585,7 @@ function claimInvocation(policy, digest, sourceRoot) {
 export function inspectInvocation(policy, assignmentDigest) {
   validateInvocationPolicy(policy);
   if (!/^[a-f0-9]{64}$/.test(assignmentDigest)) throw new Error("Invalid invocation identity.");
-  checkResultDirectory({directory:policy.directory,retention:"owner_managed"}, "/");
+  privateDirectoryIdentity(policy.directory);
   const base = {assignment_digest:assignmentDigest,execution_authorized:false,retry_authorized:false};
   const read = (suffix) => {
     const file = path.join(policy.directory, `${assignmentDigest}.${suffix}.json`);

@@ -1,12 +1,13 @@
 import test from "node:test";
+import { once } from "node:events";
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, chmodSync, rmSync, realpathSync, statSync, readdirSync, symlinkSync, existsSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
-import { contractRoundtrip, inspectInvocation, runHarness, summarizeOpenCodeEvent, buildBoundScope, hypervisor, sha256, rejectExplicitlyUnsupportedTools, buildOpenCodeConfig, buildAgentPrompt, validateAssignment, inspectWorkProfile, inspectWorkIntake, listWorkCapabilities, inspectBundledSource } from "./bundle.mjs";
+import { acquireProviderLease, contractRoundtrip, inspectInvocation, runHarness, summarizeOpenCodeEvent, buildBoundScope, hypervisor, sha256, rejectExplicitlyUnsupportedTools, buildOpenCodeConfig, buildAgentPrompt, validateAssignment, inspectWorkProfile, inspectWorkIntake, listWorkCapabilities, inspectBundledSource } from "./bundle.mjs";
 
 test("untrusted event metadata cannot carry raw text into summaries", () => {
   const secret = "private-canary";
@@ -596,4 +597,58 @@ test("accepted Hypervisor contract reaches the bundled agent executor and return
     else process.env.UNIFIED_TEST_SECRET = previousMarker;
     rmSync(temp, {recursive:true, force:true});
   }
+});
+
+test('concurrent stale lease recovery preserves the replacement owner', async t => {
+  const directory = realpathSync(mkdtempSync(path.join(tmpdir(),'lease-race-')));
+  const originalTemp = process.env.TMPDIR;
+  process.env.TMPDIR = directory;
+  t.after(() => {
+    if (originalTemp === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = originalTemp;
+    rmSync(directory,{recursive:true,force:true});
+  });
+  const endpoint = 'http://127.0.0.1:31771/v1';
+  const prelude = `import {acquireProviderLease} from ${JSON.stringify(new URL('./bundle.mjs',import.meta.url).href)};
+    const lease = await acquireProviderLease(${JSON.stringify(endpoint)},1000);`;
+  // The first process actually exits while holding the lease.
+  const old = spawnSync(process.execPath,['--input-type=module','-e',prelude],{encoding:'utf8'});
+  assert.equal(old.status,0,old.stderr);
+  const held = path.join(directory,'held');
+  const release = path.join(directory,'release');
+  const competitor = `${prelude}
+    const fs = await import('node:fs');
+    fs.writeFileSync(${JSON.stringify(held)},'held');
+    const until = Date.now()+10000;
+    while (!fs.existsSync(${JSON.stringify(release)}) && Date.now()<until)
+      await new Promise(done=>setTimeout(done,10));
+    lease.release();`;
+
+  const kill = process.kill;
+  let finished;
+  t.mock.method(process,'kill', (pid,signal) => {
+    try { return kill(pid,signal); }
+    catch (error) {
+      if (error.code === 'ESRCH' && signal === 0 && !finished) {
+        // Pause this contender after observing death. A separate process
+        // completes recovery and still holds the replacement when we resume.
+        const child = spawn(process.execPath,['--input-type=module','-e',competitor]);
+        finished = once(child,'close');
+        const until = Date.now()+5000;
+        const pause = new Int32Array(new SharedArrayBuffer(4));
+        while (!existsSync(held) && Date.now()<until) Atomics.wait(pause,0,0,5);
+        assert.ok(existsSync(held),'competing process acquired the replacement lease');
+      }
+      throw error;
+    }
+  });
+  try {
+    await assert.rejects(acquireProviderLease(endpoint,800), /lease wait exceeded/);
+    assert.ok(finished);
+  } finally {
+    writeFileSync(release,'release');
+    if (finished) assert.deepEqual(await finished,[0,null]);
+  }
+  const next = await acquireProviderLease(endpoint,500);
+  next.release();
 });

@@ -3,7 +3,7 @@ import test from 'node:test';
 import { execFileSync, spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
-import { mkdtempSync, mkdirSync, realpathSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, realpathSync, writeFileSync, rmSync, existsSync, symlinkSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { setTimeout as wait } from 'node:timers/promises';
@@ -365,3 +365,16 @@ for (const workerSucceeds of [true, false]) {
     assert.equal(existsSync(observed), false);
   });
 }
+
+test('refuse a queue physically inside a selected checkout under another spelling', t => {
+  const f = fixture(t);
+  const root = f.first.packet.workspace.root;
+  const alias = path.join(f.temp,'REPO');
+  if (!existsSync(alias)) symlinkSync(root,alias);
+  const directory = path.join(root,'private-queue');
+  mkdirSync(directory,{mode:0o700});
+  for (const target of [directory,path.join(alias,'private-queue')]) {
+    assert.throws(() => createQueue(target,f.config), /outside the source checkout/);
+    assert.equal(existsSync(path.join(directory,'queue.sqlite')), false);
+  }
+});

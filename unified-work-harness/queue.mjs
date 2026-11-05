@@ -5,7 +5,7 @@ import { fork } from 'node:child_process';
 import { closeSync, lstatSync, openSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildDraftBinding, contractRoundtrip, isQueueWorkerProcess, hypervisor, inspectExecutionWindow, inspectInvocation, sha256 } from './bundle.mjs';
+import { assertOutsideSource, buildDraftBinding, contractRoundtrip, isQueueWorkerProcess, hypervisor, inspectExecutionWindow, inspectInvocation, sha256 } from './bundle.mjs';
 
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
 const bounded = value => typeof value === 'string' && value.trim() && value.length <= 4096;
@@ -47,7 +47,7 @@ function inspectContract(packet) {
 function databasePath(directory) {
   const dir = lstatSync(directory);
   if (!process.getuid || !dir.isDirectory() || dir.uid !== process.getuid() ||
-      (dir.mode & 0o777) !== 0o700 || realpathSync(directory) !== directory) throw Error('Queue requires a canonical owner-only directory.');
+      (dir.mode & 0o777) !== 0o700 || realpathSync.native(directory) !== directory) throw Error('Queue requires a canonical owner-only directory.');
   return path.join(directory, 'queue.sqlite');
 }
 
@@ -105,8 +105,7 @@ export function createQueue(directory, {goal, packets, deadline, providerBudgets
     const {offer,packet} = job;
     const selected = proposal.selected[i];
     if (selected.id !== offer.work_id || selected.outcome !== offer.outcome || offer.assigner !== proposal.owner) throw Error('Selected task and owner must match the accepted offer.');
-    const root = realpathSync(packet.workspace.root);
-    if (directory === root || directory.startsWith(root + path.sep)) throw Error('Place the queue outside the source checkout.');
+    assertOutsideSource(directory, packet.workspace.root);
     return job;
   });
   if (!budgets.length && jobs.some(job => !job.privateRecord)) throw Error('Provider jobs require explicit provider budgets.');

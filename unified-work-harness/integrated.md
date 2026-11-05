@@ -22,3 +22,10 @@ const receipt = await contractRoundtrip({ ...policies, packet: acceptedResumedPa
 ```
 
 The scope kind is `unified-harness-readonly-v6`. Its receipt is `unified.contract-executor-receipt.v6`. Both carry `package_binding` with the inventory, full-profile request, exact intake and review digests plus the intake expiry. Older accepted packets retain their original scope version and checks, including the embedded-source pin. A change to the installed bundle invalidates that pin. Use a fresh offer for v6. The executable synthetic example is [integrated.test.mjs](integrated.test.mjs).
+
+
+## Private storage and provider recovery
+
+Place the result directory, invocation ledger and queue database outside every source checkout used by that operation. The harness checks each storage directory’s physical ancestry before writing.
+
+A waiter may reclaim a provider lease after its owner exits. Reclaimers take an exclusive sibling directory ending in `.lock.recovery` and recheck the owner token before removing the stale lease. If a reclaimer crashes while holding this guard, subsequent stale-lease recovery can time out. Stop the dispatchers sharing that endpoint, verify the owner and reclaimers have exited, and inspect the lease record before retiring an abandoned guard. Resume with one dispatcher first. Quiesce older harness versions before switching a shared lease namespace to this version.
