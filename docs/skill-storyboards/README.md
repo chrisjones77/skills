@@ -1,11 +1,12 @@
 # Skill workflow storyboards
 
-Twelve six-panel concept illustrations cover the current twelve-skill inventory at source revision `c8f77a86170d72836c47116fa0c2eeffa42a0497`. Refreshed 2026-10-28; later source changes require reconciliation. The original ten-board manifest, prompts, lineage and prior coverage-board image remain in [revision history](revisions/20261022/README.md).
+Thirteen six-panel concept illustrations cover the current thirteen-skill inventory at source revision `fb3e9f17255757fa1fdd158f6d0da4d00b98065c`. Refreshed 2026-11-05; later source changes require reconciliation. The original ten-board manifest, prompts, lineage and prior coverage-board image remain in [revision history](revisions/20261022/README.md).
 
 These are AI-generated illustrations, not implemented products. All sample UI data, including file sizes, timing and frame counts, are fictional and are not technical calculations or evidence. Canonical skill sources and their references take precedence. Human acceptance remains pending.
 
 [Local HTML gallery](index.html) · [Source and asset manifest](manifest.json) · [Generation record](generation.json) · [Asset lineage](asset-lineage.json) · [Feature specification](../../specs/001-skill-storyboards/spec.md) · [Work and safety record](../../specs/001-skill-storyboards/work-and-safety.md)
 
+- [AI Operational Governance](#ai-operational-governance)
 - [Harnessed Dispatch](#harnessed-dispatch)
 - [Project Vault Operator](#project-vault-operator)
 - [Gentle Boss · Call and Response](#call-and-response-harness)
@@ -245,5 +246,24 @@ Human acceptance: pending.
 6. Review and plan — turn season evidence into bounded next-season experiments.
 
 Observe honestly · Preserve provenance · Tested recipes govern canning. Illustration is not field inspection, recipe validation or safety certification.
+
+Human acceptance: pending.
+
+<a id="ai-operational-governance"></a>
+
+## AI Operational Governance
+
+[Canonical skill](../../ai-operational-governance/SKILL.md) · [Full PNG](assets/ai-operational-governance.png)
+
+![AI Operational Governance: six-panel concept illustration](assets/ai-operational-governance.png)
+
+1. Find the obligation — locate the applicable source and workflow boundary.
+2. Name the promise — connect an observable commitment to proposed ownership and operating responsibilities.
+3. Place the control — enforce required approval before a message is sent.
+4. Act in time — connect sensing, decision and intervention before the external action.
+5. Test the boundary — examine missing approval, stale signals and bypass paths; illustration outcomes are not tested.
+6. Record and revisit — preserve evidence separately from decisions and reconsider changed policy.
+
+Records support assurance. Controls must act. Human acceptance remains separate. This is a concept illustration, not an implemented QVCH/UWH adapter or proof of control effectiveness.
 
 Human acceptance: pending.

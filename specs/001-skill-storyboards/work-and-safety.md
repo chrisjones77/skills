@@ -191,3 +191,16 @@ Revisit on a skill or referenced-document change, regenerated image, audience/pu
 - [Markdown gallery](../../docs/skill-storyboards/README.md), [local HTML gallery](../../docs/skill-storyboards/index.html), [manifest](../../docs/skill-storyboards/manifest.json), [generation record](../../docs/skill-storyboards/generation.json) and [asset lineage](../../docs/skill-storyboards/asset-lineage.json).
 
 Author documentation completion is separate from human acceptance and release. The remaining browser check and human review stay open in the task record; the PR remains draft. The practical safety commitment is to make limitations, review capacity and decision authority visible, and to preserve agency and evidence when the work needs to pause or change.
+
+
+## 13. AI Operational Governance addition — 2026-11-05
+
+The user requested completion of storyboard integration and remaining checks, and asked how
+to make the method a QVCH bolt-on with a possible UWH integration. The new concept board,
+accessible transcript, exact generation prompt, source/asset bindings and lineage are added.
+The source article and its email metadata remain excluded. The new guide distinguishes the
+passive monitor, retained ledger and active pre-effect control, preserves canonical codes,
+and proposes QVCH semantics before a separately specified UWH adapter. Existing harnesses
+remain unchanged. [Current verification](verification.md#ai-operational-governance-integration--2026-11-05)
+records bounded visual, browser, positive and negative checks. Human acceptance and adoption
+remain distinct from these checks. No merge, installation or production execution is claimed.
