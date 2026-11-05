@@ -36,7 +36,7 @@ Start the child with fresh context rather than a fork of a private conversation.
 
 If the child's evidence contradicts its verdict, a required field is absent, or it supplies the underlying deliverable, treat the finding as invalid; do not trim it into a pass, flip the verdict or proceed. Inspect the child response, not just the parent paraphrase. An Ollama model tagged `:cloud` uses remote inference even when the client connects to loopback; do not substitute it on a local-only assignment.
 
-For a synthetic smoke, pass the full child response to [checkReviewFinding](examples/check-review-finding.mjs). It checks JSON shape and verdict consistency only. Compare the returned fields with the case separately: a model can report internally consistent but factually wrong evidence.
+For a synthetic smoke, pass the full child response to [checkReviewFinding](examples/check-review-finding.mjs). It accepts raw JSON or one standalone Markdown JSON block, never prose around either, and checks shape and verdict consistency. Report fenced output separately when testing raw-format compliance. Compare the fields with the excerpt: a model can report internally consistent but factually wrong evidence.
 
 Where the host exposes the delegation arguments, compare the actual child's excerpt with the fixture before scoring. A placeholder, changed facts, or a missing excerpt is a delivery failure, not a reviewer verdict. Record that attempt separately; do not credit a parent-written answer.
 
