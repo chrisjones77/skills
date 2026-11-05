@@ -281,7 +281,10 @@ function runSupervised(directory, options, claim) {
     const started = performance.now();
     function cancel(reason) {
       failure = reason;
-      if (child.pid) terminateGroup(child.pid);
+      if (child.pid) {
+        try { terminateGroup(child.pid); }
+        catch { failure = 'Could not terminate the queue worker process group.'; }
+      }
     }
     function check() {
       try {
@@ -293,7 +296,15 @@ function runSupervised(directory, options, claim) {
     child.on('message', msg => {
       if (msg?.ok && msg.receipt?.assignment_digest === claim.job && msg.receipt?.schema_version === claim.receiptSchema) receipt = msg.receipt;
     });
-    child.on('error', () => { clearInterval(monitor); cancel('Could not start queue worker.'); reject(Error(failure)); });
+    child.on('error', () => { cancel('Could not start queue worker.'); });
+    // The supervisor owns this POSIX group. A worker can return a valid reply
+    // while a non-detached helper is still running. End the group on every
+    // exit, before the close handler can publish the receipt or report failure.
+    child.once('exit', () => {
+      clearInterval(monitor);
+      try { terminateGroup(child.pid); }
+      catch { failure = 'Could not terminate the queue worker process group.'; }
+    });
     child.once('close', code => {
       clearInterval(monitor);
       if (code !== 0 || !receipt || failure) reject(Error(failure || 'Contract dispatch failed; inspect the accepted ledger.'));

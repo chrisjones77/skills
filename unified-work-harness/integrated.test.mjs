@@ -5,12 +5,12 @@ import { mkdtempSync, mkdirSync, writeFileSync, realpathSync, rmSync, readFileSy
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { contractRoundtrip, buildBoundScope, inspectInvocation, hypervisor, sha256, inspectBundledSource } from './bundle.mjs';
+import { buildOpenCodeConfig, validatePathAccess, contractRoundtrip, buildBoundScope, inspectInvocation, hypervisor, sha256, inspectBundledSource } from './bundle.mjs';
 import { buildPackageScope } from './integrated.mjs';
 import { packageInventory } from './package.mjs';
 import { reviewIntake } from './intake.mjs';
 
-function fixture(t, endpoint) {
+function fixture(t, endpoint, trackedFile = 'source.txt') {
   const temp = realpathSync(mkdtempSync(path.join(tmpdir(), 'unified-package-test-')));
   t.after(() => rmSync(temp, { recursive: true, force: true }));
   const root = path.join(temp, 'repo');
@@ -19,8 +19,8 @@ function fixture(t, endpoint) {
   git('init', '-q');
   git('config', 'user.name', 'Synthetic Test');
   git('config', 'user.email', 'synthetic@example.invalid');
-  writeFileSync(path.join(root, 'source.txt'), 'cobalt-otter-47');
-  git('add', 'source.txt');
+  writeFileSync(path.join(root, trackedFile), 'cobalt-otter-47');
+  git('add', '-f', trackedFile);
   git('commit', '-qm', 'synthetic case');
   const revision = git('rev-parse', 'HEAD');
   const branch = git('branch', '--show-current');
@@ -167,5 +167,38 @@ for (const event of [
       assert.equal(artifact.response.trim(),'cobalt-otter-47');
       await assert.rejects(contractRoundtrip({...inputs,packet}), /already|claimed|exists/i);
     }
+  });
+}
+
+test('a protected case alias cannot be offered to the v6 worker', t => {
+  const {inputs} = fixture(t, 'http://127.0.0.1:1/v1', '.env');
+  const assignment = JSON.parse(inputs.bindingInputs.assignmentJson);
+  assignment.authority.allowed_read_paths = ['.ENV'];
+  inputs.bindingInputs.assignmentJson = JSON.stringify(assignment);
+  assert.throws(() => buildPackageScope(inputs));
+  assert.throws(() => buildOpenCodeConfig(assignment, inputs.endpoint), /protected/i);
+  assert.equal(validatePathAccess(assignment, '.ENV', 'read').allowed, false);
+  // A broad mixed-case directory grant would let the worker's recursive
+  // wildcard reach protected children even with a case-sensitive literal deny.
+  for (const scope of ['.EnV.local', '.GiT/config', 'Scripts', '.GitHub']) {
+    assignment.authority.allowed_read_paths = [scope];
+    assert.throws(() => buildOpenCodeConfig(assignment, inputs.endpoint), /protected/i);
+  }
+  assignment.authority.allowed_read_paths = ['scripts/report.mjs'];
+  assert.doesNotThrow(() => buildOpenCodeConfig(assignment, inputs.endpoint));
+  assert.deepEqual(readdirSync(inputs.invocationPolicy.directory), []);
+});
+
+for (const flag of ['--assume-unchanged','--skip-worktree']) {
+  test('v6 rejects source drift hidden by ' + flag + ' before claiming an attempt', async t => {
+    const {inputs,temp,accept} = fixture(t, 'http://127.0.0.1:1/v1');
+    const packet = accept(buildPackageScope(inputs));
+    const cwd = path.join(temp, 'repo');
+    execFileSync('git', ['update-index', flag, 'source.txt'], {cwd});
+    writeFileSync(path.join(cwd, 'source.txt'), 'edited after acceptance');
+    assert.equal(execFileSync('git', ['status','--porcelain'], {cwd,encoding:'utf8'}), '');
+    await assert.rejects(contractRoundtrip({...inputs,packet}), /index flag/i);
+    assert.deepEqual(readdirSync(inputs.invocationPolicy.directory), []);
+    assert.deepEqual(readdirSync(inputs.resultPolicy.directory), []);
   });
 }

@@ -824,7 +824,8 @@ export function normalizeAllowedPath(value) {
     path.posix.isAbsolute(normalized) ||
     normalized === ".." ||
     normalized.startsWith("../") ||
-    normalized.includes("/../") ||
+    normalized.split("/").includes("..") ||
+    path.posix.normalize(normalized) === "." ||
     normalized.includes("\0") ||
     /[*?\[\]{}]/.test(normalized)
   ) {
@@ -841,8 +842,24 @@ export function isTestPath(filename) {
   return /(^|\/)(tests?|__tests__)(\/|$)|\.(test|spec)\.[^.]+$|_test\.go$/.test(filename);
 }
 
-export function isProtectedPath(filename) {
+// A grant must respect the protected names on case-insensitive volumes too.
+function protectedPathKey(filename) {
+  return normalizeAllowedPath(filename).normalize("NFKC").toLowerCase().replace(/\p{Default_Ignorable_Code_Point}/gu, "");
+}
+
+function checkedScopePath(filename) {
   const normalized = normalizeAllowedPath(filename);
+  const key = protectedPathKey(normalized);
+  // Directory grants become recursive globs in the worker. A literal deny on
+  // a child cannot reliably exclude every filesystem spelling of that child.
+  if (isProtectedPath(normalized) || PROTECTED_PATHS.some(protectedName => protectedName.startsWith(key + "/"))) {
+    throw new Error("scope includes a protected path; select a narrower path");
+  }
+  return normalized;
+}
+
+export function isProtectedPath(filename) {
+  const normalized = protectedPathKey(filename);
   return normalized.startsWith(".env.")
     || PROTECTED_PATHS.some((prefix) => pathMatchesPrefix(normalized, prefix));
 }
@@ -984,8 +1001,7 @@ export function validateAssignment(value) {
     } else {
       for (const [index, allowedPath] of value.authority.allowed_read_paths.entries()) {
         try {
-          const normalized = normalizeAllowedPath(allowedPath);
-          if (isProtectedPath(normalized)) errors.push(`authority.allowed_read_paths[${index}] is protected`);
+          checkedScopePath(allowedPath);
         } catch (error) {
           errors.push(`authority.allowed_read_paths[${index}] ${error.message}`);
         }
@@ -996,8 +1012,7 @@ export function validateAssignment(value) {
     } else {
       for (const [index, allowedPath] of value.authority.allowed_paths.entries()) {
         try {
-          const normalized = normalizeAllowedPath(allowedPath);
-          if (isProtectedPath(normalized)) errors.push(`authority.allowed_paths[${index}] is protected`);
+          checkedScopePath(allowedPath);
         } catch (error) {
           errors.push(`authority.allowed_paths[${index}] ${error.message}`);
         }
@@ -1142,13 +1157,13 @@ export function buildOpenCodeConfig(assignment, endpoint) {
   endpoint ??= profile.defaultEndpoint;
   const provider = assignment.assignee.provider;
   const readPermission = { "*": "deny" };
-  for (const allowedPath of assignment.authority.allowed_read_paths.map(normalizeAllowedPath)) {
+  for (const allowedPath of assignment.authority.allowed_read_paths.map(checkedScopePath)) {
     readPermission[allowedPath] = "allow";
     readPermission[`${allowedPath}/**`] = "allow";
   }
   const editPermission = { "*": "deny" };
   if (["candidate_edit", "defect_reproduction"].includes(assignment.authority.mode)) {
-    for (const allowedPath of assignment.authority.allowed_paths.map(normalizeAllowedPath)) {
+    for (const allowedPath of assignment.authority.allowed_paths.map(checkedScopePath)) {
       editPermission[allowedPath] = "allow";
       editPermission[`${allowedPath}/**`] = "allow";
     }
@@ -1554,8 +1569,13 @@ export function assertSafeGitSource(root) {
   const keys=execFileSync("git",["config","--no-includes","--null","--name-only","--list"],options).split("\0").filter(Boolean);
   const allowed=/^(?:core\.(?:repositoryformatversion|filemode|bare|logallrefupdates|ignorecase|precomposeunicode)|user\.(?:name|email)|remote\.[^\n]+\.(?:url|fetch|pushurl)|branch\.[^\n]+\.(?:remote|merge|pushremote))$/;
   if (!keys.every(key=>allowed.test(key))) throw new Error("Unsupported source Git configuration; use a clean local clone.");
-  const modes=execFileSync("git",[...contractGitArgs,"ls-files","--format=%(objectmode)"],options);
-  if (modes.split("\n").includes("160000")) throw new Error("Submodule checkouts require separate review.");
+  // -v lowercases the tag for assume-unchanged. S (including lowercase s)
+  // marks skip-worktree. Split on NUL so a tracked filename cannot forge tags.
+  const index = execFileSync("git", [...contractGitArgs, "ls-files", "-v", "--stage", "-z"], options);
+  for (const entry of index.split("\0")) {
+    if (/^(?:[a-z]|S) /.test(entry)) throw new Error("Source index flags hide tracked state; use a full clean checkout.");
+    if (/^. 160000 /.test(entry)) throw new Error("Submodule checkouts require separate review.");
+  }
 }
 
 function runCommand(command, args, options = {}) {

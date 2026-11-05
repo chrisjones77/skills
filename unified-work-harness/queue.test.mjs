@@ -324,3 +324,44 @@ test('attended refusal, stop and expiry retain a recoverable response record wit
     assert.deepEqual(inspectQueue(directory).jobs.map(j=>j.state),[terminal,'cancelled']);
   }
 });
+
+for (const workerSucceeds of [true, false]) {
+  test('queue terminates same-group descendants on ' + (workerSucceeds ? 'success' : 'failure'), async t => {
+    const f = fixture(t, await simulatedProvider(t));
+    const pidFile = path.join(f.temp, 'descendant-pid');
+    const release = path.join(f.temp, 'release');
+    const observed = path.join(f.temp, 'after-dispatch');
+    const descendant = `
+      const fs = require('node:fs');
+      const poll = setInterval(() => {
+        if (fs.existsSync(${JSON.stringify(release)})) {
+          fs.writeFileSync(${JSON.stringify(observed)}, 'still working');
+          clearInterval(poll);
+        }
+      }, 10);
+      setTimeout(() => clearInterval(poll), 5000).unref();`;
+    const events = [
+      {type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'reference'}}},
+      {type:'text',part:{text:'reference'}}
+    ];
+    installWorker(t, f, `
+      const cp = require('node:child_process'), fs = require('node:fs');
+      const helper = cp.spawn(process.execPath, ['-e', ${JSON.stringify(descendant)}], {stdio:'ignore',detached:false});
+      fs.writeFileSync(${JSON.stringify(pidFile)}, String(helper.pid));
+      helper.unref();
+      for (const event of ${JSON.stringify(events)}) console.log(JSON.stringify(event));
+      process.exitCode = ${workerSucceeds ? 0 : 1};`);
+    createQueue(f.directory, f.config);
+    if (workerSucceeds) {
+      await dispatchNext(f.directory, f.first);
+      assert.equal(inspectQueue(f.directory).jobs[0].state, 'pending_review');
+    } else {
+      await assert.rejects(dispatchNext(f.directory, f.first));
+      assert.equal(inspectQueue(f.directory).jobs[0].state, 'failed');
+    }
+    stopQueue(f.directory);
+    writeFileSync(release, 'after dispatch and stop');
+    await assertWorkerExited(pidFile);
+    assert.equal(existsSync(observed), false);
+  });
+}

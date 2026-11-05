@@ -150,7 +150,7 @@ transition is attempted. Notify any active person directly.
 
 Call `stopQueue(directory)` for an operator stop, including a concern described
 by a human stop condition. It durably cancels outstanding reservations that
-have yet to start. The live supervisor checks for a stop and deadline about
+have yet to start. The supervisor sends SIGKILL to any remaining members of its job’s POSIX process group when the direct child exits, before returning a receipt or reporting failure. The live supervisor checks for a stop and deadline about
 every 100 ms, subject to host scheduling. It terminates the active job's POSIX
 process group. Already delivered requests or detached descendants may require
 provider or OS-level intervention. Abrupt cancellation can leave private

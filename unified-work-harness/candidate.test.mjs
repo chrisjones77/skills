@@ -204,3 +204,16 @@ test("a candidate requires the selected package capability, exact effect ceiling
   assert.deepEqual(source.requests,[]);
   assert.deepEqual(readdirSync(request.invocationPolicy.directory),[]);
 });
+
+test('candidate preflight rejects hidden source edits without contacting a provider', async t => {
+  const {request,source,accept,git,results} = await fixture(t);
+  const packet = accept();
+  const file = request.reads[0];
+  git('update-index', '--assume-unchanged', file);
+  writeFileSync(path.join(request.workspace.root, file), 'locally changed synthetic input');
+  assert.equal(git('status', '--porcelain'), '');
+  await assert.rejects(candidateRoundtrip({packet,request}), /index flag/i);
+  assert.deepEqual(source.requests, []);
+  assert.deepEqual(readdirSync(request.invocationPolicy.directory), []);
+  assert.deepEqual(readdirSync(results), []);
+});
