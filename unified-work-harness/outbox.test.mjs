@@ -67,7 +67,7 @@ test('restart after state commit retains the exact pending event for redelivery'
 test('acknowledgement is exact and idempotent and never advances work',t=>{
   const f=fixture(t);createQueue(f.directory,f.config);const row=readPendingEvents(f.directory)[0],before=inspectQueue(f.directory);
   const ack={eventId:row.event.id,eventSha256:row.sha256,receipt:receipt(row)};
-  for(const changed of [{...ack,eventSha256:'0'.repeat(64)},{...ack,receipt:{...ack.receipt,event_id:'unrelated'}},{...ack,receipt:{...ack.receipt,state:'committed',commit:null}}])assert.throws(()=>acknowledgeEvent(f.directory,changed),/acknowledgement/);
+  for(const changed of [{...ack,eventSha256:'0'.repeat(64)},{...ack,receipt:{...ack.receipt,event_id:'unrelated'}},{...ack,receipt:{...ack.receipt,state:'committed',commit:null}},{...ack,receipt:{...ack.receipt,state:'committed',commit:['a'.repeat(40)]}}])assert.throws(()=>acknowledgeEvent(f.directory,changed),/acknowledgement/);
   assert.equal(readPendingEvents(f.directory).length,1);
   assert.equal(acknowledgeEvent(f.directory,ack).already_acknowledged,false);
   assert.equal(acknowledgeEvent(f.directory,{...ack,receipt:{...ack.receipt,duplicate:true}}).already_acknowledged,true);

@@ -58,7 +58,7 @@ export function pendingOutbox(db,limit) {
 }
 export function acknowledgeOutbox(db,{eventId,eventSha256,receipt}) {
   const row=checkedRows(db).find(r=>r.event_id===eventId);
-  if(!row||!hex(eventSha256)||row.sha256!==eventSha256||!receipt||Object.keys(receipt).sort().join()!=='commit,duplicate,event_id,remote_persistence,schema,sha256,state'||receipt.schema!=='work-recorder.receipt.v1'||receipt.event_id!==eventId||receipt.sha256!==eventSha256||receipt.remote_persistence!=='unverified'||typeof receipt.duplicate!=='boolean'||!['saved_locally','committed'].includes(receipt.state)||(receipt.state==='saved_locally'?receipt.commit!==null:!/^([a-f0-9]{40}|[a-f0-9]{64})$/.test(receipt.commit??'')))throw Error('Recorder acknowledgement differs from the exact outbox event');
+  if(!row||!hex(eventSha256)||row.sha256!==eventSha256||!receipt||Object.keys(receipt).sort().join()!=='commit,duplicate,event_id,remote_persistence,schema,sha256,state'||receipt.schema!=='work-recorder.receipt.v1'||receipt.event_id!==eventId||receipt.sha256!==eventSha256||receipt.remote_persistence!=='unverified'||typeof receipt.duplicate!=='boolean'||!['saved_locally','committed'].includes(receipt.state)||(receipt.state==='saved_locally'?receipt.commit!==null:(typeof receipt.commit!=='string'||!/^([a-f0-9]{40}|[a-f0-9]{64})$/.test(receipt.commit))))throw Error('Recorder acknowledgement differs from the exact outbox event');
   const already=row.acknowledgement!==null;
   if(!already)db.prepare('UPDATE recorder_outbox SET acknowledgement=? WHERE event_id=?').run(JSON.stringify(receipt),eventId);
   return {event_id:eventId,already_acknowledged:already,execution_authorized:false};
