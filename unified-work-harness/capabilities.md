@@ -27,6 +27,8 @@ Read this table alongside the [source notes](sources.md). Method lineage describ
 
 ## Separately developed controls
 
+The [optional native reviewer roles](package-guide.md#optional-native-assignment-reviewer) give Codex and Claude Code a pre-offer advisory method. They do not add a provider adapter, change the contract or satisfy independent human review.
+
 The initial integration packaged the Hypervisor contract, scoped OpenCode executor, lease, adapter command builders and candidate behavior. Subsequent work added draft binding (v2), an approved private result destination (v3), a single-attempt ledger and recovery inspection (v4), and a UTC start window (v5). The lease limits cooperating processes sharing its namespace. The ledger provides at most one attempt per accepted digest with intact local state. Start expiry gates launch; the worker has a separate timeout. Digest and token-shape checks establish identity and format. The reviewer assesses substantive correctness.
 
 

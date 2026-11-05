@@ -47,7 +47,7 @@ const uniqueList = a => Array.isArray(a) && a.length <= 32 && a.every(x=>typeof 
 // never name a remote module or escape the package, even via a symlink.
 export function packageInventory() {
   const files = JSON.parse(readFileSync(path.join(root,"package-files.json"),"utf8"));
-  if (!uniqueFiles(files) || !["integrated.mjs","intake.mjs","coordination.mjs","methods.md","LICENSE"].every(file => files.includes(file)) || !Object.values(catalog).every(([,file]) => files.includes(file)) ||
+  if (!uniqueFiles(files) || !["integrated.mjs","intake.mjs","coordination.mjs","methods.md","LICENSE","native-roles/uwh_reviewer.toml","native-roles/uwh-reviewer.md"].every(file => files.includes(file)) || !Object.values(catalog).every(([,file]) => files.includes(file)) ||
       readdirSync(root).some(file => file.endsWith(".test.mjs") && !files.includes(file)))
     throw new Error("Invalid package file manifest");
   const identities = files.map(file => {
