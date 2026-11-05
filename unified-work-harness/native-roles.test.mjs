@@ -33,6 +33,19 @@ test("a compatible limit does not hold review, but an outcome that requires viol
   assert.throws(() => check({scope_boundaries:undefined}));
 });
 
+test("scope-conflict smoke requires the operative limit in the boundary field", () => {
+  const cases = JSON.parse(readFileSync(new URL("./examples/native-review-cases.json", import.meta.url)));
+  const fixture = cases.find(c => c.id === "scope-conflict");
+  assert.ok(fixture.excerpt.includes(fixture.requiredScopeQuote));
+  const check = scope_boundaries => checkReviewFinding(JSON.stringify({scope_boundaries,
+    independent_reviewer:"Cy", rejected_as_acceptance:["email the vendor (outside the in chat only scope)"],
+    other_blockers:[], verdict:"HOLD"}), fixture);
+  for (const limits of [[], ["ten minutes available"], ["in chat"], ["in chat onlysometimes"]])
+    assert.throws(() => check(limits), /required scope quotation/);
+  assert.equal(check(["Compare the totals in chat only."]).verdict, "HOLD");
+  assert.equal(check(["Chat-only comparison"]).verdict, "HOLD");
+});
+
 test("both native host templates are pinned and deliver the same excerpt-only review", () => {
   const { files } = packageInventory();
   const read = name => {
