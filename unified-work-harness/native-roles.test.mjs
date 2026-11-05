@@ -3,6 +3,19 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { packageInventory } from "./package.mjs";
+import { checkReviewFinding } from "./examples/check-review-finding.mjs";
+
+test("smoke diagnostic rejects a false hold, a missing reviewer field, trailing work and unsupported referrals", () => {
+  const clean = { independent_reviewer: "reviewer-7", rejected_as_acceptance: [], other_blockers: [], verdict: "REFER TO HUMAN REVIEW" };
+  assert.deepEqual(checkReviewFinding(JSON.stringify(clean)), clean);
+  for (const delta of [{verdict:"HOLD"}, {independent_reviewer:undefined}, {independent_reviewer:null},
+      {other_blockers:["capacity unknown"]}, {rejected_as_acceptance:["contact supplier"]}]) {
+    assert.throws(() => checkReviewFinding(JSON.stringify({...clean, ...delta})));
+  }
+  assert.throws(() => checkReviewFinding(JSON.stringify(clean) + "\nThe answer is 42."));
+  const blocked = {...clean, independent_reviewer:null, rejected_as_acceptance:["contact supplier"], verdict:"HOLD"};
+  assert.deepEqual(checkReviewFinding(JSON.stringify(blocked)), blocked);
+});
 
 test("both native host templates are pinned and deliver the same excerpt-only review", () => {
   const { files } = packageInventory();

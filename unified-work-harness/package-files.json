@@ -13,6 +13,7 @@
   "coordination.test.mjs",
   "delivery-checklist.md",
   "examples/attended-review.mjs",
+  "examples/check-review-finding.mjs",
   "examples/native-review-cases.json",
   "examples/methods/card-r1.svg",
   "examples/methods/card-r2.svg",
