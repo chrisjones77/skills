@@ -378,3 +378,16 @@ test('refuse a queue physically inside a selected checkout under another spellin
     assert.equal(existsSync(path.join(directory,'queue.sqlite')), false);
   }
 });
+
+test('queue rejects source-local temp before reserving an attempt or worker seconds', async t => {
+  const f = fixture(t);
+  createQueue(f.directory,f.config);
+  const before = inspectQueue(f.directory);
+  const inside = path.join(f.first.packet.workspace.root,'.tmp');
+  mkdirSync(inside);
+  const previous = process.env.TMPDIR;
+  t.after(() => { if (previous === undefined) delete process.env.TMPDIR; else process.env.TMPDIR = previous; });
+  process.env.TMPDIR = inside;
+  await assert.rejects(dispatchNext(f.directory,f.first), /outside the source checkout/);
+  assert.deepEqual(inspectQueue(f.directory), before);
+});

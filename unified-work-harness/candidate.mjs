@@ -5,11 +5,10 @@ import { resolvePackageProfile } from "./package.mjs";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { readFileSync, writeFileSync, realpathSync, mkdirSync, readdirSync, mkdtempSync, rmSync, lstatSync } from "node:fs";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import {
   hypervisor, sha256, inspectBundledSource, inspectWorkIntake, inspectExecutionWindow, inspectInvocation,
-  claimInvocation, validateInvocationPolicy, checkResultDirectory, normalizeAllowedPath,
+  pinTempParent, claimInvocation, validateInvocationPolicy, checkResultDirectory, normalizeAllowedPath,
   isProtectedPath, isOllamaCloudModelId, assertSafeGitSource, contractGitEnvironment, contractGitArgs,
 } from "./bundle.mjs";
 
@@ -283,6 +282,7 @@ export async function candidateRoundtrip({packet,request,signal}) {
   request=structuredClone(request);
   const assignment=checkContract(packet,request);
   const root=request.workspace.root;
+  const getTempParent=pinTempParent(root);
   const resultDir=checkResultDirectory(request.resultPolicy,root);
   const deadline=AbortSignal.timeout(request.limits.timeoutMs);
   const stop=signal ? AbortSignal.any([signal,deadline]) : deadline;
@@ -311,7 +311,7 @@ export async function candidateRoundtrip({packet,request,signal}) {
     beforeLaunch();
     const proposal=await propose(request,files,stop);
     checkBudget();
-    scratch=mkdtempSync(path.join(tmpdir(),"unified-text-candidate-"));
+    scratch=mkdtempSync(path.join(getTempParent(),"unified-text-candidate-"));
     const candidate=materialize(request,files,proposal,scratch);
     checkPackageProfile(request);
     checkWorkspace(request.workspace);
@@ -332,7 +332,12 @@ export async function candidateRoundtrip({packet,request,signal}) {
   } catch (error) {
     invocation.finish("failed",sha256(error instanceof Error?error.message:"failed"));
     throw new Error("Candidate attempt failed; inspect the ledger before considering a new offer", {cause:error});
-  } finally { if (scratch) rmSync(scratch,{recursive:true,force:true}); }
+  } finally {
+    if (scratch) {
+      getTempParent();
+      rmSync(scratch,{recursive:true,force:true});
+    }
+  }
 }
 
 // Opens a completed private artifact for the person responsible for review.

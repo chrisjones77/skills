@@ -5,6 +5,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import * as cryptoModule from "node:crypto";
 const {createHash, randomUUID} = cryptoModule;
 import {
+  accessSync,
   existsSync,
   openSync,
   closeSync,
@@ -749,15 +750,19 @@ function reclaimDeadProviderLease(lockDirectory) {
   }
 }
 
-export async function acquireProviderLease(endpoint, timeoutMs, { pollMs = 25 } = {}) {
-  assertLoopbackEndpoint(endpoint);
-  const lockDirectory = path.join(tmpdir(), `unified-harness-agent-provider-${sha256(endpoint).slice(0, 20)}.lock`);
+export async function acquireProviderLease(endpoint, timeoutMs, { pollMs = 25, getTempParent = tmpdir } = {}) {
+  const {port} = parseLoopbackEndpoint(endpoint);
+  // All accepted API roots on a local HTTP port share the worker slot.
+  // Keep the existing lock name for the default numeric /v1 endpoints.
+  const listener = `http://127.0.0.1${port ? ":" + port : ""}/v1`;
+  const lockDirectory = path.join(getTempParent(), `unified-harness-agent-provider-${sha256(listener).slice(0, 20)}.lock`);
   const ownerPath = path.join(lockDirectory, "owner.json");
   const token = randomUUID();
   const started = Date.now();
   const deadline = started + timeoutMs;
 
   while (true) {
+    getTempParent();
     try {
       mkdirSync(lockDirectory, { mode: 0o700 });
       writeFileSync(ownerPath, `${JSON.stringify({ pid: process.pid, token, acquired_at: new Date().toISOString() })}\n`, { mode: 0o600 });
@@ -768,6 +773,7 @@ export async function acquireProviderLease(endpoint, timeoutMs, { pollMs = 25 } 
           if (released) return;
           released = true;
           try {
+            getTempParent();
             const owner = JSON.parse(readFileSync(ownerPath, "utf8"));
             if (owner.token === token) rmSync(lockDirectory, { recursive: true, force: true });
           } catch {
@@ -1629,12 +1635,17 @@ async function resolveProjectRoot(cwd) {
   return result.stdout.trim();
 }
 
-export function assertLoopbackEndpoint(endpoint) {
+function parseLoopbackEndpoint(endpoint) {
   const parsed = new URL(endpoint);
   if (parsed.protocol !== "http:" || !["127.0.0.1", "localhost", "::1"].includes(parsed.hostname)) {
     throw new Error("model endpoint must be an HTTP loopback URL");
   }
   if (!parsed.pathname.endsWith("/v1")) throw new Error("model endpoint must end in /v1");
+  return parsed;
+}
+
+export function assertLoopbackEndpoint(endpoint) {
+  parseLoopbackEndpoint(endpoint);
 }
 
 export function rejectExplicitlyUnsupportedTools(tag) {
@@ -1937,14 +1948,14 @@ export function isQueueWorkerProcess() {
     && !!process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(new URL("./queue.mjs", import.meta.url));
 }
 
-async function runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, capturePrivateResult = false }) {
+async function runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, getTempParent, capturePrivateResult = false }) {
   const prompt = buildAgentPrompt(assignment);
   const isolatedHome = path.join(artifactDirectory, "state", "home");
   mkdirSync(isolatedHome, { recursive: true, mode: 0o700 });
   const environment = {
     PATH: process.env.PATH ?? "/usr/bin:/bin",
     HOME: isolatedHome,
-    TMPDIR: tmpdir(),
+    TMPDIR: getTempParent(),
     LANG: "C.UTF-8",
     OPENCODE_CONFIG: configPath,
     OPENCODE_DISABLE_AUTOUPDATE: "true",
@@ -2080,6 +2091,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
     clearTimeout(timer);
     clearTimeout(drainTimer);
   });
+  getTempParent();
   inspectLine(stdoutBuffer + stdoutDecoder.end());
   if (assignment.acceptance.response_format === "single_ascii_token" && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(responseText.trim())) violations.push("response violates single_ascii_token format");
   writeFileSync(path.join(artifactDirectory, "events.ndjson"), `${events.map((event) => JSON.stringify(event)).join("\n")}\n`);
@@ -2315,6 +2327,7 @@ export async function runHarness({
   completionRequest = fetch,
   capturePrivateResult = false,
   beforeProvider = () => {},
+  getTempParent = tmpdir,
 }) {
   const assignmentSource = readFileSync(path.resolve(cwd, assignmentPath), "utf8");
   const assignment = validateAssignment(JSON.parse(assignmentSource));
@@ -2327,7 +2340,7 @@ export async function runHarness({
 
   const runId = `${assignment.assignment_id}-${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID().slice(0, 8)}`;
   const artifactDirectory = path.resolve(outputRoot ?? path.join(projectRoot, "outputs", "agent-runs"), runId);
-  const temporaryRoot = mkdtempSync(path.join(tmpdir(), "unified-harness-agent-"));
+  const temporaryRoot = mkdtempSync(path.join(getTempParent(), "unified-harness-agent-"));
   const worktree = path.join(temporaryRoot, "worktree");
   mkdirSync(artifactDirectory, { recursive: true });
   const adapter = assignment.worker?.adapter ?? "opencode";
@@ -2361,7 +2374,7 @@ export async function runHarness({
       writeFileSync(path.join(worktree, ".git", "opencode"), baseCommit, {flag:"wx", mode:0o600});
     }
     const beforeCheckout = readOnly ? snapshotCheckout(worktree) : null;
-    providerLease = isCodex ? null : await acquireProviderLease(endpoint, assignment.resources.timeout_seconds * 1_000);
+    providerLease = isCodex ? null : await acquireProviderLease(endpoint, assignment.resources.timeout_seconds * 1_000, {getTempParent});
     const providerLeaseWaitMs = providerLease?.waitedMs ?? 0;
     let agentResult;
     try {
@@ -2372,7 +2385,7 @@ export async function runHarness({
         ? await runDirectJson({ assignment, worktree, artifactDirectory, endpoint, request: completionRequest })
         : adapter === "aider"
           ? await runAider({ assignment, worktree, artifactDirectory, endpoint })
-        : await runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, capturePrivateResult });
+        : await runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, getTempParent, capturePrivateResult });
     } finally {
       providerLease?.release();
       providerLease = null;
@@ -2437,6 +2450,7 @@ export async function runHarness({
       disposition,
       human_approval_required: true,
     };
+    getTempParent();
     writeFileSync(path.join(artifactDirectory, "evidence.json"), `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 });
     return { artifactDirectory, evidence, ...(capturePrivateResult && disposition === "candidate" ? { privateResponse } : {}) };
   } catch (error) {
@@ -2453,10 +2467,12 @@ export async function runHarness({
       disposition: "rejected",
       human_approval_required: true,
     };
+    getTempParent();
     writeFileSync(path.join(artifactDirectory, "evidence.json"), `${JSON.stringify(failureEvidence, null, 2)}\n`, { mode: 0o600 });
     throw new Error(`Harness run rejected; inspect hash-only evidence at ${artifactDirectory}`, { cause: error });
   } finally {
     providerLease?.release();
+    getTempParent();
     rmSync(path.join(artifactDirectory, "state"), { recursive: true, force: true });
     if (!readOnly) {
       await runCommand("git", ["worktree", "remove", "--force", worktree], { cwd: projectRoot, timeoutMs: 30_000 }).catch(() => {});
@@ -2522,6 +2538,24 @@ export function assertOutsideSource(directory, sourceRoot) {
     if (parent === current) return;
     current = parent;
   }
+}
+
+// Resolve the host setting once. Revalidate that physical directory at use
+// boundaries, even if another invocation changes TMPDIR while this one waits.
+export function pinTempParent(sourceRoot) {
+  const directory = realpathSync.native(tmpdir());
+  const initial = statSync(directory, {bigint:true});
+  function getTempParent() {
+    const current = lstatSync(directory, {bigint:true});
+    if (!current.isDirectory() || current.dev !== initial.dev || current.ino !== initial.ino) {
+      throw new Error("Temporary directory changed or is not a directory.");
+    }
+    assertOutsideSource(directory, sourceRoot);
+    accessSync(directory, fsFlags.W_OK | fsFlags.X_OK);
+    return directory;
+  }
+  getTempParent();
+  return getTempParent;
 }
 
 function privateDirectoryIdentity(directory) {
@@ -2642,7 +2676,9 @@ async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outp
   packagePolicy = packagePolicy === undefined ? undefined : structuredClone(packagePolicy);
   let recheckPackage;
   let lastObservedTime = Date.now();
+  let getTempParent;
   const checkFreshness = () => {
+    getTempParent?.();
     if (executionWindow === undefined) return;
     const now = Date.now();
     if (now < lastObservedTime || inspectExecutionWindow(executionWindow,now).state !== "within_window") throw new Error("Execution window unavailable, expired, or clock regressed.");
@@ -2704,15 +2740,16 @@ async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outp
   const revision = await git(["rev-parse", "HEAD"]);
   const status = await git(["status", "--porcelain=v1", "--untracked-files=normal", "--ignore-submodules=all"]);
   if (status || root !== packet.workspace.root || `${root}#${branch}` !== packet.workspace.identity || revision !== packet.workspace.revision || packet.workspace.status_digest !== sha256("") || assignment.resources.base_ref !== revision) throw new Error("workspace identity, clean state or revision does not match the accepted packet");
+  getTempParent = pinTempParent(root);
   const resultDirectoryIdentity = resultPolicy === undefined ? null : checkResultDirectory(resultPolicy, root);
   checkFreshness();
   const invocation = invocationPolicy === undefined ? null : claimInvocation(invocationPolicy,offered.digest,root);
   let temporaryRoot;
   try {
-    temporaryRoot = mkdtempSync(path.join(tmpdir(), "unified-work-harness-"));
+    temporaryRoot = mkdtempSync(path.join(getTempParent(), "unified-work-harness-"));
     const pinnedAssignmentPath = path.join(temporaryRoot, "accepted-assignment.json");
     writeFileSync(pinnedAssignmentPath, source, {mode:0o600});
-    const run = await runHarness({assignmentPath:pinnedAssignmentPath, cwd:root, endpoint, outputRoot:outputRoot ?? path.join(temporaryRoot, "evidence"), beforeProvider:checkFreshness, capturePrivateResult:resultPolicy !== undefined, ...(endpointCheck ? {endpointCheck} : {}), ...(completionRequest ? {completionRequest} : {})});
+    const run = await runHarness({assignmentPath:pinnedAssignmentPath, cwd:root, endpoint, getTempParent, outputRoot:outputRoot ?? path.join(temporaryRoot, "evidence"), beforeProvider:checkFreshness, capturePrivateResult:resultPolicy !== undefined, ...(endpointCheck ? {endpointCheck} : {}), ...(completionRequest ? {completionRequest} : {})});
     if (run.evidence.assignment_hash !== scope.assignment_sha256 || run.evidence.base_commit !== revision) throw new Error("executor evidence does not bind the accepted assignment and revision");
     if (run.evidence.disposition !== "candidate" || run.evidence.changed_files.length) {
       const reasons = [];
@@ -2754,7 +2791,10 @@ async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outp
     invocation?.finish("failed",sha256(error instanceof Error ? error.message : "unknown failure"));
     throw error;
   } finally {
-    if (temporaryRoot) rmSync(temporaryRoot, {recursive:true, force:true});
+    if (temporaryRoot) {
+      getTempParent();
+      rmSync(temporaryRoot, {recursive:true, force:true});
+    }
   }
 }
 

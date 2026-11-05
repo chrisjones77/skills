@@ -28,4 +28,6 @@ The scope kind is `unified-harness-readonly-v6`. Its receipt is `unified.contrac
 
 Place the result directory, invocation ledger and queue database outside every source checkout used by that operation. The harness checks each storage directory’s physical ancestry before writing.
 
+Set the host temporary directory outside the source checkout. Both contracts resolve the physical directory before claiming the attempt and reuse it for scratch even if the environment changes. Queued dispatch checks it before charging a reservation. Cooperating read-only workers sharing this temporary directory use one lease per local HTTP port, including alternate URL spellings and API paths on that port. The accepted contract retains the endpoint string that was offered.
+
 A waiter may reclaim a provider lease after its owner exits. Reclaimers take an exclusive sibling directory ending in `.lock.recovery` and recheck the owner token before removing the stale lease. If a reclaimer crashes while holding this guard, subsequent stale-lease recovery can time out. Stop the dispatchers sharing that endpoint, verify the owner and reclaimers have exited, and inspect the lease record before retiring an abandoned guard. Resume with one dispatcher first. Quiesce older harness versions before switching a shared lease namespace to this version.

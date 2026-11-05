@@ -652,3 +652,26 @@ test('concurrent stale lease recovery preserves the replacement owner', async t 
   const next = await acquireProviderLease(endpoint,500);
   next.release();
 });
+
+test('equivalent endpoint URLs share a provider lease until release', async t => {
+  const directory = realpathSync(mkdtempSync(path.join(tmpdir(),'lease-alias-')));
+  const previous = process.env.TMPDIR;
+  t.after(() => {
+    if (previous === undefined) delete process.env.TMPDIR; else process.env.TMPDIR = previous;
+    rmSync(directory,{recursive:true,force:true});
+  });
+  process.env.TMPDIR = directory;
+  const canonical = 'http://127.0.0.1:31771/v1';
+  const alternate = 'http://127.0.0.1:031771/v1';
+  assert.equal(new URL(alternate).href, canonical);
+  const held = await acquireProviderLease(canonical,100);
+  try {
+    for (const address of [alternate, 'http://localhost:31771/v1']) {
+      await assert.rejects(acquireProviderLease(address,50), /lease wait exceeded/);
+    }
+    const otherPort = await acquireProviderLease('http://127.0.0.1:31772/v1',100);
+    otherPort.release();
+  } finally { held.release(); }
+  const next = await acquireProviderLease(alternate,100);
+  next.release();
+});

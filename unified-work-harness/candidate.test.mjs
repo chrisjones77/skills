@@ -282,3 +282,28 @@ for (const policy of ['resultPolicy','invocationPolicy']) {
     }
   });
 }
+
+test('candidate preserves the attempt on invalid temp and pins the external parent on retry', async t => {
+  const {request,source,accept,answer} = await fixture(t);
+  const packet = accept();
+  const inside = path.join(request.workspace.root,'.tmp');
+  const outside = path.join(path.dirname(request.workspace.root),'external-temp');
+  mkdirSync(inside); mkdirSync(outside);
+  const previous = process.env.TMPDIR;
+  t.after(() => { if (previous === undefined) delete process.env.TMPDIR; else process.env.TMPDIR = previous; });
+  process.env.TMPDIR = inside;
+  await assert.rejects(candidateRoundtrip({request,packet}), /outside the source checkout/);
+  assert.deepEqual(source.requests, []);
+  assert.deepEqual(readdirSync(request.invocationPolicy.directory), []);
+  assert.deepEqual(readdirSync(inside), []);
+  source.respond = (req,res) => {
+    process.env.TMPDIR = inside;
+    answer(req,res,{edits:[{path:'sample.txt',text:'new text'}]});
+  };
+  process.env.TMPDIR = outside;
+  const receipt = await candidateRoundtrip({request,packet});
+  assert.equal(receipt.review_status,'pending');
+  assert.equal(source.requests.length,1);
+  assert.deepEqual(readdirSync(inside), []);
+  assert.deepEqual(readdirSync(outside), []);
+});

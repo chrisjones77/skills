@@ -5,7 +5,7 @@ import { fork } from 'node:child_process';
 import { closeSync, lstatSync, openSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assertOutsideSource, buildDraftBinding, contractRoundtrip, isQueueWorkerProcess, hypervisor, inspectExecutionWindow, inspectInvocation, sha256 } from './bundle.mjs';
+import { pinTempParent, assertOutsideSource, buildDraftBinding, contractRoundtrip, isQueueWorkerProcess, hypervisor, inspectExecutionWindow, inspectInvocation, sha256 } from './bundle.mjs';
 
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
 const bounded = value => typeof value === 'string' && value.trim() && value.length <= 4096;
@@ -271,11 +271,11 @@ function terminateGroup(pid) {
   try { process.kill(-pid,'SIGKILL'); } catch (e) { if (e.code !== 'ESRCH') throw e; }
 }
 
-function runSupervised(directory, options, claim) {
+function runSupervised(directory, options, claim, tempParent) {
   return new Promise((resolve,reject) => {
     // No caller-supplied code hooks/Node options cross this boundary. The executable PATH is an operator prerequisite.
     const child = fork(self,[workerArg],{detached:true, execArgv:[], stdio:['ignore','ignore','ignore','ipc'],
-      env:{PATH:process.env.PATH, HOME:process.env.HOME, LANG:'C', TMPDIR:process.env.TMPDIR}});
+      env:{PATH:process.env.PATH, HOME:process.env.HOME, LANG:'C', TMPDIR:tempParent}});
     let receipt, failure;
     const started = performance.now();
     function cancel(reason) {
@@ -317,10 +317,11 @@ function runSupervised(directory, options, claim) {
 export async function dispatchNext(directory, envelope) {
   if (!record(envelope) || Object.keys(envelope).some(key => !fields.has(key))) throw Error('Queue accepts only the documented contract fields.');
   const options = structuredClone(envelope);
+  const getTempParent = pinTempParent(options.packet?.workspace?.root);
   const claim = reserve(directory,options);
   if (claim.hold) throw Error(claim.hold);
   try {
-    const receipt = await runSupervised(directory,options,claim);
+    const receipt = await runSupervised(directory,options,claim,getTempParent());
     const recorded = withDatabase(directory, db => {
       const policy = db.prepare('SELECT stopped,deadline FROM policy').get();
       if (policy.stopped || Date.now() >= claim.deadline) return false;

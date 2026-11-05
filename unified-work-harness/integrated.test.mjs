@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, realpathSync, rmSync, readFileSync, readdirSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, realpathSync, rmSync, readFileSync, readdirSync, renameSync, symlinkSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -246,3 +246,50 @@ for (const exitsEarly of [true, false]) {
     assert.equal(inspectInvocation(inputs.invocationPolicy, hypervisor.currentAssignment(packet).digest).state, 'failed');
   });
 }
+
+test('v6 refuses a temporary parent inside the checkout before discovery or claim', async t => {
+  const {inputs,temp,accept} = fixture(t,'http://127.0.0.1:1/v1');
+  const packet = accept(buildPackageScope(inputs));
+  const inside = path.join(packet.workspace.root,'.tmp'), alias = path.join(temp,'temp-link');
+  mkdirSync(inside);
+  symlinkSync(inside,alias);
+  const previous = process.env.TMPDIR;
+  t.after(() => { if (previous === undefined) delete process.env.TMPDIR; else process.env.TMPDIR = previous; });
+  for (const parent of [inside,alias]) {
+    process.env.TMPDIR = parent;
+    await assert.rejects(contractRoundtrip({...inputs,packet}), /outside the source checkout/);
+    assert.deepEqual(readdirSync(inside), []);
+    assert.deepEqual(readdirSync(inputs.invocationPolicy.directory), []);
+    assert.deepEqual(readdirSync(inputs.resultPolicy.directory), []);
+  }
+});
+
+test('v6 refuses a replaced temp parent and leaves its contents alone during cleanup', async t => {
+  let replaceParent;
+  const server = createServer((req,res) => {
+    if (req.url === '/v1/models') replaceParent();
+    res.end(JSON.stringify({data:[]}));
+  });
+  await new Promise((resolve,reject) => server.once('error',reject).listen(0,'127.0.0.1',resolve));
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  const {inputs,temp,accept} = fixture(t,'http://127.0.0.1:' + server.address().port + '/v1');
+  const packet = accept(buildPackageScope(inputs));
+  const outside = path.join(temp,'external-temp');
+  mkdirSync(outside);
+  const previous = process.env.TMPDIR;
+  t.after(() => { if (previous === undefined) delete process.env.TMPDIR; else process.env.TMPDIR = previous; });
+  process.env.TMPDIR = outside;
+  let marker;
+  replaceParent = () => {
+    const [run] = readdirSync(outside);
+    renameSync(outside, outside + '-saved');
+    mkdirSync(outside);
+    mkdirSync(path.join(outside,run));
+    marker = path.join(outside,run,'unrelated');
+    writeFileSync(marker,'preserve');
+  };
+  await assert.rejects(contractRoundtrip({...inputs,packet}), /Temporary directory changed/);
+  assert.equal(readFileSync(marker,'utf8'),'preserve');
+  assert.equal(inspectInvocation(inputs.invocationPolicy,hypervisor.currentAssignment(packet).digest).state,'failed');
+  assert.deepEqual(readdirSync(inputs.resultPolicy.directory), []);
+});
