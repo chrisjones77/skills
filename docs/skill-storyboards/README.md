@@ -1,6 +1,6 @@
 # Skill workflow storyboards
 
-Thirteen six-panel concept illustrations cover the current thirteen-skill inventory at source revision `fb3e9f17255757fa1fdd158f6d0da4d00b98065c`. Refreshed 2026-11-05; later source changes require reconciliation. The original ten-board manifest, prompts, lineage and prior coverage-board image remain in [revision history](revisions/20261022/README.md).
+Thirteen six-panel concept illustrations cover the current thirteen-skill inventory at source revision `d51472a0570a5b87cb366b09665f778f66d75d50`. Refreshed 2026-11-05; later source changes require reconciliation. The original ten-board manifest, prompts, lineage and prior coverage-board image remain in [revision history](revisions/20261022/README.md).
 
 These are AI-generated illustrations, not implemented products. All sample UI data, including file sizes, timing and frame counts, are fictional and are not technical calculations or evidence. Canonical skill sources and their references take precedence. Human acceptance remains pending.
 

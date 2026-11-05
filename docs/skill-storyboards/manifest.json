@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source_repository": "chrisjones77/skills",
-  "source_revision": "fb3e9f17255757fa1fdd158f6d0da4d00b98065c",
+  "source_revision": "d51472a0570a5b87cb366b09665f778f66d75d50",
   "created": "2026-10-22",
   "generator": "OpenAI built-in image_gen",
   "asset_status": "AI-generated concept illustrations",
@@ -299,7 +299,7 @@
       "slug": "ai-operational-governance",
       "title": "AI Operational Governance",
       "source_path": "ai-operational-governance/SKILL.md",
-      "source_blob_sha": "723e1d10f440a12442b440df5f071bd0f8a44a23",
+      "source_blob_sha": "672449e01a58898ee0152ee08bdbb01efb99c4bd",
       "asset": "assets/ai-operational-governance.png",
       "asset_sha256": "3ea544c440dabc91538b766cfff8dc904c7349ef910c776b0bd457092ca321b0",
       "transcript": [
@@ -316,7 +316,7 @@
         "method": "AI visual inspection against source and brief",
         "status": "reviewed-with-limits",
         "human_acceptance": "pending",
-        "notes": "All six panels inspected: source/scope, proposed ownership, approval gate, before-action timing, not-tested cases and separate evidence/decision roles are visible. Decorative checks and interface objects are illustrative, not acceptance or test results. No human acceptance or deployed integration is claimed."
+        "notes": "All six panels inspected: source/scope, proposed ownership, approval gate, before-action timing, not-tested cases and separate evidence/decision roles are visible. Decorative checks and interface objects are illustrative, not acceptance or test results. No human acceptance or deployed integration is claimed. Source reconciliation 2026-11-05: independent recorder, Git adapter and reviewed-feedback guidance added; the existing six-panel obligation-to-control/evidence narrative remains applicable. PNG unchanged; this reconciliation is not a new human or pixel review."
       }
     }
   ],

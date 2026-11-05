@@ -136,3 +136,22 @@ The skill now includes an optional QVCH bolt-on guide and staged UWH implementat
 No live profile, UWH module, installed skill, provider or runtime gate was changed or tested.
 The constitution is draft v0.2.0, with owner ratification still pending. Current-head CI is
 recorded on PR #26 after the integration commit; local checks do not establish a remote result.
+
+
+## Independent recorder foundation revision — 2026-11-05
+
+The AI Operational Governance entrypoint and references now distinguish an independent
+recorder interface, both QVCH/UWH producers, Git-first storage and read-only presentation.
+They add reviewed reciprocal feedback and keep runtime implementation in issue #27,
+separate from PR #24's merge scope. Draft constitution: v0.3.0, ratification pending.
+
+The gallery source snapshot is `d51472a0570a5b87cb366b09665f778f66d75d50`. The existing six-panel image still depicts
+the applicable obligation, owner, control, timing, test and evidence workflow. The PNG and
+its generation/lineage history are unchanged. Source reconciliation is not a new pixel
+review or human acceptance. The previously recorded browser checks apply to the unchanged
+layout and asset; browser interaction was not rerun for this documentation revision.
+
+Skill-creator validation, local skill reference links, constitution version/scaffold checks,
+gallery structural/source/asset/lineage validation and Git whitespace checks passed locally.
+No recorder, adapter, outbox, monitor or live harness behavior was implemented or validated.
+Current-head hosted checks are recorded separately on PR #26.
