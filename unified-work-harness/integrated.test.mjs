@@ -11,7 +11,7 @@ import { buildPackageScope } from './integrated.mjs';
 import { packageInventory } from './package.mjs';
 import { reviewIntake } from './intake.mjs';
 
-function fixture(t, endpoint, trackedFile = 'source.txt', timeoutSeconds = 120, prepareCheckout) {
+function fixture(t, endpoint, trackedFile = 'source.txt', timeoutSeconds = 120, prepareCheckout, prepareIndex) {
   const temp = realpathSync(mkdtempSync(path.join(tmpdir(), 'unified-package-test-')));
   t.after(() => rmSync(temp, { recursive: true, force: true }));
   const root = path.join(temp, 'repo');
@@ -26,6 +26,7 @@ function fixture(t, endpoint, trackedFile = 'source.txt', timeoutSeconds = 120, 
     prepareCheckout(root,temp);
     git('add','-f','.');
   }
+  prepareIndex?.(root,git);
   git('commit', '-qm', 'synthetic case');
   const revision = git('rev-parse', 'HEAD');
   const branch = git('branch', '--show-current');
@@ -253,6 +254,51 @@ for (const beforeRead of [false,true]) for (const scenario of (beforeRead ? redi
 // Exercise project discovery in the real binary. A stand-in worker cannot prove
 // that startup ignores local configuration or that the first prompt is in scope.
 if (process.env.UNIFIED_TEST_INSTALLED_OPENCODE === '1') {
+  test('OpenCode isolates colliding recursive Git directories',async t => {
+    const canary = 'unoffered-sibling-29840';
+    let collision, leaked = false, completed = false, requests = 0;
+    const port = await listen(t,'127.0.0.1',async (req,res) => {
+      requests++;
+      if (req.url !== '/v1/chat/completions') {
+        res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[{name:'synthetic:local'}],version:'test'}));
+        return;
+      }
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const body = Buffer.concat(chunks).toString();
+      leaked ||= body.includes(canary);
+      completed ||= body.includes('cobalt-otter-47');
+      streamReadCompletion(res,!completed && !leaked && JSON.parse(body).tools?.length,completed || leaked,
+        collision ? 'strasse/hidden.txt' : 'strasse/allowed.txt');
+    });
+    const {inputs,accept} = fixture(t,'http://127.0.0.1:'+port+'/v1','source.txt',20,undefined,(root,git) => {
+      mkdirSync(path.join(root,'strasse'));
+      collision = existsSync(path.join(root,'straße'));
+      if (process.env.UWH_EXPECT_FS) assert.equal(collision,process.env.UWH_EXPECT_FS === 'insensitive');
+      if (!collision) mkdirSync(path.join(root,'straße'));
+      writeFileSync(path.join(root,'strasse/allowed.txt'),'cobalt-otter-47');
+      writeFileSync(path.join(root,'straße/hidden.txt'),canary);
+      git('add','strasse/allowed.txt');
+      const oid = git('hash-object','-w','straße/hidden.txt');
+      git('update-index','--add','--cacheinfo','100644,'+oid+',straße/hidden.txt');
+      writeFileSync(path.join(root,'.git/info/exclude'),'strasse/hidden.txt\n');
+    });
+    const assignment = JSON.parse(inputs.bindingInputs.assignmentJson);
+    assignment.authority.allowed_read_paths = ['strasse'];
+    inputs.bindingInputs.assignmentJson = JSON.stringify(assignment);
+    writeFileSync(inputs.assignmentPath,inputs.bindingInputs.assignmentJson);
+    const packet = accept(buildPackageScope(inputs));
+    const run = contractRoundtrip({...inputs,packet});
+    if (collision) {
+      await assert.rejects(run,/Distinct Git paths/);
+      assert.equal(requests,0);
+      assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
+    } else {
+      assert.equal((await run).review_status,'pending');
+      assert.ok(completed);
+    }
+    assert.equal(leaked,false);
+  });
   const protectedSchema = 'contracts/schemas/agent-assignment.schema.json';
   const schemaAlias = 'contracts/schemas/agent-aßignment.schema.json';
   for (const {scenario,actual,grant,instructions,exact} of [

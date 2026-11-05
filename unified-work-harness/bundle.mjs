@@ -1918,10 +1918,41 @@ function snapshotCheckout(root, readBoundary) {
   return entries;
 }
 
+// Git can record two spellings that a checkout materializes as a single
+// directory or file. Inspect the pinned tree, including intermediate trees.
+function pinnedCheckoutPaths(root) {
+  const bytes = execFileSync("git", [...contractGitArgs, "ls-tree", "-r", "-t", "-z", "HEAD"], {
+    cwd:root, env:contractGitEnvironment(), timeout:5000, maxBuffer:8388608,
+  });
+  const paths = new Set();
+  const directoryEntries = new Map();
+  const entries = new TextDecoder("utf-8", {fatal:true}).decode(bytes).split("\0");
+  for (const entry of entries) {
+    if (!entry) continue;
+    const name = entry.slice(entry.indexOf("\t") + 1);
+    const st = lstatSync(path.join(root,name), {bigint:true});
+    if (entry.startsWith("040000 ") && !st.isDirectory()) throw Error("Git tree requires a checkout directory");
+    const parent = path.dirname(name), basename = path.basename(name);
+    const key = parent + "\0" + st.dev + "/" + st.ino;
+    const previous = directoryEntries.get(key);
+    if (previous !== undefined) {
+      // Legitimate source hard links can share an inode while both names
+      // exist literally. Compare directory entries only on this rare path.
+      const siblings = new Set(readdirSync(path.join(root,parent)));
+      if (!siblings.has(basename) || !siblings.has(previous)) {
+        throw Error("Distinct Git paths share a checkout directory entry");
+      }
+    }
+    directoryEntries.set(key,basename);
+    paths.add(name);
+  }
+  return paths;
+}
+
 // OpenCode also attaches instructions beside a nested read independently of
 // project config discovery. Check the source index before claiming, then the
 // actual disposable tree before spawning the worker.
-function workerReadBoundary(root, assignment) {
+function workerReadBoundary(root, assignment, pinnedPaths) {
   const grants = assignment.authority.allowed_read_paths.map(checkedScopePath);
   const folded = name => name.normalize("NFKC").toLowerCase().replace(/\p{Default_Ignorable_Code_Point}/gu, "");
   const overlaps = (a, b) => pathMatchesPrefix(a, b) || pathMatchesPrefix(b, a);
@@ -1930,7 +1961,10 @@ function workerReadBoundary(root, assignment) {
   function checkEntry(name, isLink, isRegularFile) {
     for (const grant of grants) {
       // The Git index represents a tracked directory by its descendants.
-      if (pathMatchesPrefix(name, grant)) matched.add(grant);
+      if (pathMatchesPrefix(name, grant)) {
+        if (pinnedPaths && !pinnedPaths.has(name)) throw Error("Read scope contains an entry outside the pinned Git tree");
+        matched.add(grant);
+      }
     }
     const key = folded(name);
     if (isLink && keys.some(grant => overlaps(grant, key))) {
@@ -2543,7 +2577,7 @@ export async function runHarness({
       // repository has a single shallow commit. Seed the cache before audit.
       writeFileSync(path.join(worktree, ".git", "opencode"), baseCommit, {flag:"wx", mode:0o600});
     }
-    const readBoundary = readOnly && adapter === "opencode" ? workerReadBoundary(worktree, assignment) : undefined;
+    const readBoundary = readOnly && adapter === "opencode" ? workerReadBoundary(worktree, assignment, pinnedCheckoutPaths(worktree)) : undefined;
     const beforeCheckout = readOnly ? snapshotCheckout(worktree, readBoundary) : null;
     providerLease = isCodex ? null : await acquireProviderLease(endpoint, assignment.resources.timeout_seconds * 1_000, {getTempParent});
     const providerLeaseWaitMs = providerLease?.waitedMs ?? 0;
@@ -2943,6 +2977,7 @@ async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outp
   const revision = await git(["rev-parse", "HEAD"]);
   const status = await git(["status", "--porcelain=v1", "--untracked-files=normal", "--ignore-submodules=all"]);
   if (status || root !== packet.workspace.root || `${root}#${branch}` !== packet.workspace.identity || revision !== packet.workspace.revision || packet.workspace.status_digest !== sha256("") || assignment.resources.base_ref !== revision) throw new Error("workspace identity, clean state or revision does not match the accepted packet");
+  pinnedCheckoutPaths(root);
   getTempParent = pinTempParent(root);
   const resultDirectoryIdentity = resultPolicy === undefined ? null : checkResultDirectory(resultPolicy, root);
   checkFreshness();

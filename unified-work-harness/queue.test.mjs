@@ -4,7 +4,7 @@ import { syncBuiltinESMExports } from 'node:module';
 import childProcess, { execFileSync, spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
-import { copyFileSync, mkdtempSync, mkdirSync, realpathSync, writeFileSync, rmSync, existsSync, symlinkSync, readdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, renameSync, mkdtempSync, mkdirSync, realpathSync, writeFileSync, rmSync, existsSync, symlinkSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { setTimeout as wait } from 'node:timers/promises';
@@ -374,6 +374,47 @@ function reply(directory, digest, action, by, details={}) {
   return respondAttended(directory,{assignmentDigest:digest,revision:readAttended(directory,digest).revision,
     action,by,note:'Synthetic attended reply',...details});
 }
+
+test('provider refuses a queue copied into another selected workspace', async t => {
+  const requests = [];
+  const endpoint = await simulatedProvider(t,requests);
+  const a = fixture(t,endpoint), b = fixture(t,endpoint);
+  const config = {...a.config,packets:[a.first,b.second]};
+  const inside = path.join(b.second.packet.workspace.root,'.private-queue');
+  mkdirSync(inside,{mode:0o700});
+  assert.throws(()=>createQueue(inside,config),/outside/);
+  createQueue(a.directory,config);
+  for (const name of readdirSync(a.directory)) copyFileSync(path.join(a.directory,name),path.join(inside,name));
+  const before = inspectQueue(inside);
+  await assert.rejects(dispatchNext(inside,a.first),/location/);
+  assert.throws(()=>stopQueue(inside),/location/);
+  assert.deepEqual(inspectQueue(inside),before);
+  assert.deepEqual(requests,[]);
+  assert.deepEqual(readdirSync(a.first.invocationPolicy.directory),[]);
+});
+
+test('attended replies require the original queue location after restart',async t => {
+  const f = fixture(t);
+  const human = await attendedOffer(f,'analyst','human');
+  const config = {...mixedConfig(f,[human]),providerBudgets:{}};
+  const digest = hypervisor.currentAssignment(human.packet).digest;
+  createQueue(f.directory,config);
+  const initial = readAttended(f.directory,digest);
+  const inside = path.join(human.packet.workspace.root,'.private-queue');
+  mkdirSync(inside,{mode:0o700});
+  // A database without its location binding remains readable for reconciliation.
+  copyFileSync(path.join(f.directory,'queue.sqlite'),path.join(inside,'queue.sqlite'));
+  const accept = directory => respondAttended(directory,{assignmentDigest:digest,revision:initial.revision,
+    action:'accept',by:human.intake.assignee.id,note:'private-attended-response-3819'});
+  assert.throws(()=>accept(inside),/location/);
+  assert.deepEqual(readAttended(inside,digest),initial);
+  const moved = path.join(inside,'moved');
+  renameSync(f.directory,moved);
+  assert.throws(()=>accept(moved),/location/);
+  assert.deepEqual(readAttended(moved,digest),initial);
+  renameSync(moved,f.directory);
+  assert.equal(accept(f.directory).state,'attended_accepted');
+});
 
 test('mixed human, agent and hybrid work advances only on attended responses and review', async t => {
   const f = fixture(t,await simulatedProvider(t));

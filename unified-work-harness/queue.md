@@ -160,7 +160,7 @@ provider or OS-level intervention. Abrupt cancellation can leave private
 scratch files, a consumed ledger entry, or an incomplete result. Reconcile and
 handle them under the existing retention policy.
 
-After restart, inspect the same directory. For queued or review-pending work,
+After restart, inspect the same directory. Keep its owner-only location marker with the database. Before opening for writes, the queue checks the database, directory and parent identities against their approved location. Copied, relocated and earlier unbound queues support inspection for reconciliation. Restore a moved directory to its original location to resume. For an older unbound queue, reconcile outstanding work and consumed reservations before selecting any remaining tasks for a new queue. For queued or review-pending work,
 continue at the next normal API step. A `running` job blocks later jobs while its
 supervisor status is uncertain. Verify independently that the old supervisor
 has exited, preserve its evidence, then call:

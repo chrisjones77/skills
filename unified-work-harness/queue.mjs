@@ -52,10 +52,30 @@ function databasePath(directory) {
   return path.join(directory, 'queue.sqlite');
 }
 
+// Creation has checked this directory against every selected workspace. Bind
+// the database and its entire physical parent chain so a copy, rename or
+// replacement fails before SQLite can open for writing or recover a journal.
+function locationMarker(file) {
+  const chain = [];
+  for (let current = file;; current = path.dirname(current)) {
+    const st = lstatSync(current,{bigint:true});
+    chain.push([String(st.dev), String(st.ino)]);
+    if (current === path.dirname(current)) break;
+  }
+  return path.join(path.dirname(file),'queue-location-'+digest([file,chain]));
+}
+
 function withDatabase(directory, fn, readOnly = false) {
   const file = databasePath(directory);
   const st = lstatSync(file);
   if (!st.isFile() || st.nlink !== 1 || st.uid !== process.getuid() || (st.mode & 0o777) !== 0o600) throw Error('Unsafe queue file.');
+  if (!readOnly) {
+    const marker = lstatSync(locationMarker(file),{throwIfNoEntry:false});
+    if (!marker?.isFile() || marker.nlink !== 1 || marker.uid !== process.getuid() ||
+        (marker.mode & 0o777) !== 0o600 || marker.size !== 0) {
+      throw Error('Queue location differs from its approved storage or lacks its original location binding.');
+    }
+  }
   const db = new DatabaseSync(file, {readOnly});
   try {
     db.exec('PRAGMA trusted_schema=OFF; PRAGMA busy_timeout=3000;');
@@ -124,6 +144,7 @@ export function createQueue(directory, {goal, packets, deadline, providerBudgets
   // Exclusive creation prevents reinitialization. If initialization is interrupted, preserve the database for review.
   const file = databasePath(directory);
   closeSync(openSync(file,'wx',0o600));
+  closeSync(openSync(locationMarker(file),'wx',0o600));
   return withDatabase(directory, db => {
     db.exec(`CREATE TABLE policy (goal TEXT, owner TEXT, deadline TEXT, stopped INTEGER);
       CREATE TABLE jobs (seq INTEGER PRIMARY KEY, digest TEXT UNIQUE, reviewer TEXT, expires TEXT, state TEXT, receipt TEXT, evidence TEXT, reconciliation TEXT);

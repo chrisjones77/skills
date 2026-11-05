@@ -21,7 +21,7 @@ family('transport.worker','integrated',['provider_facade'],prefix+200,...codes.m
   ...codes.map(n=>'OpenCode completion before a source read, upstream status '+n));
 if (mode === 'worker') {
   family('worker.startup','integrated',[],prefix+200,
-    ...['project configuration','project configuration directory','instructions','linked instructions','nested instructions','offered nested instructions','Unicode instruction alias','Unicode protected file alias','tracked Unicode protected alias','offered Unicode directory'].map(s=>'OpenCode isolates '+s));
+    ...['project configuration','project configuration directory','instructions','linked instructions','nested instructions','offered nested instructions','Unicode instruction alias','Unicode protected file alias','tracked Unicode protected alias','offered Unicode directory','colliding recursive Git directories'].map(s=>'OpenCode isolates '+s));
 }
 if(mode==='suite'){
   family('transport.discovery','roundtrip',[],'accepted Hypervisor contract reaches the bundled agent executor and returns evidence',
@@ -38,6 +38,8 @@ if(mode==='suite'){
     ...['v5','v6'].map(v=>v+' rejects substituted policies before reservation and accepts the original envelope'),
     ...['v5','v6'].map(v=>v+' matches the packet workspace and resume before charging'),
     ...['v5','v6'].flatMap(v=>['verifies the source before creating queue storage','refuses a relocated queue before reservation'].map(s=>v+' '+s)),
+    'provider refuses a queue copied into another selected workspace',
+    'attended replies require the original queue location after restart',
     'explicit goal, accepted identity, ceiling, expiration and cancellation govern admission');
   family('storage.identity','integrated',[],'reviewed and accepted v6 produces a package-bound candidate receipt',
     'direct v6 rejects FIFO and oversized assignments before effects and preserves the accepted attempt',
