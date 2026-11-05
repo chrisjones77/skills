@@ -6,7 +6,7 @@ import { packageInventory } from "./package.mjs";
 import { checkReviewFinding } from "./examples/check-review-finding.mjs";
 
 test("smoke diagnostic rejects a false hold, a missing reviewer field, trailing work and unsupported referrals", () => {
-  const clean = { independent_reviewer: "reviewer-7", rejected_as_acceptance: [], other_blockers: [], verdict: "REFER TO HUMAN REVIEW" };
+  const clean = { scope_boundaries: [], independent_reviewer: "reviewer-7", rejected_as_acceptance: [], other_blockers: [], verdict: "REFER TO HUMAN REVIEW" };
   assert.deepEqual(checkReviewFinding(JSON.stringify(clean)), clean);
   for (const delta of [{verdict:"HOLD"}, {independent_reviewer:undefined}, {independent_reviewer:null},
       {other_blockers:["capacity unknown"]}, {rejected_as_acceptance:["contact supplier"]}]) {
@@ -20,6 +20,17 @@ test("smoke diagnostic rejects a false hold, a missing reviewer field, trailing 
     assert.throws(() => checkReviewFinding(extra));
   const blocked = {...clean, independent_reviewer:null, rejected_as_acceptance:["contact supplier"], verdict:"HOLD"};
   assert.deepEqual(checkReviewFinding(JSON.stringify(blocked)), blocked);
+});
+
+test("a compatible limit does not hold review, but an outcome that requires violating it does", () => {
+  const base = {scope_boundaries:["Keep the original intact."], independent_reviewer:"R", rejected_as_acceptance:[], other_blockers:[], verdict:"REFER TO HUMAN REVIEW"};
+  const check = delta => checkReviewFinding(JSON.stringify({...base, ...delta}));
+  assert.deepEqual(check({}), base);
+  assert.throws(() => check({verdict:"HOLD"}), /contradicts/);
+  for (const key of ["other_blockers", "rejected_as_acceptance"])
+    assert.throws(() => check({[key]:["keep the original intact"], verdict:"HOLD"}), /boundary alone/);
+  assert.equal(check({other_blockers:["Replacing the original is required but the original must remain intact."], verdict:"HOLD"}).verdict, "HOLD");
+  assert.throws(() => check({scope_boundaries:undefined}));
 });
 
 test("both native host templates are pinned and deliver the same excerpt-only review", () => {

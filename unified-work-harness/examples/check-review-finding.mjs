@@ -6,18 +6,24 @@ export function checkReviewFinding(text) {
   const fenced = /^```json\r?\n([\s\S]*)\r?\n```$/u.exec(text.trim());
   const body = fenced ? fenced[1] : text;
   const finding = JSON.parse(body);
-  const keys = ["independent_reviewer", "other_blockers", "rejected_as_acceptance", "verdict"];
+  const keys = ["scope_boundaries", "independent_reviewer", "other_blockers", "rejected_as_acceptance", "verdict"];
   // This record has no nested objects. Count member names before accepting
   // JSON.parse's last-value-wins interpretation of duplicate evidence fields.
   const memberCount = [...body.matchAll(/"(?:\\.|[^"\\])*"(\s*:)?/gu)].filter(m => m[1]).length;
   if (!finding || typeof finding !== "object" || Array.isArray(finding) ||
       memberCount !== keys.length || !keys.every(k => Object.hasOwn(finding, k)))
-    throw new Error("Expected the four review fields");
-  const { independent_reviewer: reviewer, rejected_as_acceptance: rejected, other_blockers: blockers } = finding;
+    throw new Error("Expected the five review fields");
+  const { scope_boundaries: boundaries, independent_reviewer: reviewer, rejected_as_acceptance: rejected, other_blockers: blockers } = finding;
   const nonblank = s => typeof s === "string" && s.trim().length > 0;
   if (!(reviewer === null || nonblank(reviewer)) ||
-      ![rejected, blockers].every(a => Array.isArray(a) && a.every(nonblank)))
+      ![boundaries, rejected, blockers].every(a => Array.isArray(a) && a.every(nonblank)))
     throw new Error("Malformed review evidence");
+  // Catch a copied limit, not arbitrary paraphrases. A genuine conflict can
+  // mention the limit if it also identifies the required incompatible action.
+  const normalize = s => s.trim().toLowerCase().replace(/[.!;]+$/u, "").trim();
+  const limits = new Set(boundaries.map(normalize));
+  if ([...rejected, ...blockers].some(s => limits.has(normalize(s))))
+    throw new Error("A boundary alone is not a rejected action or blocker");
   const expected = reviewer !== null && !rejected.length && !blockers.length ? "REFER TO HUMAN REVIEW" : "HOLD";
   if (finding.verdict !== expected) throw new Error("Verdict contradicts the reported evidence");
   // A consistent record may still invent a reviewer or miss a prohibited effect.
