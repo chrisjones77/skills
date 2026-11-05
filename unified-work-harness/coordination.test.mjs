@@ -9,6 +9,28 @@ import { reviewIntake } from "./intake.mjs";
 const reviewed = intake => ({intake,review:reviewIntake(JSON.stringify(intake),{by:"reviewer",disposition:"clear",authority:"confirmed",scope:"consistent",concerns:"clear",availableMinutes:20,reviewerAvailable:true,evidenceRef:"decision#1",reviewedAt:new Date(Date.now()-1000).toISOString(),expiresAt:new Date(Date.now()+60000).toISOString()})});
 const draft = kind => offerCoordination({...reviewed({...intake,assignee:{kind,id:"worker"}}),workspace,id:"review-1",purpose:"0xB"});
 const step = (r,action,by,extra={}) => respond(r,action,{by,note:"Synthetic recorded response",assignmentDigest:inspectCoordination(r).assignmentDigest,...extra});
+test("an accepted attended workspace cannot be substituted; changing it needs a new acceptance",async()=>{
+  const accepted=step(draft("human"),"accept","worker");
+  const pin=inspectCoordination(accepted).assignmentDigest;
+  const other={root:"/other",identity:"/other#review",revision:"c".repeat(40),status_digest:"d".repeat(64)};
+  for(const [field,value] of Object.entries(other)){
+    const changed=structuredClone(accepted);
+    changed.packet.workspace[field]=value;
+    assert.throws(()=>respond(changed,"resume",{by:"worker",note:"resume",assignmentDigest:pin}),/workspace/i);
+  }
+  const {reoffer}=await import("./coordination.mjs");
+  const next=reoffer(accepted,{by:"owner",assignmentDigest:pin,note:"Change the reviewed workspace",
+    ...reviewed(intake),workspace:other});
+  assert.deepEqual(next.packet.workspace,other);
+  assert.equal(next.packet.work_contract.acceptance,null);
+  assert.throws(()=>step(next,"resume","worker"));
+  assert.throws(()=>step(next,"accept","worker",{assignmentDigest:pin}));
+  const active=step(step(next,"accept","worker"),"resume","worker");
+  assert.equal(active.packet.checkpoints.at(-1).workspace,other.identity);
+  const damaged=structuredClone(next);
+  damaged.revisions[0].workspace.revision=other.revision;
+  assert.throws(()=>inspectCoordination(damaged),/workspace/i);
+});
 for(const kind of ["human","agent","hybrid"]) test(kind+" attended review lifecycle",async()=>{
   let r=draft(kind);
   assert.throws(()=>step(r,"resume","worker"));

@@ -8,6 +8,8 @@ Use this path when an agent will inspect a clean Git revision through a local mo
 4. Invoke the accepted packet with the identical inputs. Before claiming the ledger, the executor checks the accepted scope, human review, package inventory, executor binding, workspace and clock. It rechecks the package, review and time before every model discovery request and again before launching the worker. A package or intake change requires a fresh review and offer. A failure after the ledger claim consumes the attempt.
 5. Check the receipt digest, package binding, terminal ledger record and private result. The reviewer assesses the result against the accepted criteria and records a separate disposition. The receipt identifies the reviewed bytes. Identity and authority require evidence outside these records.
 
+The read-only executor fingerprints the fresh disposable checkout before launching the worker and after it exits, independently of Git index flags. It compares names, entry types, modes, regular-file bytes and symlink targets without following links. Each pass is limited to 1 GiB of regular-file content, 100,000 entries and depth 128; unsupported entries (including hard-linked regular files) fail closed. This checks final checkout state, not transient edits, external side effects or protection against another process racing inspection.
+
 ```js
 import { buildPackageScope } from './integrated.mjs';
 import { contractRoundtrip } from './bundle.mjs';

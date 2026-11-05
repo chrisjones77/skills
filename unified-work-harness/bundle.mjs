@@ -8,12 +8,16 @@ import {
   existsSync,
   openSync,
   closeSync,
+  constants as fsFlags,
+  fstatSync,
   fsyncSync,
   lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
+  readlinkSync,
+  readSync,
   realpathSync,
   rmSync,
   symlinkSync,
@@ -1792,6 +1796,49 @@ async function readHeadCommit(worktree) {
   return head.stdout.trim();
 }
 
+// Fingerprint the materialized checkout, including ignored entries and the
+// linked worktree's .git pointer. Never use the worker's index as the oracle.
+function checkoutFingerprint(root) {
+  const tree = createHash("sha256"), buffer = Buffer.allocUnsafe(64 * 1024);
+  let count = 0, remaining = 1024 ** 3;
+  function visit(rel, depth) {
+    if (++count > 100000 || depth > 128) throw Error("Checkout inspection limit exceeded");
+    const file = path.join(root,rel), st = lstatSync(file);
+    let content = null;
+    if (st.isFile()) {
+      if (st.nlink !== 1 || st.size > remaining) throw Error("Unsupported read-only checkout file");
+      const fd = openSync(file,fsFlags.O_RDONLY | fsFlags.O_NOFOLLOW | fsFlags.O_NONBLOCK);
+      try {
+        const actual = fstatSync(fd);
+        if (!actual.isFile() || actual.dev !== st.dev || actual.ino !== st.ino) throw Error("Checkout entry changed during inspection");
+        const hash = createHash("sha256");
+        let size = 0, n;
+        while ((n = readSync(fd,buffer,0,buffer.length,null)) > 0) {
+          remaining -= n;
+          if (remaining < 0) throw Error("Checkout inspection limit exceeded");
+          hash.update(buffer.subarray(0,n));
+          size += n;
+        }
+        if (size !== st.size) throw Error("Checkout entry changed during inspection");
+        content = hash.digest("hex");
+      } finally { closeSync(fd); }
+    } else if (st.isSymbolicLink() && rel) {
+      content = readlinkSync(file,{encoding:"buffer"}).toString("hex");
+    } else if (!st.isDirectory() || rel === ".git") throw Error("Unsupported read-only checkout entry");
+    tree.update(JSON.stringify([rel,st.mode,content]) + "\n");
+    if (st.isDirectory()) {
+      const names = readdirSync(file,{encoding:"buffer"}).sort(Buffer.compare);
+      for (const bytes of names) {
+        const name = bytes.toString();
+        if (!Buffer.from(name).equals(bytes)) throw Error("Unsupported checkout path encoding");
+        visit(path.join(rel,name),depth+1);
+      }
+    }
+  }
+  visit("",0);
+  return tree.digest("hex");
+}
+
 async function collectChangedFiles(worktree, baseline) {
   const [tracked, untracked] = await Promise.all([
     runCommand("git", ["diff", baseline, "--name-only", "-z", "--"], { cwd: worktree, timeoutMs: 10_000 }),
@@ -2207,6 +2254,8 @@ export async function runHarness({
       symlinkSync(projectNodeModules, path.join(worktree, "node_modules"), "dir");
     }
     const baseCommit = await readHeadCommit(worktree);
+    const readOnly = assignment.authority.mode === "read_only";
+    const beforeCheckout = readOnly ? checkoutFingerprint(worktree) : null;
     providerLease = isCodex ? null : await acquireProviderLease(endpoint, assignment.resources.timeout_seconds * 1_000);
     const providerLeaseWaitMs = providerLease?.waitedMs ?? 0;
     let agentResult;
@@ -2225,9 +2274,10 @@ export async function runHarness({
     }
     agentResult.provider_lease_wait_ms = providerLeaseWaitMs;
     const { proposal_text: proposalText, private_response: privateResponse, ...agentEvidence } = agentResult;
-    const readOnly = assignment.authority.mode === "read_only";
+    const checkoutChanged = readOnly && checkoutFingerprint(worktree) !== beforeCheckout;
     const changedFiles = await collectChangedFiles(worktree, readOnly ? baseCommit : "HEAD");
     const policyViolations = evaluateChangedFiles(assignment, changedFiles);
+    if (checkoutChanged) policyViolations.push("read-only checkout contents changed");
     if (readOnly && await readHeadCommit(worktree) !== baseCommit) {
       policyViolations.push("read-only worker changed checkout revision");
     }

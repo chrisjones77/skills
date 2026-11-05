@@ -449,6 +449,25 @@ test("accepted Hypervisor contract reaches the bundled agent executor and return
         } finally { writeFileSync(fake,savedFake); }
       });
     }
+    for (const flag of ["--assume-unchanged","--skip-worktree"]) {
+      await t.test(`read-only v5 rejects a tracked edit hidden with ${flag}`,async()=>{
+        const marker=path.join(temp,"hidden-edit"+flag);
+        const action=`const fs=require("node:fs"),cp=require("node:child_process");
+          cp.execFileSync("git",["update-index",${JSON.stringify(flag)},"source.txt"]);
+          fs.writeFileSync("source.txt","hidden tracked edit");
+          fs.writeFileSync(${JSON.stringify(marker)},cp.execFileSync("git",["diff","HEAD","--name-only"]));`;
+        writeFileSync(fake,savedFake.replace("#!/usr/bin/env node\n","#!/usr/bin/env node\n"+action+"\n"));
+        try {
+          const scope=buildBoundScope(bindingInputs,endpoint,resultPolicy,invocationPolicy,activeWindow);
+          const p=makeBoundPacket("worker","0xB",JSON.stringify(intake.acceptance.checks),scope);
+          await assert.rejects(invokeBound({packet:p,resultPolicy,invocationPolicy,executionWindow:activeWindow}),/read-only candidate/);
+          assert.equal(readFileSync(marker,"utf8"),"");
+          assert.deepEqual(readdirSync(privateDirectory),[]);
+          assert.equal(inspectInvocation(invocationPolicy,hypervisor.currentAssignment(p).digest).state,"failed");
+          assert.equal(readFileSync(path.join(root,"source.txt"),"utf8"),"synthetic public source\n");
+        } finally { writeFileSync(fake,savedFake); }
+      });
+    }
     const unicodeAnswer = "Synthetic café 🔧 report.";
     const unicodeEvents = [{type:"tool_use",part:{tool:"read",state:{status:"completed",input:{filePath:"source.txt"},output:"source"}}},{type:"text",part:{text:unicodeAnswer}},{type:"step_finish",part:{reason:"private-canary",tokens:{total:"private-canary",output:5}}}];
     writeFileSync(fake, `#!/usr/bin/env node\nconst b=Buffer.from(${JSON.stringify(unicodeEvents.map(e=>JSON.stringify(e)).join("\n")+"\n")}); const cut=b.indexOf(Buffer.from('é'))+1; process.stdout.write(b.subarray(0,cut)); setTimeout(()=>process.stdout.write(b.subarray(cut)),40);\n`);
