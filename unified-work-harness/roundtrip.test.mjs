@@ -154,6 +154,7 @@ test("explicit model capability metadata rejects non-tool models without guessin
 test("accepted Hypervisor contract reaches the bundled agent executor and returns evidence", async () => {
   const temp = mkdtempSync(path.join(tmpdir(), "unified-test-"));
   const previous = process.env.UNIFIED_HARNESS_SUBAGENT_OPENCODE_BIN;
+  const previousPath = process.env.PATH;
   const previousMarker = process.env.UNIFIED_TEST_SECRET;
   try {
     const repo = path.join(temp, "repo");
@@ -205,10 +206,13 @@ test("accepted Hypervisor contract reaches the bundled agent executor and return
     packet.handoff.current_writer = "worker";
     packet.checkpoints.push({at:packet.work_contract.acceptance.at,kind:"resumed",note:"Synthetic explicit resume",owner:"worker",workspace:packet.workspace.identity,reconciled:false});
     hypervisor.validatePacket(packet);
-    const fake = path.join(temp, "fake-worker.mjs");
+    const fakeBin = path.join(temp, "bin");
+    mkdirSync(fakeBin);
+    const fake = path.join(fakeBin, "opencode");
     writeFileSync(fake, `#!/usr/bin/env node\nif (process.env.UNIFIED_TEST_SECRET) process.exit(9);\nfor (const e of ${JSON.stringify([{type:"step_start",timestamp:1,part:{type:"step-start"}},{type:"tool_use",timestamp:2,part:{tool:"read",state:{status:"completed",input:{filePath:"source.txt"},output:"synthetic public source"}}},{type:"text",timestamp:3,part:{text:"Synthetic source report."}},{type:"step_finish",timestamp:4,part:{reason:"stop",tokens:{total:10}}}])}) console.log(JSON.stringify(e));\n`);
     chmodSync(fake, 0o700);
-    process.env.UNIFIED_HARNESS_SUBAGENT_OPENCODE_BIN = fake;
+    process.env.PATH = [fakeBin, previousPath].filter(Boolean).join(path.delimiter);
+    process.env.UNIFIED_HARNESS_SUBAGENT_OPENCODE_BIN = path.join(temp, "must-not-run");
     process.env.UNIFIED_TEST_SECRET = "must-not-be-inherited";
     const before = JSON.stringify(packet);
     const receipt = await contractRoundtrip({packet, assignmentPath, endpointCheck:async () => ({})});
@@ -468,6 +472,8 @@ test("accepted Hypervisor contract reaches the bundled agent executor and return
   } finally {
     if (previous === undefined) delete process.env.UNIFIED_HARNESS_SUBAGENT_OPENCODE_BIN;
     else process.env.UNIFIED_HARNESS_SUBAGENT_OPENCODE_BIN = previous;
+    if (previousPath === undefined) delete process.env.PATH;
+    else process.env.PATH = previousPath;
     if (previousMarker === undefined) delete process.env.UNIFIED_TEST_SECRET;
     else process.env.UNIFIED_TEST_SECRET = previousMarker;
     rmSync(temp, {recursive:true, force:true});

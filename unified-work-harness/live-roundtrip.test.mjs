@@ -51,7 +51,6 @@ test("live local model processes an explicitly synthetic read-only assignment", 
     packet = hypervisor.acceptAssignment(packet,{by:"synthetic worker",assignmentDigest:hypervisor.currentAssignment(packet).digest,note:"Synthetic acceptance for this test only"});
     packet.status="active"; packet.handoff.current_writer="synthetic worker";
     packet.checkpoints.push({at:packet.work_contract.acceptance.at,kind:"resumed",note:"Synthetic test resume",owner:packet.owner,workspace:packet.workspace.identity,reconciled:false});
-    assert.equal(process.env.UNIFIED_HARNESS_SUBAGENT_OPENCODE_BIN, undefined, "live test requires the real worker without a test override");
     const receipt = await contractRoundtrip({packet,assignmentPath,endpoint,bindingInputs,resultPolicy,invocationPolicy,executionWindow});
     assert.equal(receipt.schema_version,"unified.contract-executor-receipt.v5");
     console.log("Live receipt:", JSON.stringify(receipt));
