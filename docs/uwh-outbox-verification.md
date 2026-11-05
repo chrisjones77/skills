@@ -63,8 +63,6 @@ observation. This outbox deliberately does not invent those events.
 
 Direct contract emission, lower-level worker-failure transport, live producer installation,
 automated delivery, retention tooling and actual owner acceptance remain outstanding under
-issue #27. The local checkout also contains an unrelated untracked synchronization duplicate;
-it was not opened, changed or included in this PR.
-
+issue #27. 
 Hosted Linux/macOS reports belong to this PR's actual head. A green automated gate does not
 constitute human acceptance, merge authorization, installed deployment or professional approval.
