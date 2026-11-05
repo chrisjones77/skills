@@ -5,7 +5,7 @@ import { fork } from 'node:child_process';
 import { closeSync, lstatSync, openSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildDraftBinding, contractRoundtrip, hypervisor, inspectExecutionWindow, inspectInvocation, sha256 } from './bundle.mjs';
+import { buildDraftBinding, contractRoundtrip, isQueueWorkerProcess, hypervisor, inspectExecutionWindow, inspectInvocation, sha256 } from './bundle.mjs';
 
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
 const bounded = value => typeof value === 'string' && value.trim() && value.length <= 4096;
@@ -339,7 +339,7 @@ export async function dispatchNext(directory, envelope) {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === self && process.argv[2] === workerArg && process.send) {
+if (isQueueWorkerProcess()) {
   process.once('disconnect', () => terminateGroup(process.pid));
   process.once('message', async options => {
     try {

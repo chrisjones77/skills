@@ -10,7 +10,7 @@ import { buildPackageScope } from './integrated.mjs';
 import { packageInventory } from './package.mjs';
 import { reviewIntake } from './intake.mjs';
 
-function fixture(t, endpoint, trackedFile = 'source.txt') {
+function fixture(t, endpoint, trackedFile = 'source.txt', timeoutSeconds = 120) {
   const temp = realpathSync(mkdtempSync(path.join(tmpdir(), 'unified-package-test-')));
   t.after(() => rmSync(temp, { recursive: true, force: true }));
   const root = path.join(temp, 'repo');
@@ -30,7 +30,7 @@ function fixture(t, endpoint, trackedFile = 'source.txt') {
     assignee:{type:"agent",provider:"ollama",model_id:"synthetic:local",processing:"local",accountable_human:"synthetic owner"},
     authority:{mode:"read_only",allowed_read_paths:["source.txt"],allowed_paths:[],allow_test_changes:false},
     data:{classification:"public",contains_sensitive_personal_data:false,contains_secrets:false,external_processing_allowed:false},
-    resources:{base_ref:revision,timeout_seconds:120,max_steps:4,max_output_bytes:1048576,max_completion_tokens:1024},
+    resources:{base_ref:revision,timeout_seconds:timeoutSeconds,max_steps:4,max_output_bytes:1048576,max_completion_tokens:1024},
     supervision:{priority:"normal",target_date:null,available_effort_minutes:10,dependencies:[],decision_owner:"synthetic owner",may_pause:true,feedback_route:"Report failure to the synthetic reviewer."},
     acceptance:{checks:[{command:"node",args:["--version"],timeout_seconds:10,expected_result:"zero"}],reviewer:"synthetic reviewer",require_changes:false},
     escalation:{stop_conditions:["Stop if access is denied or the task is unclear."],contact:"synthetic owner"},
@@ -200,5 +200,49 @@ for (const flag of ['--assume-unchanged','--skip-worktree']) {
     await assert.rejects(contractRoundtrip({...inputs,packet}), /index flag/i);
     assert.deepEqual(readdirSync(inputs.invocationPolicy.directory), []);
     assert.deepEqual(readdirSync(inputs.resultPolicy.directory), []);
+  });
+}
+
+for (const exitsEarly of [true, false]) {
+  test('direct v6 releases inherited pipes and stops helpers on ' + (exitsEarly ? 'exit' : 'timeout'), async t => {
+    const server = createServer((req, res) => res.end(JSON.stringify({
+      data:[{id:'synthetic:local'}], version:'synthetic', models:[{name:'synthetic:local'}],
+    })));
+    await new Promise((resolve,reject) => server.once('error',reject).listen(0,'127.0.0.1',resolve));
+    t.after(() => new Promise(resolve => server.close(resolve)));
+    const {inputs,temp,accept} = fixture(t, 'http://127.0.0.1:' + server.address().port + '/v1', 'source.txt', 10);
+    const packet = accept(buildPackageScope(inputs));
+    const bin = path.join(temp,'bin');
+    const marker = path.join(temp,'delayed-write');
+    const release = path.join(temp,'release');
+    mkdirSync(bin);
+    const helper = `
+      const fs = require('node:fs');
+      const poll = setInterval(() => {
+        if (fs.existsSync(${JSON.stringify(release)})) {
+          fs.writeFileSync(${JSON.stringify(marker)}, 'survived');
+          clearInterval(poll);
+        }
+      }, 10);
+      setTimeout(() => clearInterval(poll), 18000).unref();`;
+    const worker = `#!/usr/bin/env node
+      const fs = require('node:fs');
+      const child = require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(helper)}],
+        {stdio:['ignore','inherit','inherit']});
+      fs.writeFileSync(${JSON.stringify(path.join(temp,'spawned'))}, String(child.pid));
+      child.unref();
+      ${exitsEarly ? 'process.exit(0);' : 'setInterval(() => {}, 1000);'}`;
+    writeFileSync(path.join(bin,'opencode'), worker, {mode:0o700});
+    const oldPath = process.env.PATH;
+    process.env.PATH = bin + path.delimiter + oldPath;
+    t.after(() => { process.env.PATH = oldPath; });
+    const start = performance.now();
+    await assert.rejects(contractRoundtrip({...inputs,packet}), /unchanged read-only candidate/);
+    assert.ok(readFileSync(path.join(temp,'spawned'),'utf8').trim());
+    assert.ok(performance.now() - start < 14500, 'settle within the worker budget plus cleanup grace');
+    writeFileSync(release, 'check helper');
+    await new Promise(resolve => setTimeout(resolve, 250));
+    assert.equal(readdirSync(temp).includes('delayed-write'), false);
+    assert.equal(inspectInvocation(inputs.invocationPolicy, hypervisor.currentAssignment(packet).digest).state, 'failed');
   });
 }

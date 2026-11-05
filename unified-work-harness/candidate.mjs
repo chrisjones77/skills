@@ -4,7 +4,7 @@ import { verifyIntakeForOffer } from "./intake.mjs";
 import { resolvePackageProfile } from "./package.mjs";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { readFileSync, writeFileSync, realpathSync, mkdirSync, mkdtempSync, rmSync, lstatSync } from "node:fs";
+import { readFileSync, writeFileSync, realpathSync, mkdirSync, readdirSync, mkdtempSync, rmSync, lstatSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
@@ -114,12 +114,35 @@ function checkWorkspace(ws) {
     && !git(ws,["status","--porcelain=v1","--untracked-files=normal","--ignore-submodules=all"]).length, "Candidate workspace drift");
 }
 
+// Git pathspecs are literal, but a checkout can resolve a different spelling
+// to the same entry. Walk one real directory at a time, without following links.
+function checkCheckoutPath(root, name, tracked) {
+  const parts = name.split("/");
+  let parent = root;
+  for (const [index, part] of parts.entries()) {
+    const current = path.join(parent, part);
+    const stat = lstatSync(current, {throwIfNoEntry:false});
+    if (!stat) {
+      need(!tracked, "Tracked candidate path missing from checkout");
+      return;
+    }
+    need(readdirSync(parent).includes(part), "Candidate path spelling differs from checkout");
+    if (index === parts.length - 1) {
+      need(tracked && stat.isFile(), "Candidate destination already exists or is not a regular file");
+    } else {
+      need(stat.isDirectory(), "A candidate parent is not a directory");
+    }
+    parent = current;
+  }
+}
+
 function readSnapshot(request) {
   const {workspace,reads,writes,limits} = request;
   const files = new Map();
   let remaining = limits.contextBytes;
   for (const name of new Set([...reads,...writes])) {
     const entry = git(workspace,["ls-tree","-z",workspace.revision,"--",name]).toString("utf8");
+    checkCheckoutPath(workspace.root, name, Boolean(entry));
     if (!entry) {
       need(!reads.includes(name),"An approved input file is missing");
       // A new file below a tracked symlink or file would change its meaning
@@ -292,6 +315,7 @@ export async function candidateRoundtrip({packet,request,signal}) {
     const candidate=materialize(request,files,proposal,scratch);
     checkPackageProfile(request);
     checkWorkspace(request.workspace);
+    for (const edit of candidate.edits) checkCheckoutPath(root, edit.path, files.has(edit.path));
     need(hash(resultDir)===hash(checkResultDirectory(request.resultPolicy,root)),"Result directory changed");
     checkBudget();
     const artifact=JSON.stringify({schema:"unified.text-candidate.artifact.v1",assignment_digest:assignment.digest,

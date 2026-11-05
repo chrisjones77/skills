@@ -1916,6 +1916,13 @@ async function createCandidatePatch(worktree, filenames) {
   return diff.stdout;
 }
 
+// queue.mjs is forked as a POSIX group leader. Its supervisor must be able to
+// kill the entire job even if the queue worker cannot run a cleanup handler.
+export function isQueueWorkerProcess() {
+  return process.connected === true && process.argv[2] === "--accepted-queue-job"
+    && !!process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(new URL("./queue.mjs", import.meta.url));
+}
+
 async function runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, capturePrivateResult = false }) {
   const prompt = buildAgentPrompt(assignment);
   const isolatedHome = path.join(artifactDirectory, "state", "home");
@@ -1932,6 +1939,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
     XDG_DATA_HOME: path.join(artifactDirectory, "state", "data"),
     XDG_CACHE_HOME: path.join(artifactDirectory, "state", "cache"),
   };
+  const ownsGroup = process.platform !== "win32" && !isQueueWorkerProcess();
   const child = spawn("opencode", [
     "run",
     "--pure",
@@ -1939,7 +1947,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
     "--model", `${assignment.assignee.provider}/${assignment.assignee.model_id}`,
     "--dir", worktree,
     prompt,
-  ], { cwd: worktree, env: environment, shell: false, stdio: ["ignore", "pipe", "pipe"] });
+  ], { cwd: worktree, env: environment, detached: ownsGroup, shell: false, stdio: ["ignore", "pipe", "pipe"] });
 
   const events = [];
   const violations = [];
@@ -1962,11 +1970,28 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
     ["edit", "write", "patch", "apply_patch"].forEach((tool) => permittedTools.add(tool));
   }
 
-  const stop = (reason) => {
+  let groupTerminated = false;
+  function terminateWorker() {
+    if (ownsGroup && child.pid && !groupTerminated) {
+      try { process.kill(-child.pid, "SIGKILL"); }
+      catch (error) {
+        if (error.code !== "ESRCH") {
+          violations.push("could not terminate worker process group");
+          child.kill("SIGKILL");
+          return;
+        }
+      }
+      groupTerminated = true;
+    } else if (!ownsGroup) {
+      child.kill("SIGKILL");
+    }
+  }
+  function stop(reason) {
     if (!violations.includes(reason)) violations.push(reason);
-    child.kill("SIGTERM");
-    setTimeout(() => child.kill("SIGKILL"), 2_000).unref();
-  };
+    terminateWorker();
+    child.stdout.destroy();
+    child.stderr.destroy();
+  }
   const inspectLine = (line) => {
     if (!line.trim()) return;
     try {
@@ -2027,11 +2052,20 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
     timedOut = true;
     stop(`wall-clock timeout exceeded: ${assignment.resources.timeout_seconds} seconds`);
   }, assignment.resources.timeout_seconds * 1_000);
-  const result = await new Promise((resolve, reject) => {
-    child.on("error", reject);
-    child.on("close", (code, signal) => resolve({ code, signal }));
+  let drainTimer;
+  child.once("exit", () => {
+    if (ownsGroup) terminateWorker();
+    // Drain bytes already written. A helper outside our group may still hold
+    // a pipe open; it must not keep the invocation or its provider lease open.
+    drainTimer = setTimeout(() => stop("worker output pipes stayed open after exit"), 2_000);
   });
-  clearTimeout(timer);
+  const result = await new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.once("close", (code, signal) => resolve({ code, signal }));
+  }).finally(() => {
+    clearTimeout(timer);
+    clearTimeout(drainTimer);
+  });
   inspectLine(stdoutBuffer + stdoutDecoder.end());
   if (assignment.acceptance.response_format === "single_ascii_token" && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(responseText.trim())) violations.push("response violates single_ascii_token format");
   writeFileSync(path.join(artifactDirectory, "events.ndjson"), `${events.map((event) => JSON.stringify(event)).join("\n")}\n`);

@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {createServer} from "node:http";
 import {execFileSync} from "node:child_process";
-import {mkdtempSync,mkdirSync,readFileSync,realpathSync,readdirSync,rmSync,writeFileSync,utimesSync,existsSync,copyFileSync} from "node:fs";
+import {mkdtempSync,mkdirSync,readFileSync,realpathSync,readdirSync,rmSync,writeFileSync,utimesSync,existsSync,copyFileSync,symlinkSync} from "node:fs";
 import {tmpdir} from "node:os";
 import path from "node:path";
 import {pathToFileURL} from "node:url";
@@ -216,4 +216,47 @@ test('candidate preflight rejects hidden source edits without contacting a provi
   assert.deepEqual(source.requests, []);
   assert.deepEqual(readdirSync(request.invocationPolicy.directory), []);
   assert.deepEqual(readdirSync(results), []);
+});
+
+test('candidate checks actual path spelling, existing destinations and symlink ancestors before dispatch', async t => {
+  const {request,source,accept,results,git} = await fixture(t);
+  const root = request.workspace.root;
+  writeFileSync(path.join(root,'Existing.txt'),'outside read scope');
+  mkdirSync(path.join(root,'..','external'));
+  symlinkSync('../external', path.join(root,'Links'));
+  git('add','Existing.txt','Links');
+  git('-c','user.name=Synthetic','-c','user.email=test@example.invalid','commit','-m','path targets');
+  request.workspace.revision = git('rev-parse','HEAD');
+  writeFileSync(path.join(root,'.git','info','exclude'),'ignored.txt\n');
+  writeFileSync(path.join(root,'ignored.txt'),'owner file');
+  const targets = ['Existing.txt','Links/new.txt','ignored.txt'];
+  if (existsSync(path.join(root,'existing.txt'))) {
+    assert.equal(realpathSync(path.join(root,'links')), realpathSync(path.join(root,'..','external')));
+    targets.push('existing.txt','links/new.txt');
+  }
+  for (const target of targets) {
+    request.writes = [target];
+    const packet = accept();
+    await assert.rejects(candidateRoundtrip({packet,request}), /read scope|not a directory|already exists|spelling/);
+  }
+  assert.deepEqual(source.requests, []);
+  assert.deepEqual(readdirSync(request.invocationPolicy.directory), []);
+  assert.deepEqual(readdirSync(results), []);
+});
+
+test('candidate rechecks a new destination if an ignored file appears during the provider call', async t => {
+  const {request,source,accept,results,answer} = await fixture(t);
+  const root = request.workspace.root;
+  writeFileSync(path.join(root,'.git','info','exclude'),'new.txt\n');
+  request.writes = ['new.txt'];
+  request.assertions = [{path:'sample.txt',contains:'old text',expected:true}];
+  source.respond = (req,res) => {
+    writeFileSync(path.join(root,'new.txt'),'owner file');
+    answer(req,res,{edits:[{path:'new.txt',text:'proposed contents'}]});
+  };
+  const packet = accept();
+  await assert.rejects(candidateRoundtrip({packet,request}), error => /already exists/.test(error.cause?.message));
+  assert.equal(source.requests.length, 1);
+  assert.deepEqual(readdirSync(results), []);
+  assert.equal(readFileSync(path.join(root,'new.txt'),'utf8'), 'owner file');
 });
