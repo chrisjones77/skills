@@ -91,6 +91,15 @@ Do not call a system safe, compliant, continuously assured, or hard real-time on
 strength of this method. A policy model or digital twin is an optional design choice;
 its fidelity, coverage, maintenance, and connection to enforcement require evidence.
 
+## Use as an optional harness bolt-on
+
+For QVCH routing or UWH integration, read
+[the harness integration guide](references/harness-integration.md). Keep canonical purpose
+codes unchanged. Separate a passive bus-monitor view, retained event ledger, and active
+control path. Use existing authorized task and contract records; do not create a competing
+ledger or add unsupported fields to strict runtime packets. The guide supplies an optional
+method and a staged implementation proposal, not an installed resolver or runtime adapter.
+
 ## Deliver the smallest useful decision record
 
 State the material conclusion first. Where helpful, use a compact table of commitments,

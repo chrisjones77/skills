@@ -1,11 +1,11 @@
 <!--
 Sync Impact Report
-Version: none -> 0.1.0 (initial draft constitution for the new skill only)
-Principles added: I. Outcomes and evidence; II. Applicable obligations and ownership;
-III. Timely control; IV. Demonstrated effectiveness; V. Proportionate, attributed guidance.
-Sections added: Core Principles; Scope and Source Boundaries; Development and Review; Governance.
+Version: 0.1.0 -> 0.2.0 (optional harness integration and record/control boundaries)
+Principles modified: none; the existing principles now also constrain optional harness guidance.
+Sections expanded: Scope and Source Boundaries (canonical codes, authoritative records, no-action replay).
+Sections added: none.
 Sections removed: none.
-Deferred: ratification by the repository owner; storyboard gallery integration.
+Deferred: ratification by the repository owner; live QVCH/UWH adoption and runtime implementation.
 Template: resolved successfully using the supplied Spec Kit resolver and core scaffold,
 bootstrapped without Physician Scheduling project presets, overrides, or hooks.
 -->
@@ -53,6 +53,9 @@ This constitution governs development of the ai-operational-governance skill onl
 not replace the repository's other skills or an organization's institutional governance.
 The primary source is Laqua's November 5, 2026 newsletter, documented in the skill's source
 reference. Do not redistribute the supplied email, recipient metadata, or complete PDF.
+Optional QVCH/UWH guidance MUST preserve canonical purpose codes, existing authoritative
+contract and attempt records, and the distinction between observation and enforcement.
+A replay MUST NOT initiate side effects or contract transitions.
 Using the skill confers no authority to deploy, communicate externally, assign people,
 or accept residual risk.
 
@@ -73,4 +76,4 @@ minor for new or materially expanded principles, patch for clarifications. Revie
 against this constitution; disclose exceptions and obtain the owner's decision before treating
 them as accepted. This document does not grant operational authorization.
 
-**Version**: 0.1.0 | **Ratified**: TODO(RATIFICATION_DATE): pending owner adoption | **Last Amended**: 2026-11-05
+**Version**: 0.2.0 | **Ratified**: TODO(RATIFICATION_DATE): pending owner adoption | **Last Amended**: 2026-11-05
