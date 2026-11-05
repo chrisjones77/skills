@@ -39,7 +39,29 @@ function canonicalDirectory(directory) {
   if (!s.isDirectory() || s.isSymbolicLink() || s.uid !== process.getuid?.() || (s.mode & 0o777) !== 0o700) fail('Ledger requires an owner-only directory');
 }
 const gitEnv = () => Object.fromEntries([...Object.entries(process.env).filter(([k])=>!/^GIT_|^SSH_|^NODE_OPTIONS$/.test(k)),['GIT_CONFIG_NOSYSTEM','1'],['GIT_CONFIG_GLOBAL','/dev/null'],['GIT_TERMINAL_PROMPT','0']]);
-function git(root,args) {return execFileSync('git',['-c','core.hooksPath=/dev/null','-c','core.fsmonitor=false',...args],{cwd:root,env:gitEnv(),encoding:'utf8',maxBuffer:1048576,stdio:['ignore','pipe','pipe']}).trim();}
+function gitBytes(root,args) {
+  try {
+    return execFileSync('git',['-c','core.hooksPath=/dev/null','-c','core.fsmonitor=false',...args],{cwd:root,env:gitEnv(),maxBuffer:1048576,stdio:['ignore','pipe','pipe']});
+  } catch { fail('Git history or operation unavailable; reconcile ledger integrity'); }
+}
+function git(root,args) {return gitBytes(root,args).toString('utf8').trim();}
+
+// An empty new repository is valid. An unreadable existing history is not an
+// empty repository. No failed Git query is treated as evidence of a local save.
+function historyHead(root) {
+  try { return git(root,['rev-parse','--verify','HEAD^{commit}']); }
+  catch {
+    try {
+      const ref=git(root,['symbolic-ref','--quiet','HEAD']);
+      const refs=git(root,['for-each-ref','--format=%(refname)']);
+      if (!ref.startsWith('refs/heads/') || refs || existsSync(path.join(root,'.git','logs','HEAD'))) fail('Existing Git history unavailable');
+      // Includes broken loose refs which for-each-ref may warn about and omit.
+      const looseRefs=dir=>readdirSync(dir).some(name=>{const entry=path.join(dir,name);return lstatSync(entry).isDirectory()?looseRefs(entry):true;});
+      if (looseRefs(path.join(root,'.git','refs')) || existsSync(path.join(root,'.git','packed-refs'))) fail('Existing Git references unavailable');
+      return null;
+    } catch { fail('Git history unavailable; reconcile ledger integrity'); }
+  }
+}
 function syncDir(dir) {const fd=openSync(dir,'r');try{fsyncSync(fd);}finally{closeSync(fd);}}
 function regular(file,max=16384) {
   const s=lstatSync(file);
@@ -75,8 +97,8 @@ export function readEvents(root) {
   checkLedger(root);
   const entries=readdirSync(path.join(root,'events'));
   if(entries.length>10000) fail('Prototype event limit exceeded');
-  let tracked=[];
-  try{tracked=git(root,['ls-tree','-r','--name-only','HEAD','--','events']).split('\n').filter(Boolean);}catch{}
+  const head=historyHead(root);
+  const tracked=head?git(root,['ls-tree','-r','--name-only',head,'--','events']).split('\n').filter(Boolean):[];
   if(tracked.some(file=>!entries.includes(file.slice('events/'.length)))) fail('Committed event missing; reconcile without rewriting history');
   const events=entries.map(name=>{
     if(!/^[a-f0-9-]{36}\.json$/.test(name)) fail('Unexpected event entry');
@@ -115,10 +137,12 @@ export function persistence(root,id,duplicate=false) {
   checkLedger(root);
   if(!uuid(id)) fail('Invalid event ID');
   const file='events/'+id+'.json',bytes=regular(path.join(root,file));
-  validateEvent(JSON.parse(bytes));
-  let commit=null;
-  try{commit=git(root,['log','-1','--format=%H','--',file])||null;}catch{}
-  if(commit && git(root,['show',commit+':'+file])!==bytes.trim()) fail('Committed event differs from working bytes');
+  const event=validateEvent(JSON.parse(bytes));
+  if(event.id!==id) fail('Event identity differs from the requested receipt');
+  if(eventBytes(event)!==bytes) fail('Event bytes are not canonical');
+  const head=historyHead(root);
+  const commit=head?(git(root,['log','-1','--format=%H',head,'--',file])||null):null;
+  if(commit && !gitBytes(root,['show',commit+':'+file]).equals(Buffer.from(bytes,'utf8'))) fail('Committed event differs from working bytes');
   return {schema:'work-recorder.receipt.v1',event_id:id,sha256:sha(bytes),state:commit?'committed':'saved_locally',commit,remote_persistence:'unverified',duplicate};
 }
 

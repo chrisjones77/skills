@@ -24,7 +24,9 @@ or dependencies are needed. The committed preview is a synthetic capture, not a 
 `recorder.mjs` exports initialization, strict event validation/construction, append,
 readback, explicit Git commit, derived persistence receipts and a read-only view.
 `adapters.mjs` projects caller-validated QVCH profiles, UWH attended records and read-only
-executor receipts, plus bounded worker-failure observations. These adapters do not validate
+executor receipts, plus bounded worker-failure observations. UWH projections require the
+source work ID to match the recorder task ID and reject conflicting supplied assignment
+digests. These adapters do not validate
 an entire harness contract, authenticate a person or transition work. They default to
 producer-declared provenance; the examples explicitly use synthetic provenance.
 `monitor.mjs` exports a render-only HTML view and an explicit non-overwriting file export.
@@ -91,7 +93,11 @@ dependent on host/storage behavior. A failure after linking may leave an event p
 without an acknowledgement: inspect it and retry identical delivery, not the work itself.
 
 Receipts are derived separately: event digest, saved_locally or committed, commit identity,
-duplicate indication, and remote_persistence: unverified. No pushed state is inferred and no
+duplicate indication, and remote_persistence: unverified. Receipt readback verifies the
+requested event ID, canonical bytes and exact committed blob bytes. Git read failures are
+integrity failures; only a genuinely unborn repository with no references or HEAD reflog
+is treated as having no history. Missing or broken existing references/objects require
+reconciliation rather than downgrading the receipt to saved locally. No pushed state is inferred and no
 push API is provided. Commit explicitly batches current events. Changing or deleting an
 observed committed event is refused when comparing the current Git history. Git history can
 still be rewritten or removed by the owner; this is not an authenticated or tamper-proof log.

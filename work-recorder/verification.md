@@ -58,3 +58,31 @@ Manual reconciliation preserves authoritative UWH contracts and attempt claims.
 No installed skill, live project overlay, external account or production service was
 modified. Human acceptance, adoption and release remain separate. Hosted Linux/macOS CI
 results are recorded on the implementation PR, not inferred from the local results above.
+
+## QVCH review repairs — 2026-11-05
+
+Review of initial head 9650250 reproduced three P2 failures despite the passing original
+suite: the direct persistence API accepted changed whitespace and mismatched event IDs;
+Git read errors could be downgraded to saved-local state; and UWH observations could
+combine one task ID with another assignment's digest. These failures were exercised in
+disposable synthetic ledgers. No production source or participant data was used.
+
+The repair checks receipt filename/embedded identity and canonical bytes, compares exact
+working bytes with the committed Git blob, and propagates unavailable Git history as an
+integrity failure. Only an empty repository with an unborn branch, no references and no
+HEAD reflog is treated as having no history. Both UWH observation projections require the
+source work ID to match the recorder task ID and reject a conflicting supplied digest.
+
+All 21 local tests pass. Added cases cover wrong identity before/after commit, changed
+whitespace, missing commit/blob/tree objects, missing/broken references, mismatched task
+IDs and assignment digests. Each preserves a matching valid control; restoring the original
+synthetic object/reference returns to committed state. Corruption blocks read, append and
+commit without introducing another event. The genuine new-ledger and saved-local controls
+continue to pass. The original three regression groups failed before the repair; the
+missing-blob group already rejected unavailable bytes and remains a passing family control.
+
+The pinned external UWH attended-lifecycle demonstration still passes with six correlated
+events. Existing storyboard validation and whitespace checks pass. No rendering code or
+preview asset changed, so the previously recorded browser inspection was not repeated.
+These repairs do not implement transactional producer emission, change UWH gates, or
+establish owner acceptance. Current-head Linux/macOS results remain on the PR.
