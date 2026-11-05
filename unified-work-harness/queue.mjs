@@ -5,7 +5,7 @@ import { fork } from 'node:child_process';
 import { closeSync, lstatSync, openSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { pinTempParent, assertOutsideSource, buildDraftBinding, contractRoundtrip, isQueueWorkerProcess, hypervisor, inspectExecutionWindow, inspectInvocation, sha256 } from './bundle.mjs';
+import { assertLoopbackEndpoint, pinTempParent, assertOutsideSource, buildDraftBinding, contractRoundtrip, isQueueWorkerProcess, hypervisor, inspectExecutionWindow, inspectInvocation, sha256 } from './bundle.mjs';
 
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
 const bounded = value => typeof value === 'string' && value.trim() && value.length <= 4096;
@@ -78,6 +78,7 @@ function privateRecordBytes(item) {
 function admitJob(item) {
   if (item?.schema_version !== 'attended-coordination.v1') {
     const {offer,scope} = inspectContract(item);
+    assertLoopbackEndpoint(scope.endpoint);
     return {offer,packet:item,expires:scope.execution_window.expires_at,state:'queued'};
   }
   const {assigneeKind} = inspectCoordination(item);
@@ -231,6 +232,8 @@ export function reviewCandidate(directory, {assignmentDigest, reviewer, receiptH
 
 function reserve(directory, options) {
   const {offer,scope} = inspectContract(options.packet);
+  assertLoopbackEndpoint(scope.endpoint);
+  if (options.endpoint !== scope.endpoint) throw Error('Dispatch endpoint differs from the accepted endpoint.');
   if ((options.packagePolicy !== undefined) !== (scope.kind === 'unified-harness-readonly-v6')) throw Error('Package policy differs from the selected contract version.');
   const binding = buildDraftBinding(options.bindingInputs);
   if (binding.binding_sha256 !== scope.binding_sha256) throw Error('Dispatch profile differs from the accepted binding.');
@@ -276,14 +279,17 @@ function runSupervised(directory, options, claim, tempParent) {
     // No caller-supplied code hooks/Node options cross this boundary. The executable PATH is an operator prerequisite.
     const child = fork(self,[workerArg],{detached:true, execArgv:[], stdio:['ignore','ignore','ignore','ipc'],
       env:{PATH:process.env.PATH, HOME:process.env.HOME, LANG:'C', TMPDIR:tempParent}});
-    let receipt, failure;
+    let receipt;
+    const failures = new Set();
     const started = performance.now();
+    function stopGroup() {
+      if (!child.pid) return;
+      try { terminateGroup(child.pid); }
+      catch { failures.add('Could not terminate the queue worker process group.'); }
+    }
     function cancel(reason) {
-      failure = reason;
-      if (child.pid) {
-        try { terminateGroup(child.pid); }
-        catch { failure = 'Could not terminate the queue worker process group.'; }
-      }
+      failures.add(reason);
+      stopGroup();
     }
     function check() {
       try {
@@ -301,16 +307,16 @@ function runSupervised(directory, options, claim, tempParent) {
     // exit, before the close handler can publish the receipt or report failure.
     child.once('exit', () => {
       clearInterval(monitor);
-      try { terminateGroup(child.pid); }
-      catch { failure = 'Could not terminate the queue worker process group.'; }
+      stopGroup();
     });
     child.once('close', code => {
       clearInterval(monitor);
-      if (code !== 0 || !receipt || failure) reject(Error(failure || 'Contract dispatch failed; inspect the accepted ledger.'));
+      if (failures.size) reject(Error([...failures].join(' ')));
+      else if (code !== 0 || !receipt) reject(Error('Contract dispatch failed; inspect the accepted ledger.'));
       else resolve(receipt);
     });
     check();
-    if (!failure) child.send(options, err => { if (err) cancel('Queue worker channel failed.'); });
+    if (!failures.size) child.send(options, err => { if (err) cancel('Queue worker channel failed.'); });
   });
 }
 

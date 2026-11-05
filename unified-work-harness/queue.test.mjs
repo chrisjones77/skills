@@ -70,6 +70,16 @@ function fixture(t, endpoint = 'http://127.0.0.1:1/v1', packageSupport, dispatch
   return {directory, dir, temp, first, second, config};
 }
 
+test('a substituted endpoint preserves the queued job and its entire reservation', async t => {
+  const f = fixture(t);
+  createQueue(f.directory,f.config);
+  const before = inspectQueue(f.directory);
+  for (const endpoint of [f.first.endpoint+'?', f.first.endpoint.replace('127.0.0.1','localhost')]) {
+    await assert.rejects(dispatchNext(f.directory,{...f.first,endpoint}), /endpoint/);
+    assert.deepEqual(inspectQueue(f.directory),before);
+  }
+});
+
 test('explicit goal, accepted identity, ceiling, expiration and cancellation govern admission', async t => {
   const f = fixture(t);
   assert.equal(proposeGoal(f.config.goal).execution_authorized,false);
@@ -196,6 +206,28 @@ test('stopping a live queue terminates its worker and preserves the charged atte
   await assertWorkerExited(marker);
   assert.deepEqual(inspectQueue(f.directory).jobs.map(j=>j.state),['failed','cancelled']);
   assert.equal(inspectQueue(f.directory).remaining[0].attempts,1);
+});
+
+test('a cleanup error preserves the reason the supervisor stopped work', async t=>{
+  const f=fixture(t,await simulatedProvider(t));
+  const marker=path.join(f.temp,'started');
+  installWorker(t,f,'require("node:fs").writeFileSync('+JSON.stringify(marker)+',String(process.pid)); setInterval(()=>{},1000);');
+  createQueue(f.directory,f.config);
+  const rejection=assert.rejects(dispatchNext(f.directory,f.first),/Queue stopped.*Could not terminate/);
+  for(let i=0;i<100 && !existsSync(marker);i++) await wait(50);
+  assert.ok(existsSync(marker));
+  const kill=process.kill.bind(process);
+  t.mock.method(process,'kill',(pid,signal)=>{
+    const result=kill(pid,signal);
+    // The real signal still reaches the disposable group. Make the supervisor
+    // see a cleanup error as well as the operator's stop.
+    if(pid<0 && signal==='SIGKILL') throw Object.assign(Error('synthetic cleanup error'),{code:'EPERM'});
+    return result;
+  });
+  stopQueue(f.directory);
+  await rejection;
+  await assertWorkerExited(marker);
+  assert.deepEqual(inspectQueue(f.directory).jobs.map(j=>j.state),['failed','cancelled']);
 });
 
 test('a killed supervisor leaves an uncertain attempt blocked on restart', async t => {

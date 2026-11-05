@@ -68,6 +68,14 @@ async function fixture(t) {
   return {request,source,accept,results,git,answer};
 }
 
+test("candidate offers reject port zero before contacting the provider",async t=>{
+  const {request,source,accept}=await fixture(t);
+  request.provider.endpoint="http://127.0.0.1:0/v1/chat/completions";
+  assert.throws(()=>accept(),/loopback route/);
+  assert.deepEqual(source.requests,[]);
+  assert.deepEqual(readdirSync(request.invocationPolicy.directory),[]);
+});
+
 test("both provider protocols produce a private candidate and preserve source; attempts cannot replay",async t=>{
   const {request,source,accept,results,git}=await fixture(t);
   for(const adapter of ["openai_chat","ollama_chat"]){

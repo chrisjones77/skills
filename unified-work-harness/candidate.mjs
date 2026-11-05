@@ -69,7 +69,7 @@ function validate(request) {
   need(exact(provider, ["adapter","endpoint","model"]) && Object.hasOwn(routes,provider.adapter)
     && typeof provider.model === "string" && /^[\w][\w./:-]{0,127}$/.test(provider.model) && !isOllamaCloudModelId(provider.model), "Unsupported provider or model");
   const url = new URL(provider.endpoint);
-  need(url.protocol === "http:" && ["127.0.0.1","[::1]"].includes(url.hostname)
+  need(url.protocol === "http:" && url.port !== "0" && ["127.0.0.1","[::1]"].includes(url.hostname)
     && provider.endpoint === url.origin + routes[provider.adapter], "Use the adapter's exact numeric loopback route");
   need(exact(limits, ["contextBytes","replyBytes","tokens","timeoutMs"])
     && bounded(limits.contextBytes,262144) && bounded(limits.replyBytes,524288)

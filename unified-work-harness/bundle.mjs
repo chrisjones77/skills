@@ -1175,6 +1175,7 @@ export function buildOpenCodeConfig(assignment, endpoint) {
   const profile = PROVIDER_PROFILES[assignment.assignee.provider];
   if (!profile) throw new Error(`Unsupported assignment provider ${assignment.assignee.provider}`);
   endpoint ??= profile.defaultEndpoint;
+  if (endpoint != null) endpoint = parseLoopbackEndpoint(endpoint).href;
   const provider = assignment.assignee.provider;
   const readPermission = { "*": "deny" };
   for (const allowedPath of assignment.authority.allowed_read_paths.map(checkedScopePath)) {
@@ -1636,8 +1637,13 @@ async function resolveProjectRoot(cwd) {
 }
 
 function parseLoopbackEndpoint(endpoint) {
+  // Check the original spelling: URL.search and URL.hash hide empty delimiters,
+  // and the URL parser silently discards whitespace and normalizes backslashes.
+  if (typeof endpoint !== "string" || !/^http:\/\/[^/@]+\//i.test(endpoint) || /[\s\x00-\x1f\x7f\\?#]/u.test(endpoint)) {
+    throw new Error("model endpoint must be a plain HTTP loopback base URL without credentials, query or fragment");
+  }
   const parsed = new URL(endpoint);
-  if (parsed.protocol !== "http:" || !["127.0.0.1", "localhost", "::1"].includes(parsed.hostname)) {
+  if (parsed.port === "0" || !["127.0.0.1", "localhost", "[::1]"].includes(parsed.hostname)) {
     throw new Error("model endpoint must be an HTTP loopback URL");
   }
   if (!parsed.pathname.endsWith("/v1")) throw new Error("model endpoint must end in /v1");
@@ -1680,8 +1686,8 @@ async function checkModelEndpoint(endpoint, modelId, provider, requiresTools = f
   if (provider !== "ollama") return { server_version: null, model_digest: null };
 
   const root = new URL(endpoint);
-  const versionURL = new URL("/api/version", root);
-  const tagsURL = new URL("/api/tags", root);
+  const versionURL = new URL("api/version", root);
+  const tagsURL = new URL("api/tags", root);
   const optionalJson = async url => {
     beforeRequest();
     const response = await discoveryResponse(url, true);
@@ -2159,6 +2165,7 @@ async function runDirectJson({ assignment, worktree, artifactDirectory, endpoint
   }
   const response = await request(`${endpoint}/chat/completions`, {
     method: "POST",
+    redirect: "error",
     headers: { "Content-Type": "application/json", Authorization: "Bearer local" },
     body: JSON.stringify(requestBody),
     signal: AbortSignal.timeout(assignment.resources.timeout_seconds * 1_000),
@@ -2217,6 +2224,7 @@ async function runDirectJson({ assignment, worktree, artifactDirectory, endpoint
 }
 
 export function buildAiderCommand(assignment, worktree, artifactDirectory, endpoint) {
+  endpoint = parseLoopbackEndpoint(endpoint).href;
   const editable = assignment.authority.allowed_paths.map(normalizeAllowedPath);
   const readable = [...new Set(assignment.authority.allowed_read_paths.flatMap((declaredPath) => {
     const normalized = normalizeAllowedPath(declaredPath);
@@ -2333,7 +2341,7 @@ export async function runHarness({
   const assignment = validateAssignment(JSON.parse(assignmentSource));
   const isCodex = assignment.assignee.provider === "codex";
   endpoint ??= PROVIDER_PROFILES[assignment.assignee.provider].defaultEndpoint;
-  if (!isCodex) assertLoopbackEndpoint(endpoint);
+  if (!isCodex) endpoint = parseLoopbackEndpoint(endpoint).href;
   const projectRoot = await resolveProjectRoot(cwd);
   beforeProvider();
   const modelRuntime = isCodex ? {} : await endpointCheck(endpoint, assignment.assignee.model_id, assignment.assignee.provider, (assignment.worker?.adapter ?? "opencode") === "opencode") ?? {};

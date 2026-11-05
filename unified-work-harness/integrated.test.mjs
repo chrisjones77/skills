@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, realpathSync, rmSync, readFileSy
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { buildOpenCodeConfig, validatePathAccess, contractRoundtrip, buildBoundScope, inspectInvocation, hypervisor, sha256, inspectBundledSource } from './bundle.mjs';
+import { runHarness, buildOpenCodeConfig, validatePathAccess, contractRoundtrip, buildBoundScope, inspectInvocation, hypervisor, sha256, inspectBundledSource } from './bundle.mjs';
 import { buildPackageScope } from './integrated.mjs';
 import { packageInventory } from './package.mjs';
 import { reviewIntake } from './intake.mjs';
@@ -110,20 +110,84 @@ test('v6 refuses stale evidence, inconsistent profiles and scope upgrades before
   assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
 });
 
-for (const [expireAfter, title] of [
+async function listen(t, host, handler) {
+  const server = createServer(handler);
+  await new Promise((resolve,reject) => server.once('error',reject).listen(0,host,resolve));
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  return server.address().port;
+}
+
+test('ambiguous endpoints and non-loopback IPv6 fail before offer, provider contact or claim', async t => {
+  const seen = [];
+  const port = await listen(t, '127.0.0.1', (req,res) => {
+    seen.push(req.url);
+    res.writeHead(404).end();
+  });
+  const base = `http://127.0.0.1:${port}/v1`;
+  const {inputs,accept} = fixture(t,base);
+  const scope = JSON.parse(buildPackageScope(inputs));
+  for (const endpoint of [
+    base+'?view=local', base+'#local', base+'?', base+'#',
+    base.replace('//','//user:pass@'), base.replace('//','//@'),
+    base+' ', base.replace('/v1','\\v1'), base.replace('127.0.0.1','[2001:db8::1]'),
+    'http://127.0.0.1:0/v1',
+  ]) {
+    assert.throws(() => buildPackageScope({...inputs,endpoint}), /loopback/);
+    assert.throws(() => buildBoundScope(inputs.bindingInputs,endpoint), /loopback/);
+    const packet = accept(JSON.stringify({...scope,endpoint}));
+    await assert.rejects(contractRoundtrip({...inputs,endpoint,packet}), /loopback/);
+  }
+  assert.deepEqual(seen,[]);
+  assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
+});
+
+test('direct completion refuses a 307 before forwarding synthetic source', async t => {
+  const forwarded = [];
+  const destination = await listen(t,'127.0.0.1',async (req,res) => {
+    const body = [];
+    for await (const chunk of req) body.push(chunk);
+    forwarded.push({path:req.url,containsSource:Buffer.concat(body).includes('cobalt-otter-47')});
+    res.end('{}');
+  });
+  const requests = [];
+  const port = await listen(t,'127.0.0.1',async (req,res) => {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    requests.push({path:req.url,body:Buffer.concat(chunks).toString()});
+    res.writeHead(307,{Location:`http://127.0.0.1:${destination}/other`}).end();
+  });
+  const {inputs,temp} = fixture(t,`http://127.0.0.1:${port}/prefix/v1`);
+  const assignment = JSON.parse(inputs.bindingInputs.assignmentJson);
+  assignment.authority.mode = 'structured_proposal';
+  assignment.authority.allowed_paths = ['source.txt'];
+  assignment.acceptance.require_changes = true;
+  assignment.worker = {adapter:'direct_json',context_strategy:'source_files',max_context_bytes:8192};
+  writeFileSync(inputs.assignmentPath,JSON.stringify(assignment));
+  const [outcome] = await Promise.allSettled([runHarness({assignmentPath:inputs.assignmentPath,endpoint:inputs.endpoint,
+    cwd:path.join(temp,'repo'),outputRoot:inputs.resultPolicy.directory,endpointCheck:async () => ({})})]);
+  assert.deepEqual(requests.map(r => r.path),['/prefix/v1/chat/completions']);
+  assert.match(requests[0].body,/cobalt-otter-47/);
+  assert.deepEqual(forwarded,[]);
+  assert.equal(outcome.status,'rejected');
+  assert.match(outcome.reason.message,/Harness run rejected/);
+});
+
+for (const [expireAfter, title, host = '127.0.0.1', prefix = ''] of [
   [null, 'reviewed and accepted v6 produces a package-bound candidate receipt'],
+  [null, 'IPv6 loopback with a path prefix completes the accepted v6 contract', '::1', '/prefix'],
   ['/v1/models', 'expiry during discovery stops additional metadata requests and consumes the attempt'],
   ['/api/tags', 'expiry after discovery stops the worker and consumes the attempt'],
 ]) {
   test(title, async t => {
     let discover;
-    const server = createServer((req,res) => {
+    const routes = [];
+    const port = await listen(t,host,(req,res) => {
+      routes.push(req.url);
       discover?.(req.url);
       res.end(JSON.stringify({data:[{id:'synthetic:local'}],version:'synthetic',models:[{name:'synthetic:local'}]}));
     });
-    await new Promise((resolve,reject) => server.once('error',reject).listen(0,'127.0.0.1',resolve));
-    t.after(() => new Promise(resolve => server.close(resolve)));
-    const {inputs,temp,accept} = fixture(t, `http://127.0.0.1:${server.address().port}/v1`);
+    const authority = host === '::1' ? '[::1]' : host;
+    const {inputs,temp,accept} = fixture(t, `http://${authority}:${port}${prefix}/v1`);
     const scope = buildPackageScope(inputs);
     const packet = accept(scope);
     const digest = hypervisor.currentAssignment(packet).digest;
@@ -157,6 +221,7 @@ for (const event of [
       assert.equal(inspectInvocation(inputs.invocationPolicy,digest).state,'failed');
     } else {
       const receipt = await contractRoundtrip({...inputs,packet});
+      assert.deepEqual(routes.sort(), ['/api/tags','/api/version','/v1/models'].map(route => prefix + route));
       assert.equal(receipt.schema_version,'unified.contract-executor-receipt.v6');
       assert.equal(receipt.assignment_digest,digest);
       assert.equal(receipt.review_status,'pending');
