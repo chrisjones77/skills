@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "source_repository": "chrisjones77/skills",
-  "source_revision": "c8f77a86170d72836c47116fa0c2eeffa42a0497",
+  "source_revision": "d51472a0570a5b87cb366b09665f778f66d75d50",
   "created": "2026-10-22",
   "generator": "OpenAI built-in image_gen",
   "asset_status": "AI-generated concept illustrations",
-  "scope": "Current twelve-skill gallery, including Farmer Jones Victory Garden; prior snapshots and artwork retained. Current entrypoint changes require reconciliation; referenced-document drift remains manual.",
+  "scope": "Current fourteen-skill gallery. Each board records its source entrypoint and selected asset. Prior snapshots and artwork are retained.",
   "boards": [
     {
       "slug": "harnessed-dispatch",
@@ -318,7 +318,31 @@
         "human_acceptance": "pending",
         "notes": "Assistant inspected six panels and a revision replacing a false read-only mount and invented limits. The UI, progress, archive names and hashes are illustrative; external sandboxing, actual authorization and human review are not established. Human review and browser display checks remain pending."
       }
+    },
+    {
+      "slug": "ai-operational-governance",
+      "title": "AI Operational Governance",
+      "source_path": "ai-operational-governance/SKILL.md",
+      "source_blob_sha": "672449e01a58898ee0152ee08bdbb01efb99c4bd",
+      "asset": "assets/ai-operational-governance.png",
+      "asset_sha256": "3ea544c440dabc91538b766cfff8dc904c7349ef910c776b0bd457092ca321b0",
+      "transcript": [
+        "01 Find the obligation — locate the applicable source and workflow boundary.",
+        "02 Name the promise — connect an observable commitment to proposed ownership and operating responsibilities.",
+        "03 Place the control — enforce required approval before a message is sent.",
+        "04 Act in time — connect sensing, decision and intervention before the external action.",
+        "05 Test the boundary — examine missing approval, stale signals and bypass paths; illustration outcomes are not tested.",
+        "06 Record and revisit — preserve evidence separately from decisions and reconsider changed policy."
+      ],
+      "limitation": "Records support assurance. Controls must act. Human acceptance remains separate. This is a concept illustration, not an implemented QVCH/UWH adapter or proof of control effectiveness.",
+      "prompt": "Use case: ui-mockup. Create one polished six-panel LANDSCAPE storyboard titled \"AI Operational Governance\", subtitle \"Skill workflow · Illustrative storyboard\". Exactly THREE COLUMNS and TWO ROWS, six numbered panels 01–06 left to right. Match a documentation series: charcoal-black desktop interfaces and desk scenes, cream editorial typography, violet connectors, restrained amber highlights, fine pencil annotations, generous gutters. Each panel must depict a concrete interaction, not just a text card. Large legible short headings. Panel 01 \"Find the obligation\": an operator traces a policy source to a workflow boundary, with small labels \"Source\" and \"Scope\". Panel 02 \"Name the promise\": owner and observable commitment connected across governance, program, system, process. Label ownership \"Proposed\". Panel 03 \"Place the control\": a draft message reaches a gateway and is held before sending; label \"Approval required\". Panel 04 \"Act in time\": sensing leads to decision and intervention; depict a clear arrow \"Before external action\"; no invented numerical timing targets. Panel 05 \"Test the boundary\": fictional test desk checks missing approval, stale signal, and bypass route; all outcomes clearly marked \"Not tested\". Panel 06 \"Record and revisit\": separate a flight-recorder-style ledger from a control switch, then an operator reviews evidence and a changed policy. Labels \"Evidence\" and \"Decision\". Footer verbatim \"Records support assurance. Controls must act. Human acceptance remains separate.\" Small series credit \"chrisjones77/skills · Concept illustration\". This depicts an instructional concept, not an implemented product, airplane safety system, real cockpit, MIL-STD-1553 protocol, certification, compliance guarantee, digital twin requirement, or deployed QVCH/UWH integration. No real people, email details, logos, seals, pass badges, private paths, invented authoritative citations, or numeric mode-code mappings. Preserve difference between recording and governing. Only these requested words; minimize tiny decorative text.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "All six panels inspected: source/scope, proposed ownership, approval gate, before-action timing, not-tested cases and separate evidence/decision roles are visible. Decorative checks and interface objects are illustrative, not acceptance or test results. No human acceptance or deployed integration is claimed. Source reconciliation 2026-11-05: independent recorder, Git adapter and reviewed-feedback guidance added; the existing six-panel obligation-to-control/evidence narrative remains applicable. PNG unchanged; this reconciliation is not a new human or pixel review."
+      }
     }
   ],
-  "refreshed": "2026-10-28"
+  "refreshed": "2026-11-05"
 }

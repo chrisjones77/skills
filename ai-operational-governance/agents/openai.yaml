@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Operational Governance"
+  short_description: "Connect AI obligations to timely operating controls"
+  default_prompt: "Use $ai-operational-governance to review how this AI workflow keeps its organizational commitments during operation."
