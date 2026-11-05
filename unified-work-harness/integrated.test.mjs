@@ -2,7 +2,7 @@ import { redirectStatuses, observeDestination } from './test-support.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, realpathSync, rmSync, readFileSync, readdirSync, renameSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, realpathSync, rmSync, readFileSync, readdirSync, renameSync, symlinkSync, existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -11,7 +11,7 @@ import { buildPackageScope } from './integrated.mjs';
 import { packageInventory } from './package.mjs';
 import { reviewIntake } from './intake.mjs';
 
-function fixture(t, endpoint, trackedFile = 'source.txt', timeoutSeconds = 120) {
+function fixture(t, endpoint, trackedFile = 'source.txt', timeoutSeconds = 120, prepareCheckout) {
   const temp = realpathSync(mkdtempSync(path.join(tmpdir(), 'unified-package-test-')));
   t.after(() => rmSync(temp, { recursive: true, force: true }));
   const root = path.join(temp, 'repo');
@@ -22,6 +22,10 @@ function fixture(t, endpoint, trackedFile = 'source.txt', timeoutSeconds = 120) 
   git('config', 'user.email', 'synthetic@example.invalid');
   writeFileSync(path.join(root, trackedFile), 'cobalt-otter-47');
   git('add', '-f', trackedFile);
+  if (prepareCheckout) {
+    prepareCheckout(root,temp);
+    git('add','-f','.');
+  }
   git('commit', '-qm', 'synthetic case');
   const revision = git('rev-parse', 'HEAD');
   const branch = git('branch', '--show-current');
@@ -142,6 +146,19 @@ test('ambiguous endpoints and non-loopback IPv6 fail before offer, provider cont
   assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
 });
 
+function streamReadCompletion(res, askForRead, hasSource, filename = 'source.txt') {
+  const tool = {index:0,id:'call_read',type:'function',function:{name:'read',arguments:JSON.stringify({filePath:filename})}};
+  const delta = askForRead ? {role:'assistant',tool_calls:[tool]}
+    : {role:'assistant',content:hasSource ? 'cobalt-otter-47' : 'Synthetic title'};
+  res.writeHead(200,{'content-type':'text/event-stream'});
+  for (const [part,reason] of [[delta,null],[{},askForRead ? 'tool_calls' : 'stop']]) {
+    const chunk = {id:'chatcmpl-test',object:'chat.completion.chunk',created:1,model:'synthetic:local',
+      choices:[{index:0,delta:part,finish_reason:reason}]};
+    res.write('data: '+JSON.stringify(chunk)+'\n\n');
+  }
+  res.end('data: [DONE]\n\n');
+}
+
 // With UNIFIED_TEST_INSTALLED_OPENCODE=1 this same provider drives the installed
 // worker through its read tool. The deterministic lane uses an HTTP client that follows redirects.
 for (const beforeRead of [false,true]) for (const status of (beforeRead ? redirectStatuses : [...redirectStatuses,200])) {
@@ -172,16 +189,7 @@ for (const beforeRead of [false,true]) for (const status of (beforeRead ? redire
       }
       // Title generation gets a short text reply. The initial task gets a tool call.
       const askForRead = !hasSource && JSON.parse(body).tools?.length;
-      const tool = {index:0,id:'call_read',type:'function',function:{name:'read',arguments:'{"filePath":"source.txt"}'}};
-      const delta = askForRead ? {role:'assistant',tool_calls:[tool]}
-        : {role:'assistant',content:hasSource ? 'cobalt-otter-47' : 'Synthetic title'};
-      res.writeHead(200,{'content-type':'text/event-stream'});
-      for (const [part,reason] of [[delta,null],[{},askForRead ? 'tool_calls' : 'stop']]) {
-        const chunk = {id:'chatcmpl-test',object:'chat.completion.chunk',created:1,model:'synthetic:local',
-          choices:[{index:0,delta:part,finish_reason:reason}]};
-        res.write('data: '+JSON.stringify(chunk)+'\n\n');
-      }
-      res.end('data: [DONE]\n\n');
+      streamReadCompletion(res, askForRead, hasSource);
     });
     const {inputs,temp,accept} = fixture(t,`http://127.0.0.1:${port}/prefix/v1`,'source.txt',20);
     if (process.env.UNIFIED_TEST_INSTALLED_OPENCODE !== '1') {
@@ -216,6 +224,71 @@ for (const beforeRead of [false,true]) for (const status of (beforeRead ? redire
     else assert.ok(sourcePosts > 0,'the accepted upstream must receive the file token');
     assert.deepEqual(destination.requests,[],'the second listener must receive no requests');
   });
+}
+
+// Exercise project discovery in the real binary. A stand-in worker cannot prove
+// that startup ignores local configuration or that the first prompt is in scope.
+if (process.env.UNIFIED_TEST_INSTALLED_OPENCODE === '1') {
+  for (const scenario of ['project configuration','project configuration directory','instructions','linked instructions','nested instructions','offered nested instructions']) {
+    test('OpenCode isolates '+scenario, async t => {
+      const canary = 'unoffered-instruction-81bd6';
+      const nested = scenario.endsWith('nested instructions');
+      const offeredInstructions = scenario === 'offered nested instructions';
+      const filename = nested ? 'docs/source.txt' : 'source.txt';
+      let leaked = false, completedRead = false, completions = 0;
+      const port = await listen(t,'127.0.0.1',async (req,res) => {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        const body = Buffer.concat(chunks).toString();
+        leaked ||= body.includes(canary);
+        if (req.url !== '/v1/chat/completions') {
+          res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[{name:'synthetic:local'}],version:'test'}));
+          return;
+        }
+        completions++;
+        const hasSource = body.includes('cobalt-otter-47');
+        completedRead ||= hasSource;
+        streamReadCompletion(res,!hasSource && JSON.parse(body).tools?.length,hasSource,filename);
+      });
+      const {inputs,temp,accept} = fixture(t,'http://127.0.0.1:'+port+'/v1','source.txt',20,(root,temp) => {
+        if (scenario.startsWith('project configuration')) {
+          const marker = path.join(temp,'mcp-started');
+          const command = [process.execPath,'-e',"require('node:fs').writeFileSync("+JSON.stringify(marker)+",'started')"];
+          const configFile = scenario === 'project configuration' ? 'opencode.json' : '.opencode/opencode.jsonc';
+          mkdirSync(path.dirname(path.join(root,configFile)),{recursive:true});
+          writeFileSync(path.join(root,configFile),JSON.stringify({mcp:{probe:{type:'local',enabled:true,command}}}));
+        } else if (scenario === 'linked instructions') {
+          const outside = path.join(temp,'private-instructions');
+          writeFileSync(outside,canary);
+          symlinkSync(outside,path.join(root,'AGENTS.md'));
+        } else if (nested) {
+          mkdirSync(path.join(root,'docs'));
+          renameSync(path.join(root,'source.txt'),path.join(root,filename));
+          writeFileSync(path.join(root,'docs','AGENTS.md'),canary);
+        } else writeFileSync(path.join(root,'AGENTS.md'),canary);
+      });
+      if (nested) {
+        const assignment = JSON.parse(inputs.bindingInputs.assignmentJson);
+        assignment.authority.allowed_read_paths = offeredInstructions ? [filename,'docs/AGENTS.md'] : [filename];
+        inputs.bindingInputs.assignmentJson = JSON.stringify(assignment);
+        writeFileSync(inputs.assignmentPath,inputs.bindingInputs.assignmentJson);
+      }
+      const packet = accept(buildPackageScope(inputs));
+      const [run] = await Promise.allSettled([contractRoundtrip({...inputs,packet})]);
+      assert.equal(existsSync(path.join(temp,'mcp-started')),false,'checkout command executed');
+      if (!offeredInstructions) assert.equal(leaked,false,'provider received unoffered instruction bytes');
+      if (nested && !offeredInstructions) {
+        assert.equal(run.status,'rejected');
+        assert.match(run.reason.message,/Nested worker instructions/);
+        assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
+        assert.equal(completions,0,'nested instructions must be refused before launch');
+      } else {
+        assert.equal(run.status,'fulfilled',String(run.reason));
+        assert.equal(run.value.review_status,'pending');
+        assert.equal(completedRead,true,'the authorized source reached the provider');
+      }
+    });
+  }
 }
 
 for (const status of redirectStatuses) test('direct completion refuses redirect '+status, async t => {

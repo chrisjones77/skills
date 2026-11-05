@@ -1585,7 +1585,7 @@ export const contractGitArgs = Object.freeze(["-c","core.hooksPath=/dev/null","-
 
 // Reject executable or indirect local settings before asking Git to refresh the
 // index (status may run a clean filter). Unknown settings require a clean clone.
-export function assertSafeGitSource(root) {
+export function assertSafeGitSource(root, checkEntry) {
   const options={cwd:root,env:contractGitEnvironment(),timeout:5000,maxBuffer:8388608,
     encoding:"utf8",stdio:["ignore","pipe","pipe"]};
   const keys=execFileSync("git",["config","--no-includes","--null","--name-only","--list"],options).split("\0").filter(Boolean);
@@ -1597,6 +1597,11 @@ export function assertSafeGitSource(root) {
   for (const entry of index.split("\0")) {
     if (/^(?:[a-z]|S) /.test(entry)) throw new Error("Source index flags hide tracked state; use a full clean checkout.");
     if (/^. 160000 /.test(entry)) throw new Error("Submodule checkouts require separate review.");
+    if (entry && checkEntry) {
+      const name = entry.slice(entry.indexOf("\t") + 1);
+      const mode = entry.slice(2, 8);
+      checkEntry(name, mode === "120000", mode === "100644" || mode === "100755");
+    }
   }
 }
 
@@ -1867,13 +1872,14 @@ async function readHeadCommit(worktree) {
 
 // The read-only worker gets its own checkout and Git directory. Compare both
 // directly so that verification never interprets worker-controlled Git metadata.
-function snapshotCheckout(root) {
+function snapshotCheckout(root, checkEntry) {
   const entries = new Map();
   const buffer = Buffer.allocUnsafe(64 * 1024);
   let count = 0, remaining = 1024 ** 3;
   function visit(rel, depth) {
     if (++count > 100000 || depth > 128) throw Error("Checkout inspection limit exceeded");
     const file = path.join(root,rel), st = lstatSync(file);
+    checkEntry?.(rel, st.isSymbolicLink(), st.isFile());
     let content = null;
     if (st.isFile()) {
       if (st.nlink !== 1 || st.size > remaining) throw Error("Unsupported read-only checkout file");
@@ -1907,6 +1913,28 @@ function snapshotCheckout(root) {
   }
   visit("",0);
   return entries;
+}
+
+// OpenCode also attaches instructions beside a nested read independently of
+// project config discovery. Check the source index before claiming, then the
+// actual disposable tree before spawning the worker.
+function workerReadBoundary(assignment) {
+  const grants = assignment.authority.allowed_read_paths.map(checkedScopePath);
+  const folded = name => name.normalize("NFKC").toLowerCase().replace(/\p{Default_Ignorable_Code_Point}/gu, "");
+  const overlaps = (a, b) => pathMatchesPrefix(a, b) || pathMatchesPrefix(b, a);
+  const keys = grants.map(folded);
+  return (name, isLink, isRegularFile) => {
+    const key = folded(name);
+    if (isLink && keys.some(grant => overlaps(grant, key))) {
+      throw Error("Read scope includes a symbolic link");
+    }
+    const dir = path.posix.dirname(key);
+    if (dir === "." || !["agents.md","context.md","claude.md"].includes(path.posix.basename(key))) return;
+    if (keys.some(grant => overlaps(grant, dir)) &&
+        !(isRegularFile && grants.some(grant => pathMatchesPrefix(name, grant)))) {
+      throw Error("Nested worker instructions would exceed the accepted read scope");
+    }
+  };
 }
 
 function changedCheckoutPaths(before, after) {
@@ -2044,6 +2072,13 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
     TMPDIR: getTempParent(),
     LANG: "C.UTF-8",
     OPENCODE_CONFIG: configPath,
+    // OpenCode merges checkout configuration and project instructions even in
+    // --pure mode unless project discovery is explicitly disabled.
+    ...(assignment.authority.mode === "read_only" && {
+      OPENCODE_DISABLE_PROJECT_CONFIG: "true",
+      OPENCODE_DISABLE_EXTERNAL_SKILLS: "true",
+      OPENCODE_DISABLE_CLAUDE_CODE: "true",
+    }),
     OPENCODE_DISABLE_AUTOUPDATE: "true",
     OPENCODE_DISABLE_PRUNE: "true",
     XDG_CONFIG_HOME: path.join(artifactDirectory, "state", "config"),
@@ -2461,7 +2496,8 @@ export async function runHarness({
       // repository has a single shallow commit. Seed the cache before audit.
       writeFileSync(path.join(worktree, ".git", "opencode"), baseCommit, {flag:"wx", mode:0o600});
     }
-    const beforeCheckout = readOnly ? snapshotCheckout(worktree) : null;
+    const checkEntry = readOnly && adapter === "opencode" ? workerReadBoundary(assignment) : undefined;
+    const beforeCheckout = readOnly ? snapshotCheckout(worktree, checkEntry) : null;
     providerLease = isCodex ? null : await acquireProviderLease(endpoint, assignment.resources.timeout_seconds * 1_000, {getTempParent});
     const providerLeaseWaitMs = providerLease?.waitedMs ?? 0;
     let agentResult;
@@ -2750,6 +2786,25 @@ export function buildBoundScope(inputs, endpoint, resultPolicy, invocationPolicy
   return JSON.stringify({ kind: executionWindow !== undefined ? "unified-harness-readonly-v5" : invocationPolicy !== undefined ? "unified-harness-readonly-v4" : resultPolicy === undefined ? "unified-harness-readonly-v2" : "unified-harness-readonly-v3", assignment_sha256: binding.assignment_sha256, binding_sha256: binding.binding_sha256, endpoint, ...(resultPolicy === undefined ? {} : {result_policy:{directory:resultPolicy.directory,retention:resultPolicy.retention}}), ...(invocationPolicy === undefined ? {} : {invocation_policy:{directory:invocationPolicy.directory,mode:invocationPolicy.mode}}), ...(executionWindow === undefined ? {} : {execution_window:{not_before:executionWindow.not_before,expires_at:executionWindow.expires_at}}) });
 }
 
+export function verifyAcceptedReadOnlyPacket(packet, executionWindow) {
+  hypervisor.validatePacket(packet);
+  const contract = packet.work_contract;
+  if (!contract || contract.disposition !== "accepted" || !contract.acceptance || packet.status !== "active" || packet.handoff.current_writer !== packet.owner || packet.handoff.pending_transfer || (packet.clarifications ?? []).some(c => c.status !== "resolved") || !["pending", "rework"].includes(contract.review.status)) throw new Error("accepted, resumed work without pending concerns or transfer is required");
+  const checkpoint = packet.checkpoints.at(-1);
+  if (!checkpoint || checkpoint.kind !== "resumed" || checkpoint.owner !== packet.owner || checkpoint.workspace !== packet.workspace.identity || !Number.isFinite(Date.parse(checkpoint.at)) || Date.parse(checkpoint.at) < Date.parse(contract.acceptance.at)) throw new Error("a matching resume checkpoint after acceptance is required");
+  const offered = hypervisor.currentAssignment(packet);
+  if (executionWindow !== undefined && (Date.parse(offered.created_at) > Date.parse(contract.acceptance.at) || Date.parse(contract.acceptance.at) > Date.now() || Date.parse(checkpoint.at) > Date.now())) throw new Error("Contract timestamps are inconsistent or in the future.");
+  if (!["Review", "Research"].includes(offered.dispatch_kind) || !offered.engineering_purpose) throw new Error("only routed read-only review or research is supported");
+  return offered;
+}
+
+export function verifyBoundPacketIdentity(packet, offered, bindingInputs) {
+  const intake = JSON.parse(bindingInputs.intakeJson);
+  const profile = JSON.parse(bindingInputs.profileJson);
+  const workspace = JSON.parse(bindingInputs.workspaceJson);
+  if (packet.owner !== intake.assignee.id || offered.recipient !== intake.assignee.id || offered.assigner !== intake.accountableHuman || offered.reviewer !== intake.acceptance.reviewer || offered.engineering_purpose !== profile.primary || offered.acceptance_evidence !== JSON.stringify(intake.acceptance.checks) || ["root", "identity", "revision", "status_digest"].some(key => packet.workspace[key] !== workspace[key])) throw new Error("integrated contract identity or review criteria mismatch");
+}
+
 export async function contractRoundtrip(options) {
   return contractEnvironment.run(true, () => executeContractRoundtrip(options));
 }
@@ -2774,15 +2829,8 @@ async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outp
     recheckPackage?.();
   };
   packet = structuredClone(packet);
-  hypervisor.validatePacket(packet);
-  const contract = packet.work_contract;
-  if (!contract || contract.disposition !== "accepted" || !contract.acceptance || packet.status !== "active" || packet.handoff.current_writer !== packet.owner || packet.handoff.pending_transfer || (packet.clarifications ?? []).some(c => c.status !== "resolved") || !["pending", "rework"].includes(contract.review.status)) throw new Error("accepted, resumed work without pending concerns or transfer is required");
-  const checkpoint = packet.checkpoints.at(-1);
-  if (!checkpoint || checkpoint.kind !== "resumed" || checkpoint.owner !== packet.owner || checkpoint.workspace !== packet.workspace.identity || !Number.isFinite(Date.parse(checkpoint.at)) || Date.parse(checkpoint.at) < Date.parse(contract.acceptance.at)) throw new Error("a matching resume checkpoint after acceptance is required");
-  const offered = hypervisor.currentAssignment(packet);
+  const offered = verifyAcceptedReadOnlyPacket(packet, executionWindow);
   checkFreshness();
-  if (executionWindow !== undefined && (Date.parse(offered.created_at) > Date.parse(contract.acceptance.at) || Date.parse(contract.acceptance.at) > Date.now() || Date.parse(checkpoint.at) > Date.now())) throw new Error("Contract timestamps are inconsistent or in the future.");
-  if (!["Review", "Research"].includes(offered.dispatch_kind) || !offered.engineering_purpose) throw new Error("only routed read-only review or research is supported");
   let scope;
   try { scope = JSON.parse(offered.scope); } catch { throw new Error("scope must be the explicit executor binding"); }
   const packageBound = scope?.kind === "unified-harness-readonly-v6";
@@ -2803,10 +2851,7 @@ async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outp
   const integrated = packageBound || ["unified-harness-readonly-v2", "unified-harness-readonly-v3", "unified-harness-readonly-v4", "unified-harness-readonly-v5"].includes(scope?.kind);
   if (integrated) {
     if (!packageBound && offered.scope !== buildBoundScope(bindingInputs, endpoint, resultPolicy, invocationPolicy, executionWindow)) throw new Error("integrated scope or endpoint differs from accepted binding");
-    const intake = JSON.parse(bindingInputs.intakeJson);
-    const profile = JSON.parse(bindingInputs.profileJson);
-    const workspace = JSON.parse(bindingInputs.workspaceJson);
-    if (packet.owner !== intake.assignee.id || offered.recipient !== intake.assignee.id || offered.assigner !== intake.accountableHuman || offered.reviewer !== intake.acceptance.reviewer || offered.engineering_purpose !== profile.primary || offered.acceptance_evidence !== JSON.stringify(intake.acceptance.checks) || ["root", "identity", "revision", "status_digest"].some(key => packet.workspace[key] !== workspace[key])) throw new Error("integrated contract identity or review criteria mismatch");
+    verifyBoundPacketIdentity(packet, offered, bindingInputs);
   } else if (bindingInputs !== undefined || resultPolicy !== undefined || invocationPolicy !== undefined || executionWindow !== undefined || !scope || Array.isArray(scope) || Object.keys(scope).sort().join(",") !== "assignment_sha256,kind" || scope.kind !== "unified-harness-readonly-v1" || !/^[a-f0-9]{64}$/.test(scope.assignment_sha256 ?? "")) throw new Error("unsupported executor scope binding");
   const source = readFileSync(assignmentPath, "utf8");
   if (sha256(source) !== scope.assignment_sha256) throw new Error("executor assignment differs from accepted scope");
@@ -2817,7 +2862,7 @@ async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outp
   if (JSON.stringify(offered.authority.allowed) !== JSON.stringify(["execute-read-only"]) || !offered.authority.prohibited.includes("write-source") || !offered.authority.prohibited.includes("external-network")) throw new Error("explicit read-only authority declarations are required");
   const supportedProhibitions = new Set(["commit", "push", "merge", "deploy", "external-account-actions", "third-party-contact", "write-source", "external-network"]);
   if (offered.authority.prohibited.some(label => !supportedProhibitions.has(label))) throw new Error("unsupported or conflicting authority prohibition");
-  assertSafeGitSource(packet.workspace.root);
+  assertSafeGitSource(packet.workspace.root, workerReadBoundary(assignment));
   const root = await resolveProjectRoot(packet.workspace.root);
   const git = async args => {
     const result = await runCommand("git", args, {cwd:root, timeoutMs:10000});

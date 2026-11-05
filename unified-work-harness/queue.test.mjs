@@ -164,6 +164,24 @@ for (const version of ['v5','v6']) {
     installWorker(t,f,'for (const event of '+JSON.stringify(events)+') console.log(JSON.stringify(event));');
     createQueue(f.directory,f.config);
     const before = inspectQueue(f.directory);
+    async function checkRejection(substitute) {
+      const changed = structuredClone(f.first);
+      substitute(changed);
+      await assert.rejects(dispatchNext(f.directory,changed));
+      assert.deepEqual(inspectQueue(f.directory),before,'rejection must preserve the queue reservation');
+      assert.deepEqual(readdirSync(f.first.invocationPolicy.directory),[]);
+      assert.deepEqual(requests,[]);
+    }
+    const packetSubstitutions = [
+      envelope => { envelope.packet.workspace.revision = 'b'.repeat(40); },
+      envelope => { envelope.packet.workspace.status_digest = '0'.repeat(64); },
+      envelope => { envelope.packet.workspace.identity += '#other'; },
+      envelope => { envelope.packet.workspace.root = f.temp; },
+      envelope => { envelope.packet.checkpoints.at(-1).workspace += '#other'; },
+    ];
+    await t.test(version+' matches the packet workspace and resume before charging', async () => {
+      for (const substitute of packetSubstitutions) await checkRejection(substitute);
+    });
     const substitutions = [
       envelope => { envelope.invocationPolicy.directory = f.dir('other-ledger'); },
       envelope => { envelope.resultPolicy = {directory:f.dir('other-results'),retention:'owner_managed'}; },
@@ -175,14 +193,7 @@ for (const version of ['v5','v6']) {
       envelope => { envelope.endpoint = envelope.endpoint.replace(/:\d+\//,':10080/'); }
     ];
     if (packageSupport) substitutions.push(envelope => { envelope.packagePolicy.intakeReview.assessment.evidenceRef = 'other review'; });
-    for (const substitute of substitutions) {
-      const changed = structuredClone(f.first);
-      substitute(changed);
-      await assert.rejects(dispatchNext(f.directory,changed));
-      assert.deepEqual(inspectQueue(f.directory),before,'rejection must preserve the queue reservation');
-      assert.deepEqual(readdirSync(f.first.invocationPolicy.directory),[]);
-      assert.deepEqual(requests,[]);
-    }
+    for (const substitute of substitutions) await checkRejection(substitute);
     assert.equal((await dispatchNext(f.directory,f.first)).review_status,'pending');
     assert.deepEqual(requests,['/v1/models']);
   });

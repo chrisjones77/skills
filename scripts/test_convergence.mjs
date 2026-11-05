@@ -17,6 +17,10 @@ const codes=[301,302,303,307,308];
 const prefix='OpenCode completion after a source read, upstream status ';
 family('transport.worker','integrated',['provider_facade'],prefix+200,...codes.map(n=>prefix+n),
   ...codes.map(n=>'OpenCode completion before a source read, upstream status '+n));
+if (mode === 'worker') {
+  family('worker.startup','integrated',[],prefix+200,
+    ...['project configuration','project configuration directory','instructions','linked instructions','nested instructions','offered nested instructions'].map(s=>'OpenCode isolates '+s));
+}
 if(mode==='suite'){
   family('transport.discovery','roundtrip',[],'accepted Hypervisor contract reaches the bundled agent executor and returns evidence',
     ...['/v1/models','/api/version','/api/tags'].flatMap(route=>codes.map(n=>'discovery rejects '+n+' at '+route+' without contacting destination')));
@@ -30,6 +34,7 @@ if(mode==='suite'){
     'a previously clear review expires at its exclusive UTC boundary','reject ambiguous intake bytes and malformed assessment records');
   family('queue.admission','queue',['bounded_dispatch','goal_pursuit'],'v6 queued dispatch rechecks the full package profile and reviewed intake',
     ...['v5','v6'].map(v=>v+' rejects substituted policies before reservation and accepts the original envelope'),
+    ...['v5','v6'].map(v=>v+' matches the packet workspace and resume before charging'),
     'explicit goal, accepted identity, ceiling, expiration and cancellation govern admission');
   family('storage.identity','integrated',[],'reviewed and accepted v6 produces a package-bound candidate receipt',
     ...[1,2,3,4,5,6].map(v=>'v'+v+' verifies each accepted scope field before effects'),
@@ -64,7 +69,7 @@ if(mode==='worker'){
 }
 const files=(mode==='worker'?['integrated.test.mjs']:readdirSync(pkg).filter(f=>f.endsWith('.test.mjs'))).map(f=>path.join(pkg,f));
 const passed=new Set(), allowedSkips=['live local candidate edit through both accepted HTTP protocols','live local model processes an explicitly synthetic read-only assignment'];
-for await(const {type,data} of run({files,concurrency:4,...(mode==='worker'?{testNamePatterns:[/^OpenCode completion (before|after) a source read,/]}:{})})){
+for await(const {type,data} of run({files,concurrency:4,...(mode==='worker'?{testNamePatterns:[/^OpenCode (isolates |completion (before|after) a source read,)/]}:{})})){
   if(!['test:pass','test:fail'].includes(type))continue;
   const key=path.basename(data.file??'')+':'+data.name;
   if(data.skip || data.todo){

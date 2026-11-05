@@ -6,7 +6,7 @@ import { fork } from 'node:child_process';
 import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assertLoopbackEndpoint, pinTempParent, assertOutsideSource, buildBoundScope, contractRoundtrip, isQueueWorkerProcess, hypervisor, inspectExecutionWindow, inspectInvocation, sha256 } from './bundle.mjs';
+import { verifyAcceptedReadOnlyPacket, verifyBoundPacketIdentity, assertLoopbackEndpoint, pinTempParent, assertOutsideSource, buildBoundScope, contractRoundtrip, isQueueWorkerProcess, hypervisor, inspectExecutionWindow, inspectInvocation, sha256 } from './bundle.mjs';
 
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
 const bounded = value => typeof value === 'string' && value.trim() && value.length <= 4096;
@@ -275,6 +275,8 @@ function reserve(directory, options) {
       return {hold:'Queue or assignment expired.'};
     }
     if (inspectExecutionWindow(scope.execution_window).state !== 'within_window') throw Error('Execution window has not opened.');
+    verifyAcceptedReadOnlyPacket(options.packet, executionWindow);
+    verifyBoundPacketIdentity(options.packet, offer, bindingInputs);
     const offeredScope = options.packagePolicy ? buildPackageScope(options)
       : buildBoundScope(bindingInputs,endpoint,resultPolicy,invocationPolicy,executionWindow);
     if (offeredScope !== offer.scope) throw Error('Dispatch scope differs from the accepted offer.');
