@@ -1792,7 +1792,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
     XDG_DATA_HOME: path.join(artifactDirectory, "state", "data"),
     XDG_CACHE_HOME: path.join(artifactDirectory, "state", "cache"),
   };
-  const child = spawn(executable, [
+  const child = spawn("opencode", [
     "run",
     "--pure",
     "--format", "json",
