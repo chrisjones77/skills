@@ -1201,7 +1201,7 @@ export function buildAgentPrompt(assignment) {
     `Authority mode: ${assignment.authority.mode}`,
     `Allowed read paths: ${assignment.authority.allowed_read_paths.join(", ")}`,
     `Allowed edit paths: ${assignment.authority.allowed_paths.join(", ") || "none"}`,
-    "Never use shell, network, subagents, external directories, secrets, or PHI.",
+    "Never use shell, network, subagents, external directories, secrets, or sensitive personal data.",
     "Do not assess a person's fitness or eligibility, operational feasibility, mandatory-constraint validity, or publication authority.",
     "Do not alter tests unless the assignment explicitly permits test changes.",
   ];
@@ -1577,8 +1577,24 @@ export function rejectExplicitlyUnsupportedTools(tag) {
   }
 }
 
+async function discoveryResponse(url, optional = false) {
+  let response;
+  try {
+    response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(5_000) });
+  } catch (error) {
+    if (optional) return null;
+    throw error;
+  }
+  // Even optional metadata must not transfer discovery authority to another URL.
+  if (response.status >= 300 && response.status < 400) {
+    await response.body?.cancel();
+    throw new Error("Provider discovery redirect is not authorized.");
+  }
+  return response;
+}
+
 async function checkModelEndpoint(endpoint, modelId, provider, requiresTools = false) {
-  const response = await fetch(`${endpoint}/models`, { signal: AbortSignal.timeout(5_000) });
+  const response = await discoveryResponse(`${endpoint}/models`);
   if (!response.ok) throw new Error(`${provider} model endpoint returned HTTP ${response.status}`);
   const payload = await response.json();
   const advertisedModel = Array.isArray(payload?.data) ? payload.data.find((item) => item?.id === modelId) : undefined;
@@ -1588,22 +1604,15 @@ async function checkModelEndpoint(endpoint, modelId, provider, requiresTools = f
   const root = new URL(endpoint);
   const versionURL = new URL("/api/version", root);
   const tagsURL = new URL("/api/tags", root);
-  let modelTag;
-  let serverVersion = null;
-  try {
-    const [versionResponse, tagsResponse] = await Promise.all([
-      fetch(versionURL, { signal: AbortSignal.timeout(5_000) }),
-      fetch(tagsURL, { signal: AbortSignal.timeout(5_000) }),
-    ]);
-    const versionPayload = versionResponse.ok ? await versionResponse.json() : {};
-    const tagsPayload = tagsResponse.ok ? await tagsResponse.json() : {};
-    modelTag = Array.isArray(tagsPayload?.models)
-      ? tagsPayload.models.find((item) => item?.name === modelId || item?.model === modelId)
-      : undefined;
-    serverVersion = typeof versionPayload?.version === "string" ? versionPayload.version : null;
-  } catch {
-    return { server_version: null, model_digest: null };
-  }
+  const optionalJson = async url => {
+    const response = await discoveryResponse(url, true);
+    return response?.ok ? response.json().catch(() => null) : null;
+  };
+  const [versionPayload, tagsPayload] = await Promise.all([optionalJson(versionURL), optionalJson(tagsURL)]);
+  const modelTag = Array.isArray(tagsPayload?.models)
+    ? tagsPayload.models.find((item) => item?.name === modelId || item?.model === modelId)
+    : undefined;
+  const serverVersion = typeof versionPayload?.version === "string" ? versionPayload.version : null;
   if (requiresTools) rejectExplicitlyUnsupportedTools(modelTag);
   return {server_version:serverVersion, model_digest:typeof modelTag?.digest === "string" ? modelTag.digest : null};
 }
@@ -1747,9 +1756,15 @@ function parseNullDelimited(value) {
   return value.split("\0").filter(Boolean);
 }
 
-async function collectChangedFiles(worktree) {
+async function readHeadCommit(worktree) {
+  const head = await runCommand("git", ["rev-parse", "--verify", "HEAD^{commit}"], { cwd: worktree, timeoutMs: 10_000 });
+  if (head.code !== 0 || head.timedOut || !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(head.stdout.trim())) throw new Error("Cannot verify checkout revision");
+  return head.stdout.trim();
+}
+
+async function collectChangedFiles(worktree, baseline) {
   const [tracked, untracked] = await Promise.all([
-    runCommand("git", ["diff", "HEAD", "--name-only", "-z", "--"], { cwd: worktree, timeoutMs: 10_000 }),
+    runCommand("git", ["diff", baseline, "--name-only", "-z", "--"], { cwd: worktree, timeoutMs: 10_000 }),
     runCommand("git", ["ls-files", "--others", "-z"], { cwd: worktree, timeoutMs: 10_000 }),
   ]);
   if (tracked.code !== 0 || untracked.code !== 0) throw new Error("Failed to inspect candidate changes");
@@ -2161,7 +2176,7 @@ export async function runHarness({
     if (existsSync(projectNodeModules)) {
       symlinkSync(projectNodeModules, path.join(worktree, "node_modules"), "dir");
     }
-    const baseCommit = (await runCommand("git", ["rev-parse", "HEAD"], { cwd: worktree, timeoutMs: 10_000 })).stdout.trim();
+    const baseCommit = await readHeadCommit(worktree);
     providerLease = isCodex ? null : await acquireProviderLease(endpoint, assignment.resources.timeout_seconds * 1_000);
     const providerLeaseWaitMs = providerLease?.waitedMs ?? 0;
     let agentResult;
@@ -2180,8 +2195,12 @@ export async function runHarness({
     }
     agentResult.provider_lease_wait_ms = providerLeaseWaitMs;
     const { proposal_text: proposalText, private_response: privateResponse, ...agentEvidence } = agentResult;
-    const changedFiles = await collectChangedFiles(worktree);
+    const readOnly = assignment.authority.mode === "read_only";
+    const changedFiles = await collectChangedFiles(worktree, readOnly ? baseCommit : "HEAD");
     const policyViolations = evaluateChangedFiles(assignment, changedFiles);
+    if (readOnly && await readHeadCommit(worktree) !== baseCommit) {
+      policyViolations.push("read-only worker changed checkout revision");
+    }
     if (assignment.authority.mode === "read_only" && agentResult.read_calls < 1) {
       policyViolations.push("read-only work produced no completed source read");
     }

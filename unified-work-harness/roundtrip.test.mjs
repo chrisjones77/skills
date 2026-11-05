@@ -4,6 +4,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, chmodSync, rmSync, realpathSync, statSync, readdirSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import { contractRoundtrip, inspectInvocation, runHarness, summarizeOpenCodeEvent, buildBoundScope, hypervisor, sha256, rejectExplicitlyUnsupportedTools, buildOpenCodeConfig, buildAgentPrompt, validateAssignment, inspectWorkProfile, inspectWorkIntake, listWorkCapabilities, inspectBundledSource } from "./bundle.mjs";
 
@@ -151,7 +152,7 @@ test("explicit model capability metadata rejects non-tool models without guessin
   assert.doesNotThrow(() => rejectExplicitlyUnsupportedTools({}));
 });
 
-test("accepted Hypervisor contract reaches the bundled agent executor and returns evidence", async () => {
+test("accepted Hypervisor contract reaches the bundled agent executor and returns evidence", async t => {
   const temp = mkdtempSync(path.join(tmpdir(), "unified-test-"));
   const previous = process.env.UNIFIED_HARNESS_SUBAGENT_OPENCODE_BIN;
   const previousPath = process.env.PATH;
@@ -371,6 +372,63 @@ test("accepted Hypervisor contract reaches the bundled agent executor and return
     const privateBefore = JSON.stringify(privatePacket);
     const logRoot = path.join(temp, "hash-only-logs");
     const savedFake = readFileSync(fake,"utf8");
+    // Exercise the production discovery client (no endpointCheck injection).
+    for (const route of ["/v1/models", "/api/version", "/api/tags"]) {
+      await t.test(`discovery rejects redirect at ${route} without contacting destination`, async () => {
+        let hits = 0;
+        const seen = [];
+        const model = "synthetic:local";
+        const payload = JSON.stringify({data:[{id:model}],version:"synthetic",models:[{name:model}]});
+        const destination = createServer((req,res) => { hits++; res.end(payload); });
+        const origin = createServer((req,res) => {
+          seen.push(req.url);
+          if (req.url === route) res.writeHead(307,{location:`http://127.0.0.1:${destination.address().port}/other`});
+          res.end(payload);
+        });
+        const listen = server => new Promise((resolve,reject) => server.once("error",reject).listen(0,"127.0.0.1",resolve));
+        try {
+          await listen(destination);
+          await listen(origin);
+          const ep = `http://127.0.0.1:${origin.address().port}/v1`;
+          const a = structuredClone(assignment);
+          Object.assign(a.assignee,{provider:"ollama",model_id:model});
+          const inputs = {...bindingInputs,assignmentJson:JSON.stringify(a)};
+          const file = path.join(temp,"discovery-assignment.json");
+          writeFileSync(file,inputs.assignmentJson);
+          const scope = buildBoundScope(inputs,ep,resultPolicy,invocationPolicy,activeWindow);
+          const p = makeBoundPacket("worker","0xB",JSON.stringify(intake.acceptance.checks),scope);
+          const attempt = invokeBound({packet:p,endpoint:ep,assignmentPath:file,bindingInputs:inputs,resultPolicy,invocationPolicy,executionWindow:activeWindow,endpointCheck:undefined});
+          const [outcome] = await Promise.allSettled([attempt]);
+          assert.ok(seen.includes(route));
+          assert.equal(hits,0);
+          assert.equal(outcome.status,"rejected");
+          assert.match(outcome.reason.message,/discovery redirect/i);
+          assert.deepEqual(readdirSync(privateDirectory),[]);
+          assert.equal(inspectInvocation(invocationPolicy,hypervisor.currentAssignment(p).digest).state,"failed");
+        } finally {
+          for (const server of [origin,destination]) if (server.listening) await new Promise(resolve => server.close(resolve));
+        }
+      });
+    }
+    for (const empty of [false,true]) {
+      await t.test(`read-only v5 rejects ${empty ? "empty" : "content-changing"} worker commit`, async () => {
+        const marker = path.join(temp,"worker-commit-"+empty);
+        const commit = `const fs=require("node:fs"), cp=require("node:child_process");
+          ${empty ? "" : 'fs.writeFileSync("source.txt","changed");'}
+          cp.execFileSync("git",["-c","user.name=Test","-c","user.email=test@example.invalid","commit","-qam","synthetic","--allow-empty"]);
+          fs.writeFileSync(${JSON.stringify(marker)},cp.execFileSync("git",["rev-parse","HEAD"]));`;
+        writeFileSync(fake,savedFake.replace("#!/usr/bin/env node\n","#!/usr/bin/env node\n"+commit+"\n"));
+        try {
+          const scope = buildBoundScope(bindingInputs,endpoint,resultPolicy,invocationPolicy,activeWindow);
+          const p = makeBoundPacket("worker","0xB",JSON.stringify(intake.acceptance.checks),scope);
+          await assert.rejects(invokeBound({packet:p,resultPolicy,invocationPolicy,executionWindow:activeWindow}),/read-only candidate/);
+          assert.notEqual(readFileSync(marker,"utf8").trim(),revision);
+          assert.deepEqual(readdirSync(privateDirectory),[]);
+          assert.equal(inspectInvocation(invocationPolicy,hypervisor.currentAssignment(p).digest).state,"failed");
+          assert.equal(git("rev-parse","HEAD"),revision);
+        } finally { writeFileSync(fake,savedFake); }
+      });
+    }
     const unicodeAnswer = "Synthetic café 🔧 report.";
     const unicodeEvents = [{type:"tool_use",part:{tool:"read",state:{status:"completed",input:{filePath:"source.txt"},output:"source"}}},{type:"text",part:{text:unicodeAnswer}},{type:"step_finish",part:{reason:"private-canary",tokens:{total:"private-canary",output:5}}}];
     writeFileSync(fake, `#!/usr/bin/env node\nconst b=Buffer.from(${JSON.stringify(unicodeEvents.map(e=>JSON.stringify(e)).join("\n")+"\n")}); const cut=b.indexOf(Buffer.from('é'))+1; process.stdout.write(b.subarray(0,cut)); setTimeout(()=>process.stdout.write(b.subarray(cut)),40);\n`);
