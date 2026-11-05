@@ -14,7 +14,8 @@ test("smoke diagnostic rejects a false hold, a missing reviewer field, trailing 
   }
   assert.throws(() => checkReviewFinding(JSON.stringify(clean) + "\nThe answer is 42."));
   const block = "```json\n" + JSON.stringify(clean) + "\n```";
-  assert.deepEqual(checkReviewFinding(block), clean);
+  assert.throws(() => checkReviewFinding(block), SyntaxError);
+  assert.deepEqual(checkReviewFinding("\n" + JSON.stringify(clean, null, 2) + "\n"), clean);
   assert.throws(() => checkReviewFinding('{"independent_reviewer":null,' + JSON.stringify(clean).slice(1)));
   for (const extra of ["Explanation:\n" + block, block + "\nThe answer is 42.", block + "\n" + block])
     assert.throws(() => checkReviewFinding(extra));

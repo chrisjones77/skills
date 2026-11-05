@@ -15,6 +15,7 @@ For each rejected action, if an explicit limit rules it out, verify that its ope
 Example records (use the actual excerpt, not these values):
 {"scope_boundaries":["inspect a copy only"],"independent_reviewer":"Reviewer R","rejected_as_acceptance":[],"other_blockers":[],"verdict":"REFER TO HUMAN REVIEW"}
 {"scope_boundaries":["inspect a copy only"],"independent_reviewer":null,"rejected_as_acceptance":["publish a draft"],"other_blockers":["capacity unknown"],"verdict":"HOLD"}
+Output format for either verdict: a JSON parser reads your entire message. Start with { and end with }. Write the object directly, without Markdown fences, backticks, a language label, or commentary.
 """
 
 [features]
