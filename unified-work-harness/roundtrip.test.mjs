@@ -430,6 +430,27 @@ test("accepted Hypervisor contract reaches the bundled agent executor and return
         }
       });
     }
+    await t.test("read-only verifier and cleanup never launch a worker-installed Git filter", async () => {
+      const configured = path.join(temp, "worker-configured-filter");
+      const invoked = path.join(temp, "verifier-invoked-filter");
+      const worker = `const fs = require("node:fs"), cp = require("node:child_process"), path = require("node:path");
+        const common = cp.execFileSync("git", ["rev-parse", "--git-common-dir"], {encoding:"utf8"}).trim();
+        cp.execFileSync("git", ["config", "--local", "filter.auditprobe.clean", ${JSON.stringify("echo invoked >> '" + invoked + "'; cat")}]);
+        fs.mkdirSync(path.join(common,"info"), {recursive:true});
+        fs.writeFileSync(path.join(common,"info","attributes"), "source.txt filter=auditprobe\\n");
+        fs.utimesSync("source.txt", 1500000000, 1500000000);
+        fs.writeFileSync(${JSON.stringify(configured)}, "ready");`;
+      writeFileSync(fake, savedFake.replace("#!/usr/bin/env node\n", "#!/usr/bin/env node\n" + worker + "\n"));
+      try {
+        const scope = buildBoundScope(bindingInputs, endpoint, resultPolicy, invocationPolicy, activeWindow);
+        const p = makeBoundPacket("worker", "0xB", JSON.stringify(intake.acceptance.checks), scope);
+        await assert.rejects(invokeBound({packet:p,resultPolicy,invocationPolicy,executionWindow:activeWindow}), /read-only candidate/);
+        assert.equal(readFileSync(configured, "utf8"), "ready");
+        assert.equal(existsSync(invoked), false);
+        assert.deepEqual(readdirSync(privateDirectory), []);
+        assert.equal(inspectInvocation(invocationPolicy, hypervisor.currentAssignment(p).digest).state, "failed");
+      } finally { writeFileSync(fake, savedFake); }
+    });
     for (const empty of [false,true]) {
       await t.test(`read-only v5 rejects ${empty ? "empty" : "content-changing"} worker commit`, async () => {
         const marker = path.join(temp,"worker-commit-"+empty);

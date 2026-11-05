@@ -1796,10 +1796,11 @@ async function readHeadCommit(worktree) {
   return head.stdout.trim();
 }
 
-// Fingerprint the materialized checkout, including ignored entries and the
-// linked worktree's .git pointer. Never use the worker's index as the oracle.
-function checkoutFingerprint(root) {
-  const tree = createHash("sha256"), buffer = Buffer.allocUnsafe(64 * 1024);
+// The read-only worker gets its own checkout and Git directory. Compare both
+// directly so that verification never interprets worker-controlled Git metadata.
+function snapshotCheckout(root) {
+  const entries = new Map();
+  const buffer = Buffer.allocUnsafe(64 * 1024);
   let count = 0, remaining = 1024 ** 3;
   function visit(rel, depth) {
     if (++count > 100000 || depth > 128) throw Error("Checkout inspection limit exceeded");
@@ -1824,8 +1825,8 @@ function checkoutFingerprint(root) {
       } finally { closeSync(fd); }
     } else if (st.isSymbolicLink() && rel) {
       content = readlinkSync(file,{encoding:"buffer"}).toString("hex");
-    } else if (!st.isDirectory() || rel === ".git") throw Error("Unsupported read-only checkout entry");
-    tree.update(JSON.stringify([rel,st.mode,content]) + "\n");
+    } else if (!st.isDirectory()) throw Error("Unsupported read-only checkout entry");
+    entries.set(rel, JSON.stringify([st.mode, content]));
     if (st.isDirectory()) {
       const names = readdirSync(file,{encoding:"buffer"}).sort(Buffer.compare);
       for (const bytes of names) {
@@ -1836,7 +1837,34 @@ function checkoutFingerprint(root) {
     }
   }
   visit("",0);
-  return tree.digest("hex");
+  return entries;
+}
+
+function changedCheckoutPaths(before, after) {
+  const changed = new Set();
+  for (const name of new Set([...before.keys(), ...after.keys()])) {
+    if (before.get(name) !== after.get(name)) {
+      changed.add(name.startsWith(".git/") ? ".git" : name || ".");
+    }
+  }
+  return [...changed].sort();
+}
+
+async function prepareReadOnlyCheckout(projectRoot, worktree, baseRef) {
+  // Fetch the resolved commit into a self-contained repository: no shared
+  // Git directory, object alternates, configured remote or worktree cleanup.
+  async function git(cwd, args) {
+    const result = await runCommand("git", args, {cwd, timeoutMs: 30000});
+    if (result.code !== 0) throw new Error("Failed to prepare read-only checkout");
+    return result.stdout.trim();
+  }
+
+  const revision = await git(projectRoot, ["rev-parse", "--verify", "--end-of-options", baseRef + "^{commit}"]);
+  mkdirSync(worktree, {mode: 0o700});
+  await git(worktree, ["init", "--quiet"]);
+  await git(worktree, ["fetch", "--depth=1", "--no-tags", "--no-recurse-submodules",
+    "--no-write-fetch-head", "--", projectRoot, revision]);
+  await git(worktree, ["checkout", "--quiet", "--detach", revision]);
 }
 
 async function collectChangedFiles(worktree, baseline) {
@@ -2243,19 +2271,28 @@ export async function runHarness({
   const startedAt = new Date();
   let evidence;
   let providerLease = null;
+  const readOnly = assignment.authority.mode === "read_only";
   try {
-    const addWorktree = await runCommand("git", ["worktree", "add", "--detach", worktree, assignment.resources.base_ref], {
-      cwd: projectRoot,
-      timeoutMs: 30_000,
-    });
-    if (addWorktree.code !== 0) throw new Error(`Failed to create disposable worktree (${sha256(addWorktree.stderr)})`);
+    if (readOnly) {
+      await contractEnvironment.run(true, () => prepareReadOnlyCheckout(projectRoot, worktree, assignment.resources.base_ref));
+    } else {
+      const addWorktree = await runCommand("git", ["worktree", "add", "--detach", worktree, assignment.resources.base_ref], {
+        cwd: projectRoot,
+        timeoutMs: 30_000,
+      });
+      if (addWorktree.code !== 0) throw new Error(`Failed to create disposable worktree (${sha256(addWorktree.stderr)})`);
+    }
     const projectNodeModules = path.join(projectRoot, "node_modules");
-    if (existsSync(projectNodeModules)) {
+    if ((!readOnly || !contractEnvironment.getStore()) && existsSync(projectNodeModules)) {
       symlinkSync(projectNodeModules, path.join(worktree, "node_modules"), "dir");
     }
     const baseCommit = await readHeadCommit(worktree);
-    const readOnly = assignment.authority.mode === "read_only";
-    const beforeCheckout = readOnly ? checkoutFingerprint(worktree) : null;
+    if (readOnly && adapter === "opencode") {
+      // OpenCode caches the root commit as its project ID. The disposable
+      // repository has a single shallow commit. Seed the cache before audit.
+      writeFileSync(path.join(worktree, ".git", "opencode"), baseCommit, {flag:"wx", mode:0o600});
+    }
+    const beforeCheckout = readOnly ? snapshotCheckout(worktree) : null;
     providerLease = isCodex ? null : await acquireProviderLease(endpoint, assignment.resources.timeout_seconds * 1_000);
     const providerLeaseWaitMs = providerLease?.waitedMs ?? 0;
     let agentResult;
@@ -2274,13 +2311,12 @@ export async function runHarness({
     }
     agentResult.provider_lease_wait_ms = providerLeaseWaitMs;
     const { proposal_text: proposalText, private_response: privateResponse, ...agentEvidence } = agentResult;
-    const checkoutChanged = readOnly && checkoutFingerprint(worktree) !== beforeCheckout;
-    const changedFiles = await collectChangedFiles(worktree, readOnly ? baseCommit : "HEAD");
-    const policyViolations = evaluateChangedFiles(assignment, changedFiles);
-    if (checkoutChanged) policyViolations.push("read-only checkout contents changed");
-    if (readOnly && await readHeadCommit(worktree) !== baseCommit) {
-      policyViolations.push("read-only worker changed checkout revision");
-    }
+    const changedFiles = readOnly
+      ? changedCheckoutPaths(beforeCheckout, snapshotCheckout(worktree))
+      : await collectChangedFiles(worktree, "HEAD");
+    const policyViolations = readOnly && changedFiles.length
+      ? ["read-only checkout or Git metadata changed"]
+      : evaluateChangedFiles(assignment, changedFiles);
     if (assignment.authority.mode === "read_only" && agentResult.read_calls < 1) {
       policyViolations.push("read-only work produced no completed source read");
     }
@@ -2354,7 +2390,9 @@ export async function runHarness({
   } finally {
     providerLease?.release();
     rmSync(path.join(artifactDirectory, "state"), { recursive: true, force: true });
-    await runCommand("git", ["worktree", "remove", "--force", worktree], { cwd: projectRoot, timeoutMs: 30_000 }).catch(() => {});
+    if (!readOnly) {
+      await runCommand("git", ["worktree", "remove", "--force", worktree], { cwd: projectRoot, timeoutMs: 30_000 }).catch(() => {});
+    }
     rmSync(temporaryRoot, { recursive: true, force: true });
   }
 }
@@ -2581,12 +2619,9 @@ async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outp
   let temporaryRoot;
   try {
     temporaryRoot = mkdtempSync(path.join(tmpdir(), "unified-work-harness-"));
-    const clone = path.join(temporaryRoot, "checkout");
     const pinnedAssignmentPath = path.join(temporaryRoot, "accepted-assignment.json");
     writeFileSync(pinnedAssignmentPath, source, {mode:0o600});
-    const result = await runCommand("git", ["clone", "--no-local", "--no-hardlinks", "--", root, clone], {cwd:temporaryRoot, timeoutMs:30000});
-    if (result.code !== 0) throw new Error("isolated checkout creation failed");
-    const run = await runHarness({assignmentPath:pinnedAssignmentPath, cwd:clone, endpoint, outputRoot:outputRoot ?? path.join(temporaryRoot, "evidence"), beforeProvider:checkFreshness, capturePrivateResult:resultPolicy !== undefined, ...(endpointCheck ? {endpointCheck} : {}), ...(completionRequest ? {completionRequest} : {})});
+    const run = await runHarness({assignmentPath:pinnedAssignmentPath, cwd:root, endpoint, outputRoot:outputRoot ?? path.join(temporaryRoot, "evidence"), beforeProvider:checkFreshness, capturePrivateResult:resultPolicy !== undefined, ...(endpointCheck ? {endpointCheck} : {}), ...(completionRequest ? {completionRequest} : {})});
     if (run.evidence.assignment_hash !== scope.assignment_sha256 || run.evidence.base_commit !== revision) throw new Error("executor evidence does not bind the accepted assignment and revision");
     if (run.evidence.disposition !== "candidate" || run.evidence.changed_files.length) {
       const reasons = [];
