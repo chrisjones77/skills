@@ -1776,8 +1776,7 @@ async function createCandidatePatch(worktree, filenames) {
   return diff.stdout;
 }
 
-async function runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, capturePrivateResult = false }) {
-  const executable = process.env.UNIFIED_HARNESS_SUBAGENT_OPENCODE_BIN || "opencode";
+async function runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, capturePrivateResult = false, executable = "opencode" }) {
   const prompt = buildAgentPrompt(assignment);
   const isolatedHome = path.join(artifactDirectory, "state", "home");
   mkdirSync(isolatedHome, { recursive: true, mode: 0o700 });
@@ -2174,7 +2173,11 @@ export async function runHarness({
         ? await runDirectJson({ assignment, worktree, artifactDirectory, endpoint, request: completionRequest })
         : adapter === "aider"
           ? await runAider({ assignment, worktree, artifactDirectory, endpoint })
-          : await runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, capturePrivateResult });
+        : await runOpenCode({
+            assignment, worktree, configPath, artifactDirectory, endpoint, capturePrivateResult,
+            // Binary substitution is reachable only through the injected test-hook path.
+            executable: endpointCheck === checkModelEndpoint ? "opencode" : process.env.UNIFIED_HARNESS_SUBAGENT_OPENCODE_BIN || "opencode",
+          });
     } finally {
       providerLease?.release();
       providerLease = null;
