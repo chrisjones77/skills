@@ -1872,14 +1872,14 @@ async function readHeadCommit(worktree) {
 
 // The read-only worker gets its own checkout and Git directory. Compare both
 // directly so that verification never interprets worker-controlled Git metadata.
-function snapshotCheckout(root, checkEntry) {
+function snapshotCheckout(root, readBoundary) {
   const entries = new Map();
   const buffer = Buffer.allocUnsafe(64 * 1024);
   let count = 0, remaining = 1024 ** 3;
   function visit(rel, depth) {
     if (++count > 100000 || depth > 128) throw Error("Checkout inspection limit exceeded");
     const file = path.join(root,rel), st = lstatSync(file);
-    checkEntry?.(rel, st.isSymbolicLink(), st.isFile());
+    readBoundary?.checkEntry(rel, st.isSymbolicLink(), st.isFile());
     let content = null;
     if (st.isFile()) {
       if (st.nlink !== 1 || st.size > remaining) throw Error("Unsupported read-only checkout file");
@@ -1912,18 +1912,24 @@ function snapshotCheckout(root, checkEntry) {
     }
   }
   visit("",0);
+  readBoundary?.verifyGrants();
   return entries;
 }
 
 // OpenCode also attaches instructions beside a nested read independently of
 // project config discovery. Check the source index before claiming, then the
 // actual disposable tree before spawning the worker.
-function workerReadBoundary(assignment) {
+function workerReadBoundary(root, assignment) {
   const grants = assignment.authority.allowed_read_paths.map(checkedScopePath);
   const folded = name => name.normalize("NFKC").toLowerCase().replace(/\p{Default_Ignorable_Code_Point}/gu, "");
   const overlaps = (a, b) => pathMatchesPrefix(a, b) || pathMatchesPrefix(b, a);
   const keys = grants.map(folded);
-  return (name, isLink, isRegularFile) => {
+  const matched = new Set();
+  function checkEntry(name, isLink, isRegularFile) {
+    for (const grant of grants) {
+      // The Git index represents a tracked directory by its descendants.
+      if (pathMatchesPrefix(name, grant)) matched.add(grant);
+    }
     const key = folded(name);
     if (isLink && keys.some(grant => overlaps(grant, key))) {
       throw Error("Read scope includes a symbolic link");
@@ -1934,7 +1940,44 @@ function workerReadBoundary(assignment) {
         !(isRegularFile && grants.some(grant => pathMatchesPrefix(name, grant)))) {
       throw Error("Nested worker instructions would exceed the accepted read scope");
     }
-  };
+  }
+  function verifyGrants() {
+    if (matched.size !== new Set(grants).size) throw Error("Read scope requires an exact tracked path");
+    // The protected name can resolve even when Git tracks a different spelling.
+    // Compare the existing path components by inode, in both ancestry directions.
+    const identity = st => st.dev + "/" + st.ino;
+    const protectedLeaves = new Set(), protectedComponents = new Set();
+    for (const relative of PROTECTED_PATHS) {
+      let current = root;
+      const leaf = path.join(root, relative);
+      for (const component of relative.split("/")) {
+        current = path.join(current, component);
+        const st = lstatSync(current, {bigint:true, throwIfNoEntry:false});
+        if (!st) break;
+        protectedComponents.add(identity(st));
+        if (current === leaf) protectedLeaves.add(identity(st));
+        if (!st.isDirectory()) break;
+      }
+    }
+    for (const grant of matched) {
+      let current = root;
+      const leaf = path.join(root, grant);
+      for (const component of grant.split("/")) {
+        const expected = Buffer.from(component);
+        if (!readdirSync(current, {encoding:"buffer"}).some(bytes => bytes.equals(expected))) {
+          throw Error("Read scope requires an exact tracked path in the checkout");
+        }
+        current = path.join(current, component);
+        const st = lstatSync(current, {bigint:true});
+        if (st.isSymbolicLink()) throw Error("Read scope includes a symbolic link");
+        const id = identity(st);
+        if (protectedLeaves.has(id) || (current === leaf && protectedComponents.has(id))) {
+          throw Error("Read scope includes a protected path");
+        }
+      }
+    }
+  }
+  return {checkEntry, verifyGrants};
 }
 
 function changedCheckoutPaths(before, after) {
@@ -2496,8 +2539,8 @@ export async function runHarness({
       // repository has a single shallow commit. Seed the cache before audit.
       writeFileSync(path.join(worktree, ".git", "opencode"), baseCommit, {flag:"wx", mode:0o600});
     }
-    const checkEntry = readOnly && adapter === "opencode" ? workerReadBoundary(assignment) : undefined;
-    const beforeCheckout = readOnly ? snapshotCheckout(worktree, checkEntry) : null;
+    const readBoundary = readOnly && adapter === "opencode" ? workerReadBoundary(worktree, assignment) : undefined;
+    const beforeCheckout = readOnly ? snapshotCheckout(worktree, readBoundary) : null;
     providerLease = isCodex ? null : await acquireProviderLease(endpoint, assignment.resources.timeout_seconds * 1_000, {getTempParent});
     const providerLeaseWaitMs = providerLease?.waitedMs ?? 0;
     let agentResult;
@@ -2862,7 +2905,9 @@ async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outp
   if (JSON.stringify(offered.authority.allowed) !== JSON.stringify(["execute-read-only"]) || !offered.authority.prohibited.includes("write-source") || !offered.authority.prohibited.includes("external-network")) throw new Error("explicit read-only authority declarations are required");
   const supportedProhibitions = new Set(["commit", "push", "merge", "deploy", "external-account-actions", "third-party-contact", "write-source", "external-network"]);
   if (offered.authority.prohibited.some(label => !supportedProhibitions.has(label))) throw new Error("unsupported or conflicting authority prohibition");
-  assertSafeGitSource(packet.workspace.root, workerReadBoundary(assignment));
+  const readBoundary = workerReadBoundary(packet.workspace.root, assignment);
+  assertSafeGitSource(packet.workspace.root, readBoundary.checkEntry);
+  readBoundary.verifyGrants();
   const root = await resolveProjectRoot(packet.workspace.root);
   const git = async args => {
     const result = await runCommand("git", args, {cwd:root, timeoutMs:10000});

@@ -44,7 +44,7 @@ const goal = {
 };
 const proposal = proposeGoal(goal); // Review selected outcomes with the owner.
 createQueue(directory, {
-  goal, packets: [scopeEnvelope.packet, stepsEnvelope.packet],
+  goal, packets: [scopeEnvelope, stepsEnvelope],
   deadline: agreedDeadlineUTC,
   providerBudgets: { mlx: { attempts: 2, workerSeconds: 120 } }
 });
@@ -84,7 +84,10 @@ verifies the identity, authority and substance of each decision.
 
 Pass items to `createQueue` in the selected goal order. Use the offered
 coordination **record** for a human or hybrid job, and the accepted read-only
-**packet** for a provider job. Both source workspaces must resolve on the host.
+**envelope** for a provider job. At admission, only its `packet` and
+`bindingInputs` are required. Callers that previously supplied bare provider
+packets must supply both fields so the queue can verify each source before
+creating storage. Dispatch checks the storage location again before reserving work. Both source workspaces must resolve on the host.
 Build each attended record with `offerCoordination` following [the attended
 handoff guide](coordination.md). Use a distinct named recipient and reviewer.
 An attended-only queue can omit `providerBudgets`. The provider budget applies
@@ -96,7 +99,7 @@ import { inspectCoordination } from './coordination.mjs';
 
 createQueue(directory, {
   goal: mixedGoal, deadline: agreedDeadlineUTC,
-  packets: [analystOffer, agentEnvelope.packet, hybridTeamOffer],
+  packets: [analystOffer, agentEnvelope, hybridTeamOffer],
   providerBudgets: { mlx: { attempts: 1, workerSeconds: 60 } }
 });
 const assignmentDigest = inspectCoordination(analystOffer).assignmentDigest;

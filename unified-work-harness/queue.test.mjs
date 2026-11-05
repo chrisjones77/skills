@@ -4,7 +4,7 @@ import { syncBuiltinESMExports } from 'node:module';
 import childProcess, { execFileSync, spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
-import { mkdtempSync, mkdirSync, realpathSync, writeFileSync, rmSync, existsSync, symlinkSync, readdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, mkdirSync, realpathSync, writeFileSync, rmSync, existsSync, symlinkSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { setTimeout as wait } from 'node:timers/promises';
@@ -68,7 +68,7 @@ function fixture(t, endpoint = 'http://127.0.0.1:11434/v1', packageSupport, disp
   const first=candidate('first'), second=candidate('second');
   const packets=[first.packet,second.packet];
   const goal = {owner:'owner',objective:'Evaluate the selected synthetic reads.',stopConditions:['Missing evidence'],tasks:packets.map(p=>({id:p.task_id,outcome:p.objective})),selectedIds:['first','second']};
-  const config = {goal,packets,deadline:until(60000),providerBudgets:{mlx:{attempts:2,workerSeconds:60}}};
+  const config = {goal,packets:[first,second],deadline:until(60000),providerBudgets:{mlx:{attempts:2,workerSeconds:60}}};
   return {directory, dir, temp, first, second, config};
 }
 
@@ -86,7 +86,7 @@ test('explicit goal, accepted identity, ceiling, expiration and cancellation gov
   const f = fixture(t);
   assert.equal(proposeGoal(f.config.goal).execution_authorized,false);
   assert.throws(()=>proposeGoal({...f.config.goal,selectedIds:['unselected']}));
-  assert.throws(()=>createQueue(f.directory,{...f.config,packets:[f.second.packet,f.first.packet]}));
+  assert.throws(()=>createQueue(f.directory,{...f.config,packets:[f.second,f.first]}));
   const config={...f.config,deadline:new Date(Date.now()+750).toISOString(),providerBudgets:{mlx:{attempts:2,workerSeconds:1}}};
   createQueue(f.directory,config);
   assert.throws(()=>createQueue(f.directory,config));
@@ -153,6 +153,43 @@ test('accepted read-only work without dispatch authority cannot enter the worker
 });
 
 for (const version of ['v5','v6']) {
+  for (const misplaced of [false,true]) {
+    const scenario = misplaced ? 'refuses a relocated queue before reservation' : 'verifies the source before creating queue storage';
+    test(version+' '+scenario, async t => {
+      const packageSupport = version === 'v6' && {
+        ...await import('./integrated.mjs'), ...await import('./package.mjs'), ...await import('./intake.mjs')
+      };
+      const requests = [];
+      const f = fixture(t,await simulatedProvider(t,requests),packageSupport || undefined);
+      const root = f.first.packet.workspace.root;
+      const inside = path.join(root,'.queue-state');
+      mkdirSync(inside,{mode:0o700});
+      writeFileSync(path.join(root,'.git/info/exclude'),'/.queue-state/\n');
+      if (!misplaced) {
+        const forged = structuredClone(f.config);
+        const other = f.dir('other');
+        for (const {packet} of forged.packets) packet.workspace.root = other;
+        assert.throws(()=>createQueue(inside,forged),/identity|binding/);
+        for (const {packet} of forged.packets) {
+          packet.workspace.identity = other+'#main';
+          packet.checkpoints.at(-1).workspace = packet.workspace.identity;
+        }
+        assert.throws(()=>createQueue(inside,forged),/identity|binding/);
+        for (const item of forged.packets) item.bindingInputs.workspaceJson = JSON.stringify(item.packet.workspace);
+        assert.throws(()=>createQueue(inside,forged),/binding/i);
+        assert.throws(()=>createQueue(inside,{...f.config,packets:forged.packets.map(item=>item.packet)}),/bindingInputs/);
+        assert.deepEqual(readdirSync(inside),[]);
+      } else {
+        createQueue(f.directory,f.config);
+        copyFileSync(path.join(f.directory,'queue.sqlite'),path.join(inside,'queue.sqlite'));
+        const before = inspectQueue(inside);
+        await assert.rejects(dispatchNext(inside,f.first),/outside/);
+        assert.deepEqual(inspectQueue(inside),before);
+      }
+      assert.deepEqual(readdirSync(f.first.invocationPolicy.directory),[]);
+      assert.deepEqual(requests,[]);
+    });
+  }
   test(version+' rejects substituted policies before reservation and accepts the original envelope', async t => {
     const packageSupport = version === 'v6' && {
       ...await import('./integrated.mjs'), ...await import('./package.mjs'), ...await import('./intake.mjs')
@@ -344,7 +381,7 @@ test('mixed human, agent and hybrid work advances only on attended responses and
   const h = hypervisor.currentAssignment(human.packet).digest, team = hypervisor.currentAssignment(hybrid.packet).digest;
   const events=[{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'reference'}}},{type:'text',part:{text:'reference'}}];
   installWorker(t,f,'for (const e of '+JSON.stringify(events)+') console.log(JSON.stringify(e));');
-  createQueue(f.directory,mixedConfig(f,[human,f.first.packet,hybrid]));
+  createQueue(f.directory,mixedConfig(f,[human,f.first,hybrid]));
   const initial = readAttended(f.directory,h);
   assert.deepEqual(initial.record,human);
   assert.throws(()=>reply(f.directory,team,'accept','worker-team'),/order/);

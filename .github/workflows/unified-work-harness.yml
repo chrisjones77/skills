@@ -41,7 +41,19 @@ jobs:
           name: convergence-${{ matrix.os }}
           path: ${{ runner.temp }}/convergence.json
   installed-worker:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            fs: sensitive
+            asset: opencode-linux-x64-baseline.tar.gz
+            digest: ccd10586611b598b1eaed7c05cfbcbc68e3ec09e736b360da09b1d615d922968
+          - os: macos-latest
+            fs: insensitive
+            asset: opencode-darwin-arm64.zip
+            digest: 606b09722d98069605e16037fb8c3c7c8ebbfed9ba713079a5efb2e5b065ae27
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -50,19 +62,25 @@ jobs:
         with: {node-version: "22"}
       - name: Install the verified worker
         working-directory: ${{ runner.temp }}
+        env:
+          ASSET: ${{ matrix.asset }}
+          DIGEST: ${{ matrix.digest }}
         run: |
-          curl --fail --location --retry 2 --output worker.tgz https://github.com/anomalyco/opencode/releases/download/v1.18.25/opencode-linux-x64-baseline.tar.gz
-          echo 'ccd10586611b598b1eaed7c05cfbcbc68e3ec09e736b360da09b1d615d922968  worker.tgz' | sha256sum --check
+          curl --fail --location --retry 2 -O "https://github.com/anomalyco/opencode/releases/download/v1.18.25/$ASSET"
+          echo "$DIGEST  $ASSET" | shasum -a 256 -c
           mkdir worker
-          tar xzf worker.tgz -C worker
+          case "$ASSET" in
+            *.zip) unzip -q "$ASSET" -d worker ;;
+            *.tar.gz) tar xzf "$ASSET" -C worker ;;
+          esac
           binary=$(find "$RUNNER_TEMP/worker" -type f -name opencode -print)
           test -x "$binary"
           dirname "$binary" >> "$GITHUB_PATH"
       - run: node scripts/test_convergence.mjs worker > "$RUNNER_TEMP/worker.json"
-        env: {UWH_WORKER_VERSION: "1.18.25"}
+        env: {UWH_WORKER_VERSION: "1.18.25", UWH_EXPECT_FS: "${{ matrix.fs }}"}
       - uses: actions/upload-artifact@v4
         if: always()
-        with: {name: convergence-worker, path: "${{ runner.temp }}/worker.json"}
+        with: {name: "convergence-worker-${{ matrix.os }}", path: "${{ runner.temp }}/worker.json"}
   mutations:
     runs-on: ubuntu-latest
     timeout-minutes: 10

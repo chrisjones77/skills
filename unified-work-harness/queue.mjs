@@ -6,7 +6,7 @@ import { fork } from 'node:child_process';
 import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { verifyAcceptedReadOnlyPacket, verifyBoundPacketIdentity, assertLoopbackEndpoint, pinTempParent, assertOutsideSource, buildBoundScope, contractRoundtrip, isQueueWorkerProcess, hypervisor, inspectExecutionWindow, inspectInvocation, sha256 } from './bundle.mjs';
+import { buildDraftBinding, verifyAcceptedReadOnlyPacket, verifyBoundPacketIdentity, assertLoopbackEndpoint, pinTempParent, assertOutsideSource, buildBoundScope, contractRoundtrip, isQueueWorkerProcess, hypervisor, inspectExecutionWindow, inspectInvocation, sha256 } from './bundle.mjs';
 
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
 const bounded = value => typeof value === 'string' && value.trim() && value.length <= 4096;
@@ -76,11 +76,21 @@ function privateRecordBytes(item) {
   return bytes;
 }
 
+function verifyProviderWorkspace(packet, offer, scope, bindingInputs) {
+  if (buildDraftBinding(bindingInputs).binding_sha256 !== scope.binding_sha256) {
+    throw Error('Provider workspace binding differs from the accepted offer.');
+  }
+  verifyBoundPacketIdentity(packet,offer,bindingInputs);
+}
+
 function admitJob(item) {
   if (item?.schema_version !== 'attended-coordination.v1') {
-    const {offer,scope} = inspectContract(item);
+    const {packet,bindingInputs} = item ?? {};
+    if (!packet || !bindingInputs) throw Error('Provider queue admission requires the accepted packet and bindingInputs.');
+    const {offer,scope} = inspectContract(packet);
+    verifyProviderWorkspace(packet,offer,scope,bindingInputs);
     assertLoopbackEndpoint(scope.endpoint);
-    return {offer,packet:item,expires:scope.execution_window.expires_at,state:'queued'};
+    return {offer,packet,expires:scope.execution_window.expires_at,state:'queued'};
   }
   const {assigneeKind} = inspectCoordination(item);
   const {packet,intake,review} = item;
@@ -255,6 +265,8 @@ function reserve(directory, options) {
   assertLoopbackEndpoint(scope.endpoint);
   if (options.endpoint !== scope.endpoint) throw Error('Dispatch endpoint differs from the accepted endpoint.');
   if ((options.packagePolicy !== undefined) !== (scope.kind === 'unified-harness-readonly-v6')) throw Error('Package policy differs from the selected contract version.');
+  verifyProviderWorkspace(options.packet,offer,scope,options.bindingInputs);
+  assertOutsideSource(directory,options.packet.workspace.root);
   const profile = JSON.parse(options.bindingInputs.profileJson);
   if (!profile.effectCeiling?.includes('dispatch') || !profile.requestedEffects?.includes('dispatch'))
     throw Error('Queue dispatch must be explicitly requested within the accepted effect ceiling.');
@@ -276,7 +288,6 @@ function reserve(directory, options) {
     }
     if (inspectExecutionWindow(scope.execution_window).state !== 'within_window') throw Error('Execution window has not opened.');
     verifyAcceptedReadOnlyPacket(options.packet, executionWindow);
-    verifyBoundPacketIdentity(options.packet, offer, bindingInputs);
     const offeredScope = options.packagePolicy ? buildPackageScope(options)
       : buildBoundScope(bindingInputs,endpoint,resultPolicy,invocationPolicy,executionWindow);
     if (offeredScope !== offer.scope) throw Error('Dispatch scope differs from the accepted offer.');

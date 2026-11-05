@@ -229,6 +229,59 @@ for (const beforeRead of [false,true]) for (const status of (beforeRead ? redire
 // Exercise project discovery in the real binary. A stand-in worker cannot prove
 // that startup ignores local configuration or that the first prompt is in scope.
 if (process.env.UNIFIED_TEST_INSTALLED_OPENCODE === '1') {
+  const protectedSchema = 'contracts/schemas/agent-assignment.schema.json';
+  const schemaAlias = 'contracts/schemas/agent-aßignment.schema.json';
+  for (const {scenario,actual,grant,instructions,exact} of [
+    {scenario:'Unicode instruction alias',actual:'straße/source.txt',grant:'strasse/source.txt',instructions:true},
+    {scenario:'Unicode protected file alias',actual:protectedSchema,grant:schemaAlias},
+    {scenario:'tracked Unicode protected alias',actual:schemaAlias,grant:schemaAlias,exact:true},
+    {scenario:'offered Unicode directory',actual:'straße/source.txt',grant:'straße',exact:true},
+  ]) {
+    test('OpenCode isolates '+scenario, async t => {
+      const canary = 'unoffered-unicode-file-3187';
+      let requests = 0, leaked = false, completedRead = false, protectedAlias = false;
+      const port = await listen(t,'127.0.0.1',async (req,res) => {
+        requests++;
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        const body = Buffer.concat(chunks).toString();
+        leaked ||= body.includes(canary);
+        if (req.url !== '/v1/chat/completions') {
+          res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[{name:'synthetic:local'}],version:'test'}));
+          return;
+        }
+        const hasSource = body.includes('cobalt-otter-47');
+        completedRead ||= hasSource;
+        streamReadCompletion(res,!hasSource && JSON.parse(body).tools?.length,hasSource,exact ? actual : grant);
+      });
+      const {inputs,accept} = fixture(t,'http://127.0.0.1:'+port+'/v1','source.txt',20,root => {
+        mkdirSync(path.dirname(path.join(root,actual)),{recursive:true});
+        writeFileSync(path.join(root,actual),'cobalt-otter-47'+(actual === protectedSchema || actual === schemaAlias ? canary : ''));
+        protectedAlias = actual === schemaAlias && existsSync(path.join(root,protectedSchema));
+        if (instructions) writeFileSync(path.join(root,'straße','AGENTS.md'),canary);
+        if (!exact && process.env.UWH_EXPECT_FS === 'insensitive') {
+          assert.equal(readFileSync(path.join(root,grant),'utf8'),readFileSync(path.join(root,actual),'utf8'));
+        }
+      });
+      const assignment = JSON.parse(inputs.bindingInputs.assignmentJson);
+      assignment.authority.allowed_read_paths = [grant];
+      inputs.bindingInputs.assignmentJson = JSON.stringify(assignment);
+      writeFileSync(inputs.assignmentPath,inputs.bindingInputs.assignmentJson);
+      const packet = accept(buildPackageScope(inputs));
+      const [result] = await Promise.allSettled([contractRoundtrip({...inputs,packet})]);
+      if (exact && !protectedAlias) {
+        assert.equal(result.status,'fulfilled',String(result.reason));
+        assert.equal(result.value.review_status,'pending');
+        assert.equal(completedRead,true,'the exact authorized source reached the provider');
+        return;
+      }
+      assert.equal(leaked,false,'provider received unoffered bytes via '+grant);
+      assert.equal(result.status,'rejected');
+      assert.match(result.reason.message,protectedAlias ? /protected path/ : /exact tracked path/);
+      assert.equal(requests,0,'refuse before provider discovery');
+      assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
+    });
+  }
   for (const scenario of ['project configuration','project configuration directory','instructions','linked instructions','nested instructions','offered nested instructions']) {
     test('OpenCode isolates '+scenario, async t => {
       const canary = 'unoffered-instruction-81bd6';
