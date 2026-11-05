@@ -45,3 +45,9 @@ For fixture scoring call `checkReviewFinding(childText, fixture)` **outside** th
 Score each blocker against the requested outcome, not just the verdict. In the missing-reviewer case, comparing revisions does not require editing either revision. The no-edit rule belongs in `scope_boundaries`, not in `rejected_as_acceptance` or `other_blockers`. Conversely, if an assignment actually requires modifying a protected original, report the incompatible requirement. The checker detects a copied limit, not every paraphrase; do not strip references to prohibitions from model output to make it pass.
 
 **Smoke check:** use the [three fictional assignments and scoring notes](examples/native-review-cases.json) in a disposable project. Keep the cases and answer key outside that project. In a fresh session per case, delegate to the exact installed role with only the `excerpt`. Check the named child's finding against `verdict`, `rejected` and `check`. For the scope-conflict case, identifying the email without explicitly rejecting it does not pass. For the control, referring a bounded assignment is not approval. Verify no child tool invocation, worker launch or file edits, and an unchanged fixture including untracked files. A clean checkout alone does not prove isolation. Record host and model separately; a successful smoke is not qualification of the model for other assignments.
+
+## Optional queue outbox
+
+For newly reviewed queues that require durable event emission, use [transactional recording](outbox.md).
+This option changes private metadata retention and must be selected explicitly before queue
+creation. It does not install the independent recorder or authorize delivery.

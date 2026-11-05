@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { setTimeout as wait } from 'node:timers/promises';
 import { buildBoundScope, contractRoundtrip, hypervisor, inspectBundledSource, sha256 } from './bundle.mjs';
-import { createQueue, dispatchNext, inspectQueue, proposeGoal, readAttended, respondAttended, reconcileInterrupted, reviewCandidate, stopQueue } from './queue.mjs';
+import { createQueue, dispatchNext, inspectQueue, readPendingEvents, proposeGoal, readAttended, respondAttended, reconcileInterrupted, reviewCandidate, stopQueue } from './queue.mjs';
 
 function fixture(t, endpoint = 'http://127.0.0.1:11434/v1', packageSupport, dispatch = true, retainResults = false) {
   const temp = realpathSync(mkdtempSync(path.join(tmpdir(),'queue-test-')));
@@ -614,3 +614,24 @@ for (const [phase,claims,terminals,artifacts,providerCalls] of [
     await assert.rejects(dispatchNext(f.directory,f.second),/stopped/);
   });
 }
+
+
+for(const version of ['v5','v6']) test(version+' records reservation and reviewed result without changing admission',async t=>{
+  const support=version==='v6'?{...await import('./integrated.mjs'),...await import('./package.mjs'),...await import('./intake.mjs')}:undefined;
+  const requests=[],f=fixture(t,await simulatedProvider(t,requests),support);
+  installWorker(t,f,'for(const e of '+JSON.stringify([{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'reference'}}},{type:'text',part:{text:'reference'}}])+')console.log(JSON.stringify(e));');
+  createQueue(f.directory,{...f.config,recording:{mode:'transactional-outbox-v1'}});
+  const initial=readPendingEvents(f.directory),before=inspectQueue(f.directory);
+  await assert.rejects(dispatchNext(f.directory,{...f.first,endpoint:f.first.endpoint+'?'}),/endpoint/);
+  assert.deepEqual(readPendingEvents(f.directory),initial);assert.deepEqual(inspectQueue(f.directory),before);assert.equal(requests.length,0);
+  const db=new DatabaseSync(path.join(f.directory,'queue.sqlite'));db.exec("CREATE TRIGGER fail_reservation_event BEFORE INSERT ON recorder_outbox WHEN NEW.sequence>2 BEGIN SELECT RAISE(ABORT,'synthetic-outbox-full'); END;");db.close();
+  await assert.rejects(dispatchNext(f.directory,f.first),/synthetic-outbox-full/);
+  assert.deepEqual(inspectQueue(f.directory),before);assert.deepEqual(readPendingEvents(f.directory),initial);assert.equal(requests.length,0);
+  const repair=new DatabaseSync(path.join(f.directory,'queue.sqlite'));repair.exec('DROP TRIGGER fail_reservation_event');repair.close();
+  const receipt=await dispatchNext(f.directory,f.first);
+  reviewCandidate(f.directory,{assignmentDigest:receipt.assignment_digest,reviewer:'reviewer',receiptHash:receipt.receipt_sha256,evidenceHash:sha256('synthetic review'),accept:true});
+  const events=readPendingEvents(f.directory).map(r=>r.event);
+  assert.deepEqual(events.filter(e=>e.task.id==='first').map(e=>e.kind),['offer_recorded','reservation_recorded','result_received','review_recorded']);
+  assert.ok(!events.some(e=>e.kind==='attempt_claimed'||e.kind==='execution_started'));
+  assert.equal(inspectQueue(f.directory).remaining[0].attempts,1);assert.equal(inspectQueue(f.directory).jobs[0].state,'reviewed');
+});

@@ -188,3 +188,10 @@ The implementation adapts the prior queue's ordered admissions and provider
 budgets and the prior goal dispatcher's explicit task selection. It uses
 attended offers or accepted v5/v6 envelopes and an operator-managed queue rather than automatically
 choosing a model, escalating model access or materializing further assignments.
+
+## Optional transactional recording
+
+New queues can opt into the [independent event outbox](outbox.md). Queue changes and
+pending observations commit together; external delivery and its acknowledgement remain
+separate from task authority, review, execution and Git persistence. Existing queues are
+not migrated.
