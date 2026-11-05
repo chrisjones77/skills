@@ -20,6 +20,10 @@ class GalleryParser(HTMLParser):
         self.ids = set()
         self.images = []
         self.details = 0
+        self.transcripts = {}
+        self.article = None
+        self.in_details = False
+        self.step = None
         self.language = None
         self.viewport = False
         self.errors = []
@@ -34,7 +38,13 @@ class GalleryParser(HTMLParser):
             self.language = values.get('lang')
         if tag == 'meta' and values.get('name') == 'viewport':
             self.viewport = True
+        if tag == 'article':
+            self.article = values.get('id')
+            self.transcripts[self.article] = []
+        if tag == 'li' and self.in_details and self.article:
+            self.step = []
         if tag == 'details':
+            self.in_details = True
             self.details += 1
         if tag == 'img':
             self.images.append(values)
@@ -45,6 +55,20 @@ class GalleryParser(HTMLParser):
                 self.errors.append('Unexpected HTML event handler: ' + key)
             if key in ('src', 'href'):
                 self.links.append(value or '')
+
+
+    def handle_data(self, data):
+        if self.step is not None:
+            self.step.append(data)
+
+    def handle_endtag(self, tag):
+        if tag == 'li' and self.step is not None:
+            self.transcripts[self.article].append(' '.join(''.join(self.step).split()))
+            self.step = None
+        if tag == 'details':
+            self.in_details = False
+        if tag == 'article':
+            self.article = None
 
 
 # These boards ship independent image review records alongside the gallery.
@@ -150,6 +174,10 @@ def validate(root):
         matching_prompts = [p for p in initial_prompts if p.get('slug') == record['slug']]
         require(len(matching_prompts) == 1 and isinstance(matching_prompts[0].get('prompt'), str) and bool(matching_prompts[0]['prompt'].strip()), 'Missing or ambiguous initial prompt: ' + record['slug'])
         for index, stage in enumerate(stages):
+            if 'retained_asset' in stage:
+                retained = local_path(gallery, stage['retained_asset'])
+                require(retained.is_file() and hashlib.sha256(retained.read_bytes()).hexdigest() == stage['asset_sha256'],
+                        'Retained revision hash mismatch: ' + record['slug'])
             require(bool(re.fullmatch(r'[0-9a-f]{64}', stage.get('asset_sha256', ''))), 'Invalid lineage digest: ' + record['slug'])
             if index:
                 require(stage.get('parent_sha256') == stages[index - 1]['asset_sha256'], 'Broken lineage parent: ' + record['slug'])
@@ -163,6 +191,9 @@ def validate(root):
     html = (gallery / 'index.html').read_text()
     parser.feed(html)
     errors.extend(parser.errors)
+    for board in boards:
+        steps = [' '.join(re.sub(r'^\d{2}\s+', '', step).split()) for step in board['transcript']]
+        require(parser.transcripts.get(board['slug']) == steps, 'Rendered transcript differs: ' + board['slug'])
     require(parser.language == 'en' and parser.viewport, 'Missing HTML language or viewport')
     require(parser.details == len(boards), 'Missing HTML transcripts')
     require(len(parser.images) == len(boards), 'HTML image count differs')

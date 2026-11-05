@@ -39,3 +39,21 @@ test("changed guidance invalidates the accepted package pin", async()=>{
     assert.equal(copied.resolvePackageProfile({primary:"0xB",effectCeiling:["read"],sourceSha256:snapshot.sourceSha256}).status,"hold");
   } finally { rmSync(temp,{recursive:true,force:true}); }
 });
+
+test('manifest-only installation runs the documented offline walkthrough', async t=>{
+  const {copyFileSync,mkdirSync} = await import('node:fs');
+  const {execFileSync} = await import('node:child_process');
+  const root=fileURLToPath(new URL('.',import.meta.url));
+  const cwd=mkdtempSync(path.join(tmpdir(),'uwh-install-'));
+  t.after(()=>rmSync(cwd,{recursive:true,force:true}));
+  const inventory=packageInventory();
+  for (const name of ['package-files.json',...Object.keys(inventory.files)]) {
+    mkdirSync(path.dirname(path.join(cwd,name)),{recursive:true});
+    copyFileSync(path.join(root,name),path.join(cwd,name));
+  }
+  const invoke=(...args)=>execFileSync(process.execPath,args,{cwd,encoding:'utf8'});
+  assert.equal(JSON.parse(invoke('package.mjs','inventory')).sourceSha256,inventory.sourceSha256);
+  assert.match(invoke('examples/methods/labels.mjs','r1'),/^B Unobserved$/m);
+  assert.match(invoke('examples/methods/labels.mjs','r2'),/^B Empty$/m);
+  assert.match(invoke('examples/attended-review.mjs'),/^Work status: complete$/m);
+});

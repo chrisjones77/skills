@@ -1,3 +1,4 @@
+import { redirectStatuses, observeDestination } from './test-support.mjs';
 import {packageInventory} from "./package.mjs";
 import {reviewIntake} from "./intake.mjs";
 import test from "node:test";
@@ -103,6 +104,63 @@ test("both provider protocols produce a private candidate and preserve source; a
   }
   assert.deepEqual(source.requests.map(r=>r.url),["/v1/chat/completions","/api/chat"]);
 });
+
+for (const adapter of ['openai_chat','ollama_chat']) {
+  test(adapter+' observes response limits, integrity and private evidence', async t => {
+    const {request,source,results,accept,git} = await fixture(t);
+    request.provider.adapter = adapter;
+    const native = adapter === 'ollama_chat';
+    if (native) request.provider.endpoint = request.provider.endpoint.replace('/v1/chat/completions','/api/chat');
+    const message = {role:'assistant',content:JSON.stringify({edits:[{path:'sample.txt',text:'new text'}]})};
+    const payload = native ? {done:true,done_reason:'stop',message} : {choices:[{finish_reason:'stop',message}]};
+    const json = JSON.stringify(payload);
+    const destination = await observeDestination(t);
+    const cases = [
+      ...redirectStatuses.map(status => [String(status),res => res.writeHead(status,{location:destination.url}).end()]),
+      ['stream disconnected',res => {res.writeHead(200);res.write(json.slice(0,10));setImmediate(()=>res.destroy());}],
+      ['truncated',res => res.end(json.slice(0,-1))],
+      ['tool call',res => res.end(json.replace('"role":"assistant"','"role":"assistant","tool_calls":[{}]'))],
+      ['over limit',res => res.end(json+'  ')],
+      ['at limit',res => res.end(json+' ')],
+      ['under limit',res => res.end(json)],
+    ];
+    for (const [label,send] of cases) {
+      const r = structuredClone(request);
+      r.intake.outcome += ' '+label;
+      r.limits.replyBytes = Buffer.byteLength(json)+1;
+      const packet = accept(r);
+      const digest = hypervisor.currentAssignment(packet).digest;
+      source.respond = (req,res) => send(res);
+      const before = readdirSync(results).sort();
+      const previousCalls = source.requests.length;
+      const run = candidateRoundtrip({packet,request:r});
+      if (label==='at limit' || label==='under limit') {
+        const receipt = await run;
+        const file = path.join(results,receipt.private_result.name);
+        const bytes = readFileSync(file);
+        assert.equal(sha256(bytes),receipt.private_result.sha256);
+        assert.ok(!JSON.stringify(receipt).includes('new text'));
+        assert.equal(readCandidateForReview({packet,request:r,receipt}).edits[0].text,'new text');
+        const damaged = Buffer.from(bytes);
+        damaged[damaged.length-1] ^= 1;
+        writeFileSync(file,damaged);
+        assert.throws(()=>readCandidateForReview({packet,request:r,receipt}),/differs from receipt/);
+        writeFileSync(file,bytes);
+        for (const key of Object.keys(receipt)) {
+          assert.throws(()=>readCandidateForReview({packet,request:r,receipt:{...receipt,[key]:null}}),undefined,key);
+        }
+      } else {
+        await assert.rejects(run,/attempt failed/);
+        assert.deepEqual(readdirSync(results).sort(),before,label);
+        assert.equal(inspectInvocation(r.invocationPolicy,digest).state,'failed',label);
+      }
+      await assert.rejects(candidateRoundtrip({packet,request:r}),/claim unavailable/);
+      assert.equal(source.requests.length,previousCalls+1,label);
+      assert.deepEqual(destination.requests,[],label);
+      assert.equal(git('status','--porcelain'),'');
+    }
+  });
+}
 
 test("defect reproduction safely returns a failing accepted data fixture",async t=>{
   const {request,source,accept,results,answer}=await fixture(t);
@@ -316,4 +374,31 @@ test('candidate preserves the attempt on invalid temp and pins the external pare
   assert.equal(source.requests.length,1);
   assert.deepEqual(readdirSync(inside), []);
   assert.deepEqual(readdirSync(outside), []);
+});
+
+for (const adapter of ['openai_chat','ollama_chat']) test(adapter+' admits only its canonical route and bounded token budget',async t=>{
+  const {request,source,accept,results}=await fixture(t);
+  request.provider.adapter=adapter;
+  const route=adapter==='ollama_chat'?'/api/chat':'/v1/chat/completions';
+  const {origin,port}=new URL(request.provider.endpoint);
+  const valid=origin+route;
+  for(const endpoint of [valid+'?',valid+'#',valid+'?query',origin+'/prefix'+route,
+    valid.replace('//','//u:p@'),valid.replace('127.0.0.1','localhost'),valid.replace('127.0.0.1','[2001:db8::1]'),
+    valid.replace(':'+port,' :'+port),valid.replace(':'+port,':0'+port),valid.replace(':'+port,':80'),valid.replace(':'+port,':10080')]){
+    assert.throws(()=>accept({...request,provider:{...request.provider,endpoint}}),undefined,endpoint);
+  }
+  for(const host of ['http://[::1]','http://127.0.0.1'])assert.doesNotThrow(()=>accept({...request,provider:{...request.provider,endpoint:host+route}}));
+  request.provider.endpoint=valid;
+  for(const tokens of [0,4097])assert.throws(()=>accept({...request,limits:{...request.limits,tokens}}),/budget/);
+  assert.deepEqual(source.requests,[]);
+  assert.deepEqual(readdirSync(request.invocationPolicy.directory),[]);
+  assert.deepEqual(readdirSync(results),[]);
+  for(const tokens of [1,4095,4096]){
+    const r={...request,limits:{...request.limits,tokens}};
+    const receipt=await candidateRoundtrip({packet:accept(r),request:r});
+    assert.equal(receipt.review_status,'pending');
+    const {url,body}=source.requests.at(-1);
+    assert.equal(url,route);
+    assert.equal(adapter==='ollama_chat'?body.options.num_predict:body.max_tokens,tokens);
+  }
 });

@@ -2,25 +2,73 @@ name: Unified work harness
 
 on:
   pull_request:
-    paths:
+    paths: &paths
       - "unified-work-harness/**"
+      - "scripts/test_convergence*"
+      - "scripts/test_storyboard*"
+      - "scripts/validate_storyboards.py"
+      - "docs/skill-storyboards/**"
+      - "image-card-coverage-harness/scripts/harness.py"
       - ".github/workflows/unified-work-harness.yml"
   push:
     branches: [main]
-    paths:
-      - "unified-work-harness/**"
-      - ".github/workflows/unified-work-harness.yml"
+    paths: *paths
 
 permissions:
   contents: read
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  suite:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-latest, fs: sensitive}
+          - {os: macos-latest, fs: insensitive}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with: {ref: "${{ github.event.pull_request.head.sha || github.sha }}"}
       - uses: actions/setup-node@v4
+        with: {node-version: "22"}
+      - run: node scripts/test_convergence.mjs suite > "$RUNNER_TEMP/convergence.json"
+        env:
+          UWH_EXPECT_FS: ${{ matrix.fs }}
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          node-version: "22"
-      - run: node --check unified-work-harness/bundle.mjs
-      - run: node --test unified-work-harness/*.test.mjs
+          name: convergence-${{ matrix.os }}
+          path: ${{ runner.temp }}/convergence.json
+  installed-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: "${{ github.event.pull_request.head.sha || github.sha }}"}
+      - uses: actions/setup-node@v4
+        with: {node-version: "22"}
+      - name: Install the verified worker
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl --fail --location --retry 2 --output worker.tgz https://github.com/anomalyco/opencode/releases/download/v1.18.25/opencode-linux-x64-baseline.tar.gz
+          echo 'ccd10586611b598b1eaed7c05cfbcbc68e3ec09e736b360da09b1d615d922968  worker.tgz' | sha256sum --check
+          mkdir worker
+          tar xzf worker.tgz -C worker
+          binary=$(find "$RUNNER_TEMP/worker" -type f -name opencode -print)
+          test -x "$binary"
+          dirname "$binary" >> "$GITHUB_PATH"
+      - run: node scripts/test_convergence.mjs worker > "$RUNNER_TEMP/worker.json"
+        env: {UWH_WORKER_VERSION: "1.18.25"}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: convergence-worker, path: "${{ runner.temp }}/worker.json"}
+  mutations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: "${{ github.event.pull_request.head.sha || github.sha }}"}
+      - uses: actions/setup-node@v4
+        with: {node-version: "22"}
+      - run: python3 scripts/test_convergence_mutations.py

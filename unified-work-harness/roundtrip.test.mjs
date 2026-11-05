@@ -1,3 +1,4 @@
+import { redirectStatuses } from './test-support.mjs';
 import test from "node:test";
 import { once } from "node:events";
 import assert from "node:assert/strict";
@@ -395,7 +396,7 @@ test("accepted Hypervisor contract reaches the bundled agent executor and return
     const savedFake = readFileSync(fake,"utf8");
     // Exercise the production discovery client (no endpointCheck injection).
     for (const route of ["/v1/models", "/api/version", "/api/tags"]) {
-      await t.test(`discovery rejects redirect at ${route} without contacting destination`, async () => {
+      for (const status of redirectStatuses) await t.test(`discovery rejects ${status} at ${route} without contacting destination`, async () => {
         let hits = 0;
         const seen = [];
         const model = "synthetic:local";
@@ -403,7 +404,7 @@ test("accepted Hypervisor contract reaches the bundled agent executor and return
         const destination = createServer((req,res) => { hits++; res.end(payload); });
         const origin = createServer((req,res) => {
           seen.push(req.url);
-          if (req.url === route) res.writeHead(307,{location:`http://127.0.0.1:${destination.address().port}/other`});
+          if (req.url === route) res.writeHead(status,{location:`http://127.0.0.1:${destination.address().port}/other`});
           res.end(payload);
         });
         const listen = server => new Promise((resolve,reject) => server.once("error",reject).listen(0,"127.0.0.1",resolve));

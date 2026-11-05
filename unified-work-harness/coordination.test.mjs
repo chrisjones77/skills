@@ -73,3 +73,27 @@ test("decline requires a new offer and preserves superseded review scope",async(
   assert.equal(next.packet.work_contract.events[1].kind,"declined");
   assert.throws(()=>step(next,"accept","worker",{assignmentDigest:inspectCoordination(declined).assignmentDigest}));
 });
+
+test('attended lifecycle enforces the transition and actor table', () => {
+  const options = {evidence:'synthetic review'};
+  const actor = {accept:'worker',resume:'worker',pause:'worker',submit:'worker',rework:'reviewer',approve:'reviewer',close:'reviewer'};
+  const offered = draft('human');
+  const apply = (record, action) => step(record,action,actor[action],options);
+  const accepted = apply(offered,'accept'), active = apply(accepted,'resume');
+  const submitted = apply(active,'submit'), approved = apply(submitted,'approve');
+  const states = [
+    [offered,['accept']], [accepted,['resume']], [active,['pause','submit']],
+    [apply(active,'pause'),['resume']], [submitted,['approve','rework']],
+    [apply(submitted,'rework'),['resume']], [approved,['close']], [apply(approved,'close'),[]],
+  ];
+  for (const [record,legal] of states) {
+    const before = JSON.stringify(record);
+    for (const action of Object.keys(actor)) {
+      if (legal.includes(action)) assert.doesNotThrow(()=>apply(record,action));
+      else assert.throws(()=>apply(record,action),undefined,action);
+      assert.throws(()=>step(record,action,'unassigned',options));
+      assert.throws(()=>step(record,action,actor[action],{...options,assignmentDigest:'0'.repeat(64)}));
+      assert.equal(JSON.stringify(record),before);
+    }
+  }
+});

@@ -1,3 +1,4 @@
+import { redirectStatuses, observeDestination } from './test-support.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -142,11 +143,12 @@ test('ambiguous endpoints and non-loopback IPv6 fail before offer, provider cont
 });
 
 // With UNIFIED_TEST_INSTALLED_OPENCODE=1 this same provider drives the installed
-// worker through its read tool. CI uses a small HTTP client with redirect following enabled.
-for (const status of [307,308,200]) {
-  test('OpenCode completion after a source read, upstream status '+status, async t => {
-    let forwarded = 0, sourcePosts = 0;
-    const destination = await listen(t,'127.0.0.1',(req,res) => { forwarded++; res.writeHead(400).end(); });
+// worker through its read tool. The deterministic lane uses an HTTP client that follows redirects.
+for (const beforeRead of [false,true]) for (const status of (beforeRead ? redirectStatuses : [...redirectStatuses,200])) {
+  const stage = beforeRead ? 'before a source read' : 'after a source read';
+  test('OpenCode completion '+stage+', upstream status '+status, async t => {
+    let sourcePosts = 0, firstPosts = 0;
+    const destination = await observeDestination(t);
     const port = await listen(t,'127.0.0.1',async (req,res) => {
       if (req.url !== '/prefix/v1/chat/completions') {
         res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[{name:'synthetic:local'}],version:'test'}));
@@ -156,10 +158,15 @@ for (const status of [307,308,200]) {
       for await (const chunk of req) chunks.push(chunk);
       const body = Buffer.concat(chunks).toString();
       const hasSource = body.includes('cobalt-otter-47');
+      if (beforeRead) {
+        firstPosts++;
+        res.writeHead(status,{location:destination.url}).end();
+        return;
+      }
       if (hasSource) {
         sourcePosts++;
         if (status !== 200) {
-          res.writeHead(status,{location:`http://127.0.0.1:${destination}/unoffered`}).end();
+          res.writeHead(status,{location:destination.url}).end();
           return;
         }
       }
@@ -184,6 +191,11 @@ for (const status of [307,308,200]) {
 (async () => {
   const fs = require('node:fs');
   const {baseURL,apiKey} = JSON.parse(fs.readFileSync(process.env.OPENCODE_CONFIG)).provider.ollama.options;
+  if (${beforeRead}) {
+    const first=await fetch(baseURL+'/chat/completions',{method:'POST',headers:{authorization:'Bearer '+apiKey},body:'{"messages":[]}'});
+    if(!first.ok) {process.exitCode=1;return;}
+    throw Error('unexpected first completion');
+  }
   const token = fs.readFileSync('source.txt','utf8');
   console.log(JSON.stringify({type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:token}}}));
   const reply = await fetch(baseURL+'/chat/completions',{method:'POST',headers:{authorization:'Bearer '+apiKey},
@@ -200,25 +212,20 @@ for (const status of [307,308,200]) {
     const run = contractRoundtrip({...inputs,packet});
     if (status === 200) assert.equal((await run).review_status,'pending');
     else await assert.rejects(run);
-    assert.ok(sourcePosts > 0,'the accepted upstream must receive the file token');
-    assert.equal(forwarded,0,'the second listener must receive no requests');
+    if(beforeRead) assert.ok(firstPosts>0,'the accepted upstream must receive the initial completion');
+    else assert.ok(sourcePosts > 0,'the accepted upstream must receive the file token');
+    assert.deepEqual(destination.requests,[],'the second listener must receive no requests');
   });
 }
 
-test('direct completion refuses a 307 before forwarding synthetic source', async t => {
-  const forwarded = [];
-  const destination = await listen(t,'127.0.0.1',async (req,res) => {
-    const body = [];
-    for await (const chunk of req) body.push(chunk);
-    forwarded.push({path:req.url,containsSource:Buffer.concat(body).includes('cobalt-otter-47')});
-    res.end('{}');
-  });
+for (const status of redirectStatuses) test('direct completion refuses redirect '+status, async t => {
+  const destination = await observeDestination(t);
   const requests = [];
   const port = await listen(t,'127.0.0.1',async (req,res) => {
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
     requests.push({path:req.url,body:Buffer.concat(chunks).toString()});
-    res.writeHead(307,{Location:`http://127.0.0.1:${destination}/other`}).end();
+    res.writeHead(status,{Location:destination.url}).end();
   });
   const {inputs,temp} = fixture(t,`http://127.0.0.1:${port}/prefix/v1`);
   const assignment = JSON.parse(inputs.bindingInputs.assignmentJson);
@@ -231,7 +238,7 @@ test('direct completion refuses a 307 before forwarding synthetic source', async
     cwd:path.join(temp,'repo'),outputRoot:inputs.resultPolicy.directory,endpointCheck:async () => ({})})]);
   assert.deepEqual(requests.map(r => r.path),['/prefix/v1/chat/completions']);
   assert.match(requests[0].body,/cobalt-otter-47/);
-  assert.deepEqual(forwarded,[]);
+  assert.deepEqual(destination.requests,[]);
   assert.equal(outcome.status,'rejected');
   assert.match(outcome.reason.message,/Harness run rejected/);
 });
@@ -421,4 +428,93 @@ test('v6 refuses a replaced temp parent and leaves its contents alone during cle
   assert.equal(readFileSync(marker,'utf8'),'preserve');
   assert.equal(inspectInvocation(inputs.invocationPolicy,hypervisor.currentAssignment(packet).digest).state,'failed');
   assert.deepEqual(readdirSync(inputs.resultPolicy.directory), []);
+});
+
+test('physical ancestry refuses an aliased private directory', async t => {
+  const {assertOutsideSource} = await import('./bundle.mjs');
+  const dir = realpathSync(mkdtempSync(path.join(tmpdir(),'uwh-alias-')));
+  t.after(()=>rmSync(dir,{recursive:true,force:true}));
+  const repo = path.join(dir,'repo'), alias = path.join(dir,'alias');
+  mkdirSync(path.join(repo,'private'),{recursive:true});
+  symlinkSync(repo,alias,'dir');
+  assert.throws(()=>assertOutsideSource(path.join(alias,'private'),repo),/outside the source checkout/);
+});
+
+test('relay admits only the scoped completion and closes after the worker exits', async t => {
+  const posts = [];
+  const port = await listen(t,'127.0.0.1',async (req,res) => {
+    if (req.method === 'POST') {
+      posts.push([req.url,req.headers.authorization]);
+      for await (const _ of req) {}
+      res.end('cobalt-otter-47');
+    } else res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[{name:'synthetic:local'}],version:'test'}));
+  });
+  const {inputs,temp,accept} = fixture(t,'http://127.0.0.1:'+port+'/prefix/v1');
+  const marker = path.join(temp,'relay-url'), bin = path.join(temp,'bin');
+  mkdirSync(bin);
+  const script = async function(marker) {
+    const fs = require('node:fs');
+    const {baseURL,apiKey} = JSON.parse(fs.readFileSync(process.env.OPENCODE_CONFIG)).provider.ollama.options;
+    fs.writeFileSync(marker,baseURL);
+    const route = '/chat/completions';
+    for (const [method,key,suffix] of [['POST',null,route],['POST','wrong',route],['GET',apiKey,route],['POST',apiKey,route+'?m=1']]) {
+      const r = await fetch(baseURL+suffix,{method,headers:key?{authorization:'Bearer '+key}:{}});
+      if (r.status!==403) throw Error('unexpected relay admission '+r.status);
+    }
+    const token=fs.readFileSync('source.txt','utf8');
+    console.log(JSON.stringify({type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:token}}}));
+    const reply=await fetch(baseURL+route,{method:'POST',headers:{authorization:'Bearer '+apiKey},body:token});
+    if ((await reply.text())!==token) throw Error('control failed');
+    console.log(JSON.stringify({type:'text',part:{text:token}}));
+  };
+  writeFileSync(path.join(bin,'opencode'),'#!/usr/bin/env node\n('+script+')('+JSON.stringify(marker)+').catch(()=>process.exitCode=1)',{mode:0o700});
+  const previous = process.env.PATH;
+  process.env.PATH = bin+path.delimiter+previous;
+  t.after(()=>{process.env.PATH=previous;});
+  const receipt=await contractRoundtrip({...inputs,packet:accept(buildPackageScope(inputs))});
+  assert.equal(receipt.review_status,'pending');
+  assert.deepEqual(posts,[['/prefix/v1/chat/completions','Bearer local']]);
+  await assert.rejects(fetch(readFileSync(marker,'utf8'),{signal:AbortSignal.timeout(2000)}),
+    err=>err.cause?.code==='ECONNREFUSED');
+});
+
+for (const version of [1,2,3,4,5,6]) test('v'+version+' verifies each accepted scope field before effects',async t=>{
+  const calls=[];
+  const port=await listen(t,'127.0.0.1',(req,res)=>{
+    calls.push(req.url);
+    res.end(JSON.stringify({data:[{id:'synthetic:local'}],version:'synthetic',models:[{name:'synthetic:local'}]}));
+  });
+  const {temp,inputs,accept}=fixture(t,'http://127.0.0.1:'+port+'/v1');
+  const {resultPolicy,invocationPolicy,executionWindow,packagePolicy,...base}=inputs;
+  const options={...base,...(version>=3 && {resultPolicy}),...(version>=4 && {invocationPolicy}),
+    ...(version>=5 && {executionWindow}),...(version===6 && {packagePolicy})};
+  if(version===1)delete options.bindingInputs;
+  const scope=version===1?{kind:'unified-harness-readonly-v1',assignment_sha256:sha256(base.bindingInputs.assignmentJson)}
+    :JSON.parse(version===6?buildPackageScope(options):buildBoundScope(options.bindingInputs,options.endpoint,options.resultPolicy,options.invocationPolicy,options.executionWindow));
+  function* fields(object,prefix=[]){
+    for(const [k,v] of Object.entries(object)){
+      if(v && typeof v==='object')yield* fields(v,[...prefix,k]);else yield [...prefix,k];
+    }
+  }
+  for(const keys of fields(scope)){
+    const changed=structuredClone(scope), k=keys.at(-1);
+    const section=keys.slice(0,-1).reduce((o,key)=>o[key],changed);
+    section[k]=k==='assignment_sha256'?'0'.repeat(64):section[k]+'-changed';
+    await assert.rejects(contractRoundtrip({...options,packet:accept(JSON.stringify(changed))}),undefined,keys.join('.'));
+  }
+  assert.deepEqual(calls,[]);
+  assert.deepEqual(readdirSync(invocationPolicy.directory),[]);
+  assert.deepEqual(readdirSync(resultPolicy.directory),[]);
+  const bin=path.join(temp,'bin');
+  mkdirSync(bin);
+  writeFileSync(path.join(bin,'opencode'),`#!/usr/bin/env node
+const token=require('node:fs').readFileSync('source.txt','utf8');
+for(const e of [{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:token}}},{type:'text',part:{text:token}}])console.log(JSON.stringify(e));
+`,{mode:0o700});
+  const previous=process.env.PATH;
+  process.env.PATH=bin+path.delimiter+previous;
+  t.after(()=>{process.env.PATH=previous;});
+  const receipt=await contractRoundtrip({...options,packet:accept(JSON.stringify(scope))});
+  assert.equal(receipt.review_status,'pending');
+  assert.ok(calls.length>0);
 });

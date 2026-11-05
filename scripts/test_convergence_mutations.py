@@ -1,0 +1,74 @@
+"""Seed one fault per disposable copy. Require both a specific failed assertion and a passing control."""
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[1]
+PKG = 'unified-work-harness'
+# target and control are actual TAP names, not input substrings used as evidence
+cases = [
+    ('worker-redirect', 'bundle.mjs',
+     'await runGuardedOpenCode({ assignment, worktree, artifactDirectory, endpoint, getTempParent, capturePrivateResult }, beforeProvider)',
+     'await runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, getTempParent, capturePrivateResult })',
+     'integrated', 'OpenCode completion after a source read, upstream status 307',
+     'OpenCode completion after a source read, upstream status 200', 'the second listener must receive no requests'),
+    ('late-reservation-check', 'queue.mjs', "if (offeredScope !== offer.scope) throw Error('Dispatch scope differs from the accepted offer.');",
+     '// intentionally defer rejection to worker', 'queue', 'v5 rejects substituted policies before reservation and accepts the original envelope',
+     'v6 queued dispatch rechecks the full package profile and reviewed intake', 'rejection must preserve the queue reservation'),
+    ('lexical-ancestry', 'bundle.mjs', 'ancestor.dev === source.dev && ancestor.ino === source.ino',
+     'directory === sourceRoot || directory.startsWith(sourceRoot + path.sep)', 'integrated',
+     'physical ancestry refuses an aliased private directory','reviewed and accepted v6 produces a package-bound candidate receipt','Missing expected exception'),
+    ('stale-owner', 'bundle.mjs','if (current?.token !== owner.token || current.pid !== owner.pid) return false;',
+     '// intentionally remove replacement-owner check', 'roundtrip','concurrent stale lease recovery preserves the replacement owner',
+     'equivalent endpoint URLs share a provider lease until release','Missing expected rejection'),
+]
+
+
+def substitute(file, old, new):
+    text = file.read_text()
+    if text.count(old) != 1:
+        raise RuntimeError(f'Seed no longer targets exactly one location: {file.name}')
+    file.write_text(text.replace(old, new))
+
+
+def verify(cmd, adverse, control, message, cwd, python=False):
+    result = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                            timeout=90, env={**os.environ, 'UNIFIED_TEST_INSTALLED_OPENCODE': '0'})
+    if python:
+        bad = re.search(r'^'+re.escape(adverse)+r' .* \.\.\. FAIL$', result.stdout,re.M)
+        good = re.search(r'^'+re.escape(control)+r' .* \.\.\. ok$', result.stdout,re.M)
+    else:
+        bad = re.search(r'^not ok \d+ - '+re.escape(adverse)+r'$',result.stdout,re.M)
+        good = re.search(r'^ok \d+ - '+re.escape(control)+r'$',result.stdout,re.M)
+    if result.returncode != 1 or not (bad and good and message in result.stdout):
+        raise RuntimeError('Seed survived, failed for the wrong reason, or lost its control:\n'+result.stdout)
+
+
+def main():
+    for name, source, old, new, suite, adverse, control, message in cases:
+        with tempfile.TemporaryDirectory() as scratch:
+            pkg = Path(scratch) / PKG
+            shutil.copytree(ROOT / PKG,pkg)
+            substitute(pkg / source,old,new)
+            verify(['node','--test','--test-reporter=tap','--test-name-pattern=^('+re.escape(adverse)+'|'+re.escape(control)+')$',
+                    suite+'.test.mjs'],adverse,control,message,pkg)
+            print('DETECTED '+name+'; control passed',flush=True)
+    with tempfile.TemporaryDirectory() as scratch:
+        root = Path(scratch)
+        for file in ['scripts/test_storyboard_coverage.py','scripts/validate_storyboards.py',
+                     'docs/skill-storyboards/manifest.json','docs/skill-storyboards/assets/unified-work-harness.png',
+                     'docs/skill-storyboards/coverage-unified-work-harness.json','image-card-coverage-harness/scripts/harness.py']:
+            (root / file).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT / file,root / file)
+        substitute(root / 'scripts/validate_storyboards.py', '    report = validate_coverage(record, asset_root=gallery)',
+                   "    record['provenance']['asset_sha256'] = board['asset_sha256']\n    report = validate_coverage(record, asset_root=gallery)")
+        verify(['python3','scripts/test_storyboard_coverage.py','StoryboardCoverageTest','-v'],'test_wrong_asset_digest','test_valid_human_hold',
+               'ASSET_HASH_MISMATCH',root,python=True)
+        print('DETECTED storyboard-digest; control passed')
+
+
+if __name__ == '__main__':
+    main()

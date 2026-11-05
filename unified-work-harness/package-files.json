@@ -14,13 +14,13 @@
   "delivery-checklist.md",
   "examples/attended-review.mjs",
   "examples/check-review-finding.mjs",
-  "examples/native-review-cases.json",
   "examples/methods/card-r1.svg",
   "examples/methods/card-r2.svg",
   "examples/methods/guide-r1.txt",
   "examples/methods/guide-r2.txt",
   "examples/methods/labels.mjs",
   "examples/methods/samples.csv",
+  "examples/native-review-cases.json",
   "intake.md",
   "intake.mjs",
   "intake.test.mjs",
@@ -31,9 +31,9 @@
   "live-roundtrip.test.mjs",
   "live-test-results.md",
   "methods.md",
+  "native-roles.test.mjs",
   "native-roles/uwh-reviewer.md",
   "native-roles/uwh_reviewer.toml",
-  "native-roles.test.mjs",
   "package-guide.md",
   "package-profile.test.mjs",
   "package.mjs",
@@ -43,5 +43,6 @@
   "queue.test.mjs",
   "review.md",
   "roundtrip.test.mjs",
-  "sources.md"
+  "sources.md",
+  "test-support.mjs"
 ]

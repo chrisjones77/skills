@@ -1,16 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { execFileSync, spawn } from 'node:child_process';
+import { syncBuiltinESMExports } from 'node:module';
+import childProcess, { execFileSync, spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
-import { mkdtempSync, mkdirSync, realpathSync, writeFileSync, rmSync, existsSync, symlinkSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, realpathSync, writeFileSync, rmSync, existsSync, symlinkSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { setTimeout as wait } from 'node:timers/promises';
 import { buildBoundScope, contractRoundtrip, hypervisor, inspectBundledSource, sha256 } from './bundle.mjs';
 import { createQueue, dispatchNext, inspectQueue, proposeGoal, readAttended, respondAttended, reconcileInterrupted, reviewCandidate, stopQueue } from './queue.mjs';
 
-function fixture(t, endpoint = 'http://127.0.0.1:11434/v1', packageSupport, dispatch = true) {
+function fixture(t, endpoint = 'http://127.0.0.1:11434/v1', packageSupport, dispatch = true, retainResults = false) {
   const temp = realpathSync(mkdtempSync(path.join(tmpdir(),'queue-test-')));
   t.after(() => rmSync(temp,{recursive:true,force:true}));
   const dir = name => { const p=path.join(temp,name); mkdirSync(p,{mode:0o700}); return p; };
@@ -24,6 +25,7 @@ function fixture(t, endpoint = 'http://127.0.0.1:11434/v1', packageSupport, disp
   const workspace = {root,revision,identity:root+'#'+git('branch','--show-current'),status_digest:sha256('')};
   const until = offset => new Date(Date.now()+offset).toISOString();
   const invocationPolicy = {directory:ledger,mode:'single_attempt'};
+  const resultPolicy = retainResults ? {directory:dir('results'),retention:'owner_managed'} : undefined;
   function candidate(id) {
     const outcome = 'Read source.txt and return its synthetic value for '+id+'.';
     const checks = ['Review source and executor evidence'];
@@ -53,15 +55,15 @@ function fixture(t, endpoint = 'http://127.0.0.1:11434/v1', packageSupport, disp
       }),
     };
     const scope = packagePolicy
-      ? packageSupport.buildPackageScope({bindingInputs,endpoint,invocationPolicy,executionWindow,packagePolicy})
-      : buildBoundScope(bindingInputs,endpoint,undefined,invocationPolicy,executionWindow);
+      ? packageSupport.buildPackageScope({bindingInputs,endpoint,resultPolicy,invocationPolicy,executionWindow,packagePolicy})
+      : buildBoundScope(bindingInputs,endpoint,resultPolicy,invocationPolicy,executionWindow);
     let packet = hypervisor.createPacket({id,owner:'worker',objective:outcome,mode:'Review',workspace,authorization:['execute-read-only'],grantedBy:'owner'});
     packet.authorization.prohibited.push('write-source','external-network');
     packet = hypervisor.offerAssignment(packet,{scope,acceptanceEvidence:JSON.stringify(checks),engineeringPurpose:'0xB',assigner:'owner',reviewer:'reviewer'});
     packet = hypervisor.acceptAssignment(packet,{by:'worker',assignmentDigest:hypervisor.currentAssignment(packet).digest,note:'Synthetic acceptance'});
     packet.status='active'; packet.handoff.current_writer='worker';
     packet.checkpoints.push({at:packet.work_contract.acceptance.at,kind:'resumed',note:'Synthetic resume',owner:'worker',workspace:workspace.identity,reconciled:false});
-    return {packet, endpoint, assignmentPath, bindingInputs, invocationPolicy, executionWindow, ...(packagePolicy && {packagePolicy})};
+    return {packet, endpoint, assignmentPath, bindingInputs, invocationPolicy, executionWindow, ...(resultPolicy && {resultPolicy}), ...(packagePolicy && {packagePolicy})};
   }
   const first=candidate('first'), second=candidate('second');
   const packets=[first.packet,second.packet];
@@ -104,8 +106,11 @@ test('explicit goal, accepted identity, ceiling, expiration and cancellation gov
   assert.deepEqual(inspectQueue(dir).jobs.map(job=>job.state),['cancelled','cancelled']);
 });
 
-async function simulatedProvider(t) {
-  const server=createServer((req,res)=>res.end(JSON.stringify({data:[{id:'mlx-community/test-model'}]})));
+async function simulatedProvider(t, requests = []) {
+  const server=createServer((req,res)=>{
+    requests.push(req.url);
+    res.end(JSON.stringify({data:[{id:'mlx-community/test-model'}]}));
+  });
   await new Promise((resolve,reject)=>server.once('error',reject).listen(0,'127.0.0.1',resolve));
   t.after(()=>new Promise(resolve=>server.close(resolve)));
   return 'http://127.0.0.1:'+server.address().port+'/v1';
@@ -152,7 +157,8 @@ for (const version of ['v5','v6']) {
     const packageSupport = version === 'v6' && {
       ...await import('./integrated.mjs'), ...await import('./package.mjs'), ...await import('./intake.mjs')
     };
-    const f = fixture(t,await simulatedProvider(t),packageSupport || undefined);
+    const requests = [];
+    const f = fixture(t,await simulatedProvider(t,requests),packageSupport || undefined);
     const events=[{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'reference'}}},
       {type:'text',part:{text:'reference'}}];
     installWorker(t,f,'for (const event of '+JSON.stringify(events)+') console.log(JSON.stringify(event));');
@@ -162,16 +168,23 @@ for (const version of ['v5','v6']) {
       envelope => { envelope.invocationPolicy.directory = f.dir('other-ledger'); },
       envelope => { envelope.resultPolicy = {directory:f.dir('other-results'),retention:'owner_managed'}; },
       envelope => { envelope.executionWindow.expires_at = new Date(Date.now()+90000).toISOString(); },
-      envelope => { envelope.assignmentPath = f.second.assignmentPath; }
+      envelope => { envelope.assignmentPath = f.second.assignmentPath; },
+      ...Object.keys(f.first.bindingInputs).map(key => envelope => { envelope.bindingInputs[key] += ' '; }),
+      ...['?','#','/other','?view=local'].map(suffix => envelope => { envelope.endpoint += suffix; }),
+      envelope => { envelope.endpoint = envelope.endpoint.replace('127.0.0.1','localhost'); },
+      envelope => { envelope.endpoint = envelope.endpoint.replace(/:\d+\//,':10080/'); }
     ];
     if (packageSupport) substitutions.push(envelope => { envelope.packagePolicy.intakeReview.assessment.evidenceRef = 'other review'; });
     for (const substitute of substitutions) {
       const changed = structuredClone(f.first);
       substitute(changed);
       await assert.rejects(dispatchNext(f.directory,changed));
-      assert.deepEqual(inspectQueue(f.directory),before);
+      assert.deepEqual(inspectQueue(f.directory),before,'rejection must preserve the queue reservation');
+      assert.deepEqual(readdirSync(f.first.invocationPolicy.directory),[]);
+      assert.deepEqual(requests,[]);
     }
     assert.equal((await dispatchNext(f.directory,f.first)).review_status,'pending');
+    assert.deepEqual(requests,['/v1/models']);
   });
 }
 
@@ -451,3 +464,64 @@ test('queue rejects source-local temp before reserving an attempt or worker seco
   await assert.rejects(dispatchNext(f.directory,f.first), /outside the source checkout/);
   assert.deepEqual(inspectQueue(f.directory), before);
 });
+
+// Inject only in the disposable fork. The public dispatch envelope carries no fault hooks.
+for (const [phase,claims,terminals,artifacts,providerCalls] of [
+  ['reserved',0,0,0,0], ['claimed',1,0,0,0], ['persisted',1,0,1,1],
+  ['completed',1,1,1,1], ['write failure',1,1,0,1],
+]) {
+  test('queue recovers worker loss at '+phase, async t => {
+    const requests=[];
+    const f=fixture(t,await simulatedProvider(t,requests),undefined,true,true);
+    const events=[{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'reference'}}},
+      {type:'text',part:{text:'reference'}}];
+    installWorker(t,f,'for (const e of '+JSON.stringify(events)+') console.log(JSON.stringify(e));');
+    const observed=path.join(f.temp,'injected');
+    const preload=path.join(f.temp,'fault.cjs');
+    writeFileSync(preload,`
+      const fs=require('node:fs'), phase=${JSON.stringify(phase)};
+      function fault() {
+        fs.appendFileSync(${JSON.stringify(observed)},phase);
+        if (phase==='write failure') throw Error('synthetic ENOSPC');
+        process.kill(process.pid,'SIGKILL');
+      }
+      if (phase==='reserved') fault();
+      if (phase==='claimed') globalThis.fetch=fault;
+      if (phase==='completed') process.send=fault;
+      const write=fs.writeFileSync;
+      fs.writeFileSync=function(file,...args) {
+        const resultFile=typeof file==='string' && file.startsWith(${JSON.stringify(f.first.resultPolicy.directory+path.sep)});
+        if (resultFile && phase==='write failure') fault();
+        const written=write.call(this,file,...args);
+        if (resultFile && phase==='persisted') fault();
+        return written;
+      };
+      require('node:module').syncBuiltinESMExports();`);
+    const original=childProcess.fork;
+    const replace=t.mock.method(childProcess,'fork',(file,args,options)=>original(file,args,{
+      ...options,execArgv:['--require',preload],env:{...options.env,TMPDIR:f.temp},
+    }));
+    syncBuiltinESMExports();
+    try {
+      createQueue(f.directory,f.config);
+      await assert.rejects(dispatchNext(f.directory,f.first));
+    } finally { replace.mock.restore(); syncBuiltinESMExports(); }
+    assert.equal(readFileSync(observed,'utf8'),phase);
+    assert.equal(requests.length,providerCalls);
+    const files=readdirSync(f.first.invocationPolicy.directory);
+    assert.equal(files.filter(name=>name.endsWith('.claim.json')).length,claims);
+    const terminal=files.filter(name=>name.endsWith('.terminal.json'));
+    assert.equal(terminal.length,terminals);
+    if (terminals) assert.equal(JSON.parse(readFileSync(path.join(f.first.invocationPolicy.directory,terminal[0]))).state,
+      phase==='completed'?'completed':'failed');
+    assert.equal(readdirSync(f.first.resultPolicy.directory).length,artifacts);
+    const reopen='import {inspectQueue} from '+JSON.stringify(new URL('./queue.mjs',import.meta.url).href)+
+      ';console.log(JSON.stringify(inspectQueue(process.argv[1])))';
+    const state=JSON.parse(execFileSync(process.execPath,['--input-type=module','-e',reopen,f.directory],{encoding:'utf8'}));
+    assert.equal(state.remaining[0].attempts,1);
+    assert.equal(state.remaining[0].seconds,30);
+    assert.deepEqual(state.jobs.map(job=>job.state),['failed','cancelled']);
+    assert.equal(state.jobs[0].receipt,null);
+    await assert.rejects(dispatchNext(f.directory,f.second),/stopped/);
+  });
+}
