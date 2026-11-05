@@ -7,6 +7,7 @@ import json
 from html.parser import HTMLParser
 from pathlib import Path
 import re
+import runpy
 import struct
 import sys
 from urllib.parse import unquote, urlsplit
@@ -46,6 +47,29 @@ class GalleryParser(HTMLParser):
                 self.links.append(value or '')
 
 
+# These boards ship independent image review records alongside the gallery.
+REVIEWED_BOARDS = {'build-music-video', 'farmer-jones-victory-garden',
+                   'image-card-coverage-harness', 'unified-work-harness'}
+harness_path = Path(__file__).resolve().parents[1] / 'image-card-coverage-harness/scripts/harness.py'
+validate_coverage = runpy.run_path(str(harness_path))['validate']
+
+
+def coverage_errors(gallery, board):
+    slug = board['slug']
+    manifest = gallery / f'coverage-{slug}.json'
+    record = json.loads(manifest.read_text(encoding='utf-8'))
+    report = validate_coverage(record, asset_root=gallery)
+    errors = [finding['code'] for finding in report['findings'] if finding['severity'] == 'blocker']
+    binding = report['asset_binding']
+    if (report['artifact_id'] != f'CURRENT-GALLERY-{slug}' or
+            binding != {'status': 'verified', 'asset_ref': board['asset'], 'asset_sha256': board['asset_sha256']}):
+        errors.append('Review must identify the selected board and its exact asset')
+    if (report['validation_status'], report['reviewer_kind'], report['reviewer_decision'],
+            report['release_outcome']) != ('clear', 'assistant', 'hold', 'hold'):
+        errors.append('Expected a clear assistant review held for human acceptance')
+    return [f'{manifest.name}: {error}' for error in errors]
+
+
 def validate(root):
     root = root.resolve()
     gallery = root / 'docs/skill-storyboards'
@@ -77,8 +101,11 @@ def validate(root):
     actual = [b['source_path'] for b in boards]
     require(len(set(actual)) == len(actual), 'Duplicate source entrypoint')
     require(set(actual) == expected, 'Skill inventory differs: ' + repr(set(actual) ^ expected))
+    require(REVIEWED_BOARDS.issubset(slugs), 'Missing independently reviewed board')
     for b in boards:
         label = b['slug']
+        if label in REVIEWED_BOARDS:
+            errors.extend(coverage_errors(gallery, b))
         require(bool(re.fullmatch(r'[a-z0-9-]+', label)), 'Unsafe slug: ' + label)
         source = local_path(root, b['source_path'])
         asset = local_path(gallery, b['asset'])

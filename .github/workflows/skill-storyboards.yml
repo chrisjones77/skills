@@ -6,6 +6,8 @@ on:
       - "docs/skill-storyboards/**"
       - "specs/001-skill-storyboards/**"
       - "scripts/validate_storyboards.py"
+      - "scripts/test_storyboard_coverage.py"
+      - "image-card-coverage-harness/scripts/harness.py"
       - ".github/workflows/skill-storyboards.yml"
       - "**/SKILL.md"
       - "**/skill.md"
@@ -16,6 +18,8 @@ on:
       - "docs/skill-storyboards/**"
       - "specs/001-skill-storyboards/**"
       - "scripts/validate_storyboards.py"
+      - "scripts/test_storyboard_coverage.py"
+      - "image-card-coverage-harness/scripts/harness.py"
       - ".github/workflows/skill-storyboards.yml"
       - "**/SKILL.md"
       - "**/skill.md"
@@ -33,3 +37,4 @@ jobs:
         with:
           python-version: "3.11"
       - run: python scripts/validate_storyboards.py
+      - run: python scripts/test_storyboard_coverage.py

@@ -130,7 +130,7 @@ test('ambiguous endpoints and non-loopback IPv6 fail before offer, provider cont
     base+'?view=local', base+'#local', base+'?', base+'#',
     base.replace('//','//user:pass@'), base.replace('//','//@'),
     base+' ', base.replace('/v1','\\v1'), base.replace('127.0.0.1','[2001:db8::1]'),
-    'http://127.0.0.1:0/v1',
+    'http://127.0.0.1:0/v1', 'http://127.0.0.1:10080/v1', 'http://[::1]:06000/v1',
   ]) {
     assert.throws(() => buildPackageScope({...inputs,endpoint}), /loopback/);
     assert.throws(() => buildBoundScope(inputs.bindingInputs,endpoint), /loopback/);
@@ -140,6 +140,70 @@ test('ambiguous endpoints and non-loopback IPv6 fail before offer, provider cont
   assert.deepEqual(seen,[]);
   assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
 });
+
+// With UNIFIED_TEST_INSTALLED_OPENCODE=1 this same provider drives the installed
+// worker through its read tool. CI uses a small HTTP client with redirect following enabled.
+for (const status of [307,308,200]) {
+  test('OpenCode completion after a source read, upstream status '+status, async t => {
+    let forwarded = 0, sourcePosts = 0;
+    const destination = await listen(t,'127.0.0.1',(req,res) => { forwarded++; res.writeHead(400).end(); });
+    const port = await listen(t,'127.0.0.1',async (req,res) => {
+      if (req.url !== '/prefix/v1/chat/completions') {
+        res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[{name:'synthetic:local'}],version:'test'}));
+        return;
+      }
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const body = Buffer.concat(chunks).toString();
+      const hasSource = body.includes('cobalt-otter-47');
+      if (hasSource) {
+        sourcePosts++;
+        if (status !== 200) {
+          res.writeHead(status,{location:`http://127.0.0.1:${destination}/unoffered`}).end();
+          return;
+        }
+      }
+      // Title generation gets a short text reply. The initial task gets a tool call.
+      const askForRead = !hasSource && JSON.parse(body).tools?.length;
+      const tool = {index:0,id:'call_read',type:'function',function:{name:'read',arguments:'{"filePath":"source.txt"}'}};
+      const delta = askForRead ? {role:'assistant',tool_calls:[tool]}
+        : {role:'assistant',content:hasSource ? 'cobalt-otter-47' : 'Synthetic title'};
+      res.writeHead(200,{'content-type':'text/event-stream'});
+      for (const [part,reason] of [[delta,null],[{},askForRead ? 'tool_calls' : 'stop']]) {
+        const chunk = {id:'chatcmpl-test',object:'chat.completion.chunk',created:1,model:'synthetic:local',
+          choices:[{index:0,delta:part,finish_reason:reason}]};
+        res.write('data: '+JSON.stringify(chunk)+'\n\n');
+      }
+      res.end('data: [DONE]\n\n');
+    });
+    const {inputs,temp,accept} = fixture(t,`http://127.0.0.1:${port}/prefix/v1`,'source.txt',20);
+    if (process.env.UNIFIED_TEST_INSTALLED_OPENCODE !== '1') {
+      const bin = path.join(temp,'bin');
+      mkdirSync(bin);
+      const script = `#!/usr/bin/env node
+(async () => {
+  const fs = require('node:fs');
+  const {baseURL,apiKey} = JSON.parse(fs.readFileSync(process.env.OPENCODE_CONFIG)).provider.ollama.options;
+  const token = fs.readFileSync('source.txt','utf8');
+  console.log(JSON.stringify({type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:token}}}));
+  const reply = await fetch(baseURL+'/chat/completions',{method:'POST',headers:{authorization:'Bearer '+apiKey},
+    body:JSON.stringify({messages:[{role:'tool',content:token}]})});
+  if (!reply.ok || !(await reply.text()).includes(token)) process.exitCode=1;
+  else console.log(JSON.stringify({type:'text',part:{text:token}}));
+})().catch(()=>{process.exitCode=1;});`;
+      writeFileSync(path.join(bin,'opencode'),script,{mode:0o700});
+      const previous = process.env.PATH;
+      process.env.PATH = bin+path.delimiter+previous;
+      t.after(() => { process.env.PATH = previous; });
+    }
+    const packet = accept(buildPackageScope(inputs));
+    const run = contractRoundtrip({...inputs,packet});
+    if (status === 200) assert.equal((await run).review_status,'pending');
+    else await assert.rejects(run);
+    assert.ok(sourcePosts > 0,'the accepted upstream must receive the file token');
+    assert.equal(forwarded,0,'the second listener must receive no requests');
+  });
+}
 
 test('direct completion refuses a 307 before forwarding synthetic source', async t => {
   const forwarded = [];
@@ -236,7 +300,7 @@ for (const event of [
 }
 
 test('a protected case alias cannot be offered to the v6 worker', t => {
-  const {inputs} = fixture(t, 'http://127.0.0.1:1/v1', '.env');
+  const {inputs} = fixture(t, 'http://127.0.0.1:11434/v1', '.env');
   const assignment = JSON.parse(inputs.bindingInputs.assignmentJson);
   assignment.authority.allowed_read_paths = ['.ENV'];
   inputs.bindingInputs.assignmentJson = JSON.stringify(assignment);
@@ -256,7 +320,7 @@ test('a protected case alias cannot be offered to the v6 worker', t => {
 
 for (const flag of ['--assume-unchanged','--skip-worktree']) {
   test('v6 rejects source drift hidden by ' + flag + ' before claiming an attempt', async t => {
-    const {inputs,temp,accept} = fixture(t, 'http://127.0.0.1:1/v1');
+    const {inputs,temp,accept} = fixture(t, 'http://127.0.0.1:11434/v1');
     const packet = accept(buildPackageScope(inputs));
     const cwd = path.join(temp, 'repo');
     execFileSync('git', ['update-index', flag, 'source.txt'], {cwd});
@@ -313,7 +377,7 @@ for (const exitsEarly of [true, false]) {
 }
 
 test('v6 refuses a temporary parent inside the checkout before discovery or claim', async t => {
-  const {inputs,temp,accept} = fixture(t,'http://127.0.0.1:1/v1');
+  const {inputs,temp,accept} = fixture(t,'http://127.0.0.1:11434/v1');
   const packet = accept(buildPackageScope(inputs));
   const inside = path.join(packet.workspace.root,'.tmp'), alias = path.join(temp,'temp-link');
   mkdirSync(inside);

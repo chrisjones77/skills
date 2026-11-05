@@ -1,11 +1,12 @@
 import { DatabaseSync } from 'node:sqlite';
 import { inspectCoordination, respond } from './coordination.mjs';
+import { buildPackageScope } from './integrated.mjs';
 import { verifyIntakeForOffer } from './intake.mjs';
 import { fork } from 'node:child_process';
-import { closeSync, lstatSync, openSync, realpathSync } from 'node:fs';
+import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assertLoopbackEndpoint, pinTempParent, assertOutsideSource, buildDraftBinding, contractRoundtrip, isQueueWorkerProcess, hypervisor, inspectExecutionWindow, inspectInvocation, sha256 } from './bundle.mjs';
+import { assertLoopbackEndpoint, pinTempParent, assertOutsideSource, buildBoundScope, contractRoundtrip, isQueueWorkerProcess, hypervisor, inspectExecutionWindow, inspectInvocation, sha256 } from './bundle.mjs';
 
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
 const bounded = value => typeof value === 'string' && value.trim() && value.length <= 4096;
@@ -230,22 +231,38 @@ export function reviewCandidate(directory, {assignmentDigest, reviewer, receiptH
   });
 }
 
+// The caller supplies this path. A FIFO or oversized replacement must not
+// block the supervisor or make it allocate beyond the reviewed assignment.
+function matchesAssignmentFile(filename, source) {
+  const expected = Buffer.from(source);
+  const fd = openSync(filename, constants.O_RDONLY | constants.O_NONBLOCK);
+  try {
+    const st = fstatSync(fd);
+    if (!st.isFile() || st.size !== expected.length) return false;
+    const contents = Buffer.alloc(expected.length);
+    let offset = 0;
+    while (offset < contents.length) {
+      const count = readSync(fd,contents,offset,contents.length-offset,offset);
+      if (!count) return false;
+      offset += count;
+    }
+    return contents.equals(expected);
+  } finally { closeSync(fd); }
+}
+
 function reserve(directory, options) {
   const {offer,scope} = inspectContract(options.packet);
   assertLoopbackEndpoint(scope.endpoint);
   if (options.endpoint !== scope.endpoint) throw Error('Dispatch endpoint differs from the accepted endpoint.');
   if ((options.packagePolicy !== undefined) !== (scope.kind === 'unified-harness-readonly-v6')) throw Error('Package policy differs from the selected contract version.');
-  const binding = buildDraftBinding(options.bindingInputs);
-  if (binding.binding_sha256 !== scope.binding_sha256) throw Error('Dispatch profile differs from the accepted binding.');
   const profile = JSON.parse(options.bindingInputs.profileJson);
   if (!profile.effectCeiling?.includes('dispatch') || !profile.requestedEffects?.includes('dispatch'))
     throw Error('Queue dispatch must be explicitly requested within the accepted effect ceiling.');
-  if (options.packagePolicy && (!options.packagePolicy.profileRequest?.requiredCapabilities?.includes('sequential_queue')
-      || digest(options.packagePolicy.profileRequest) !== scope.package_binding?.profile_sha256))
+  if (options.packagePolicy && !options.packagePolicy.profileRequest?.requiredCapabilities?.includes('sequential_queue'))
     throw Error('Package dispatch requires its pinned sequential queue capability.');
-  const worker = JSON.parse(options.bindingInputs.assignmentJson);
-  if (sha256(options.bindingInputs.assignmentJson) !== scope.assignment_sha256 ||
-      !positive(worker.resources?.timeout_seconds,86400)) throw Error('Assignment differs from approved scope.');
+  const {bindingInputs,endpoint,resultPolicy,invocationPolicy,executionWindow} = options;
+  const worker = JSON.parse(bindingInputs.assignmentJson);
+  if (!positive(worker.resources?.timeout_seconds,86400)) throw Error('Assignment differs from approved scope.');
   const reservation = worker.resources.timeout_seconds;
   return withDatabase(directory, db => {
     const policy = db.prepare('SELECT * FROM policy').get();
@@ -258,6 +275,10 @@ function reserve(directory, options) {
       return {hold:'Queue or assignment expired.'};
     }
     if (inspectExecutionWindow(scope.execution_window).state !== 'within_window') throw Error('Execution window has not opened.');
+    const offeredScope = options.packagePolicy ? buildPackageScope(options)
+      : buildBoundScope(bindingInputs,endpoint,resultPolicy,invocationPolicy,executionWindow);
+    if (offeredScope !== offer.scope) throw Error('Dispatch scope differs from the accepted offer.');
+    if (!matchesAssignmentFile(options.assignmentPath,bindingInputs.assignmentJson)) throw Error('Assignment file differs from approved scope.');
     const charge = db.prepare('UPDATE budgets SET attempts=attempts-1,seconds=seconds-? WHERE lane=? AND attempts>0 AND seconds>=?')
       .run(reservation,worker.assignee.provider,reservation);
     if (!charge.changes) throw Error('Insufficient provider budget.');

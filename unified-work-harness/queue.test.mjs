@@ -10,7 +10,7 @@ import { setTimeout as wait } from 'node:timers/promises';
 import { buildBoundScope, contractRoundtrip, hypervisor, inspectBundledSource, sha256 } from './bundle.mjs';
 import { createQueue, dispatchNext, inspectQueue, proposeGoal, readAttended, respondAttended, reconcileInterrupted, reviewCandidate, stopQueue } from './queue.mjs';
 
-function fixture(t, endpoint = 'http://127.0.0.1:1/v1', packageSupport, dispatch = true) {
+function fixture(t, endpoint = 'http://127.0.0.1:11434/v1', packageSupport, dispatch = true) {
   const temp = realpathSync(mkdtempSync(path.join(tmpdir(),'queue-test-')));
   t.after(() => rmSync(temp,{recursive:true,force:true}));
   const dir = name => { const p=path.join(temp,name); mkdirSync(p,{mode:0o700}); return p; };
@@ -146,6 +146,34 @@ test('accepted read-only work without dispatch authority cannot enter the worker
   await assert.rejects(dispatchNext(f.directory,f.first),/effect ceiling/);
   assert.equal(inspectQueue(f.directory).remaining[0].attempts,2);
 });
+
+for (const version of ['v5','v6']) {
+  test(version+' rejects substituted policies before reservation and accepts the original envelope', async t => {
+    const packageSupport = version === 'v6' && {
+      ...await import('./integrated.mjs'), ...await import('./package.mjs'), ...await import('./intake.mjs')
+    };
+    const f = fixture(t,await simulatedProvider(t),packageSupport || undefined);
+    const events=[{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'reference'}}},
+      {type:'text',part:{text:'reference'}}];
+    installWorker(t,f,'for (const event of '+JSON.stringify(events)+') console.log(JSON.stringify(event));');
+    createQueue(f.directory,f.config);
+    const before = inspectQueue(f.directory);
+    const substitutions = [
+      envelope => { envelope.invocationPolicy.directory = f.dir('other-ledger'); },
+      envelope => { envelope.resultPolicy = {directory:f.dir('other-results'),retention:'owner_managed'}; },
+      envelope => { envelope.executionWindow.expires_at = new Date(Date.now()+90000).toISOString(); },
+      envelope => { envelope.assignmentPath = f.second.assignmentPath; }
+    ];
+    if (packageSupport) substitutions.push(envelope => { envelope.packagePolicy.intakeReview.assessment.evidenceRef = 'other review'; });
+    for (const substitute of substitutions) {
+      const changed = structuredClone(f.first);
+      substitute(changed);
+      await assert.rejects(dispatchNext(f.directory,changed));
+      assert.deepEqual(inspectQueue(f.directory),before);
+    }
+    assert.equal((await dispatchNext(f.directory,f.first)).review_status,'pending');
+  });
+}
 
 test('v6 queued dispatch rechecks the full package profile and reviewed intake', async t => {
   const [{buildPackageScope},{packageInventory},{reviewIntake}] = await Promise.all([

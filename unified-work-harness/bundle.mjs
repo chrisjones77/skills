@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn, execFileSync } from "node:child_process";
+import { createServer, request as httpRequest } from "node:http";
 import { AsyncLocalStorage } from "node:async_hooks";
 import * as cryptoModule from "node:crypto";
 const {createHash, randomUUID} = cryptoModule;
@@ -1636,6 +1637,22 @@ async function resolveProjectRoot(cwd) {
   return result.stdout.trim();
 }
 
+// Fetch Standard bad ports, including port zero. Keep admission consistent
+// across discovery, the worker configuration and both candidate protocols.
+const forbiddenProviderPorts = new Set([
+  0, 1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 69, 77, 79,
+  87, 95, 101, 102, 103, 104, 109, 110, 111, 113, 115, 117, 119, 123, 135, 137, 139,
+  143, 161, 179, 389, 427, 465, 512, 513, 514, 515, 526, 530, 531, 532, 540, 548, 554,
+  556, 563, 587, 601, 636, 989, 990, 993, 995, 1719, 1720, 1723, 2049, 3659, 4045,
+  4190, 5060, 5061, 6000, 6566, 6665, 6666, 6667, 6668, 6669, 6679, 6697, 10080,
+]);
+
+export function assertProviderPort(url) {
+  if (forbiddenProviderPorts.has(Number(url.port || 80))) {
+    throw new Error("HTTP loopback provider port is forbidden by fetch");
+  }
+}
+
 function parseLoopbackEndpoint(endpoint) {
   // Check the original spelling: URL.search and URL.hash hide empty delimiters,
   // and the URL parser silently discards whitespace and normalizes backslashes.
@@ -1643,7 +1660,8 @@ function parseLoopbackEndpoint(endpoint) {
     throw new Error("model endpoint must be a plain HTTP loopback base URL without credentials, query or fragment");
   }
   const parsed = new URL(endpoint);
-  if (parsed.port === "0" || !["127.0.0.1", "localhost", "[::1]"].includes(parsed.hostname)) {
+  assertProviderPort(parsed);
+  if (!["127.0.0.1", "localhost", "[::1]"].includes(parsed.hostname)) {
     throw new Error("model endpoint must be an HTTP loopback URL");
   }
   if (!parsed.pathname.endsWith("/v1")) throw new Error("model endpoint must end in /v1");
@@ -1952,6 +1970,68 @@ async function createCandidatePatch(worktree, filenames) {
 export function isQueueWorkerProcess() {
   return process.connected === true && process.argv[2] === "--accepted-queue-job"
     && !!process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(new URL("./queue.mjs", import.meta.url));
+}
+
+// OpenCode's HTTP client follows redirects. Give that client a per-run local
+// endpoint whose only upstream is the accepted completion route. node:http
+// streams both directions without following redirects or decoding SSE.
+async function runGuardedOpenCode(options, beforeProvider) {
+  const target = new URL(options.endpoint + "/chat/completions");
+  const token = randomUUID();
+  let denied = false;
+  const server = createServer((req, res) => {
+    if (req.method !== "POST" || req.url !== "/v1/chat/completions" ||
+        req.headers.authorization !== "Bearer " + token) {
+      res.writeHead(403).end();
+      return;
+    }
+    try { beforeProvider(); }
+    catch { denied = true; }
+    if (denied) { res.writeHead(403).end(); return; }
+    const upstream = httpRequest(target, {
+      method: "POST", headers: { "content-type": "application/json", authorization: "Bearer local" },
+      agent: false,
+    }, reply => {
+      if (reply.statusCode >= 300 && reply.statusCode < 400) {
+        denied = true;
+        res.writeHead(403).end();
+        reply.destroy();
+        return;
+      }
+      const headers = {};
+      for (const key of ["content-type", "content-encoding"]) {
+        if (reply.headers[key]) headers[key] = reply.headers[key];
+      }
+      res.writeHead(reply.statusCode, headers);
+      reply.on("error", () => res.destroy());
+      reply.pipe(res);
+    });
+    upstream.on("error", () => {
+      if (res.headersSent) res.destroy();
+      else res.writeHead(502).end();
+    });
+    res.on("close", () => upstream.destroy());
+    req.on("error", () => upstream.destroy());
+    req.pipe(upstream);
+  });
+  await new Promise((resolve, reject) => server.once("error", reject).listen(0, "127.0.0.1", resolve));
+  try {
+    const config = buildOpenCodeConfig(options.assignment, options.endpoint);
+    config.provider[options.assignment.assignee.provider].options = {
+      baseURL: `http://127.0.0.1:${server.address().port}/v1`, apiKey: token,
+    };
+    const state = path.join(options.artifactDirectory, "state");
+    mkdirSync(state, {recursive:true, mode:0o700});
+    const configPath = path.join(state, "guarded-opencode.json");
+    writeFileSync(configPath, JSON.stringify(config), {mode:0o600, flag:"wx"});
+    const result = await runOpenCode({...options, configPath});
+    if (denied) result.violations.push("provider request or redirect outside accepted authority");
+    return result;
+  } finally {
+    const closed = new Promise(resolve => server.close(resolve));
+    server.closeAllConnections();
+    await closed;
+  }
 }
 
 async function runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, getTempParent, capturePrivateResult = false }) {
@@ -2393,7 +2473,7 @@ export async function runHarness({
         ? await runDirectJson({ assignment, worktree, artifactDirectory, endpoint, request: completionRequest })
         : adapter === "aider"
           ? await runAider({ assignment, worktree, artifactDirectory, endpoint })
-        : await runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, getTempParent, capturePrivateResult });
+        : await runGuardedOpenCode({ assignment, worktree, artifactDirectory, endpoint, getTempParent, capturePrivateResult }, beforeProvider);
     } finally {
       providerLease?.release();
       providerLease = null;

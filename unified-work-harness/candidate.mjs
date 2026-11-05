@@ -8,7 +8,7 @@ import { readFileSync, writeFileSync, realpathSync, mkdirSync, readdirSync, mkdt
 import path from "node:path";
 import {
   hypervisor, sha256, inspectBundledSource, inspectWorkIntake, inspectExecutionWindow, inspectInvocation,
-  pinTempParent, claimInvocation, validateInvocationPolicy, checkResultDirectory, normalizeAllowedPath,
+  assertProviderPort, pinTempParent, claimInvocation, validateInvocationPolicy, checkResultDirectory, normalizeAllowedPath,
   isProtectedPath, isOllamaCloudModelId, assertSafeGitSource, contractGitEnvironment, contractGitArgs,
 } from "./bundle.mjs";
 
@@ -69,7 +69,8 @@ function validate(request) {
   need(exact(provider, ["adapter","endpoint","model"]) && Object.hasOwn(routes,provider.adapter)
     && typeof provider.model === "string" && /^[\w][\w./:-]{0,127}$/.test(provider.model) && !isOllamaCloudModelId(provider.model), "Unsupported provider or model");
   const url = new URL(provider.endpoint);
-  need(url.protocol === "http:" && url.port !== "0" && ["127.0.0.1","[::1]"].includes(url.hostname)
+  assertProviderPort(url);
+  need(url.protocol === "http:" && ["127.0.0.1","[::1]"].includes(url.hostname)
     && provider.endpoint === url.origin + routes[provider.adapter], "Use the adapter's exact numeric loopback route");
   need(exact(limits, ["contextBytes","replyBytes","tokens","timeoutMs"])
     && bounded(limits.contextBytes,262144) && bounded(limits.replyBytes,524288)
