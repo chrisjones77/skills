@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="100" viewBox="0 0 320 100" role="img" aria-labelledby="title">
+  <title id="title">Bin B</title>
+  <rect width="320" height="100" fill="#fff"/>
+  <text x="16" y="34" font-size="22" font-family="sans-serif" fill="#14202b">Bin B</text>
+  <circle cx="29" cy="70" r="12" fill="#8491a2"/>
+</svg>

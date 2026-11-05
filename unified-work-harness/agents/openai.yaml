@@ -1,4 +1,4 @@
 interface:
   display_name: "Unified Work Harness"
-  short_description: "Route and verify bounded read-only work."
-  default_prompt: "Use the unified work harness to prepare and verify a bounded read-only assignment."
+  short_description: "Coordinate and review bounded engineering work."
+  default_prompt: "Use the unified work harness to select a purpose, review the intake and use the supported workflow."

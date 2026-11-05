@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, chmodSync, rmSync, realpathSync, statSync, readdirSync, symlinkSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, chmodSync, rmSync, realpathSync, statSync, readdirSync, symlinkSync, existsSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createServer } from "node:http";
@@ -342,6 +342,26 @@ test("accepted Hypervisor contract reaches the bundled agent executor and return
     const activeWindow = {not_before:new Date(now-60000).toISOString(),expires_at:new Date(now+60000).toISOString()};
     const timedPacket = window => makeBoundPacket("worker","0xB",JSON.stringify(intake.acceptance.checks),buildBoundScope(bindingInputs,endpoint,undefined,invocationPolicy,window));
     const validTimedPacket = timedPacket(activeWindow);
+    await t.test("read-only v5 refuses a local Git clean helper before claiming or dispatching", async () => {
+      const sourceFile=path.join(root,"source.txt"), original=readFileSync(sourceFile);
+      const attributes=path.join(root,".git","info","attributes"), marker=path.join(root,".git","filter-ran");
+      writeFileSync(attributes,"source.txt filter=untrusted\n");
+      git("config","filter.untrusted.clean","echo invoked >> .git/filter-ran; cat");
+      const changed=Buffer.from(original); changed[0]=0x41;
+      writeFileSync(sourceFile,changed);
+      utimesSync(sourceFile,1500000000,1500000000);
+      const previousCalls=endpointCalls, entries=readdirSync(ledgerDirectory);
+      try {
+        await assert.rejects(invokeBound({packet:validTimedPacket,invocationPolicy,executionWindow:activeWindow}),/Unsupported source Git configuration/);
+        assert.equal(existsSync(marker),false);
+        assert.deepEqual(readdirSync(ledgerDirectory),entries);
+        assert.equal(endpointCalls,previousCalls);
+      } finally {
+        git("config","--unset","filter.untrusted.clean");
+        rmSync(attributes);
+        writeFileSync(sourceFile,original);
+      }
+    });
     const timedReceipt = await invokeBound({packet:validTimedPacket,invocationPolicy,executionWindow:activeWindow});
     assert.equal(timedReceipt.schema_version,"unified.contract-executor-receipt.v5");
     assert.deepEqual(timedReceipt.execution_window,activeWindow);

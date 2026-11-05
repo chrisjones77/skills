@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
+import { AsyncLocalStorage } from "node:async_hooks";
 import * as cryptoModule from "node:crypto";
 const {createHash, randomUUID} = cryptoModule;
 import {
@@ -194,7 +195,7 @@ function integrityFindings(packet) {
   results.push(finding('authority-validity','unknown','Authority references are declared, not authenticated or externally resolved.'));
   return results;
 }
-return { currentAssignment, validateWorkContract, offerAssignment, acceptAssignment };
+return { currentAssignment, validateWorkContract, offerAssignment, acceptAssignment, reviseAssignment, recordDisposition, reviewWork };
 })();
 const {currentAssignment, validateWorkContract} = work;
 const clarification = (() => {
@@ -339,7 +340,7 @@ function routeClarification(packet, {concernId, human, by, note, at=new Date().t
   return event(next,'clarification-rerouted',concern,at);
 }
 
-return { validateClarifications };
+return { validateClarifications, requestClarification, answerClarification, reassessClarification, routeClarification };
 })();
 const {validateClarifications} = clarification;
 
@@ -420,7 +421,7 @@ function createPacket({ id, objective, owner, mode, workspace, authorization, gr
   return packet;
 }
 
-return {validatePacket, createPacket, ...work};
+return {validatePacket, createPacket, ...work, ...clarification};
 })();
 // Profile inspection is metadata-only. It neither discovers external skills nor
 // authenticates the caller's declared authority or starts an executor.
@@ -1527,11 +1528,38 @@ export function evaluateChangedFiles(assignment, filenames) {
   return [...new Set(violations)];
 }
 
+// Only the accepted contract uses this context. Standalone runHarness keeps its
+// existing caller environment. Git subprocesses within a contract inherit no
+// user config, template hooks, Git environment overrides or lazy-fetch policy.
+const contractEnvironment = new AsyncLocalStorage();
+export function contractGitEnvironment() {
+  return {PATH:process.env.PATH ?? "/usr/bin:/bin", LANG:"C", GIT_CONFIG_NOSYSTEM:"1",
+    GIT_CONFIG_GLOBAL:"/dev/null", GIT_ATTR_NOSYSTEM:"1", GIT_NO_LAZY_FETCH:"1",
+    GIT_OPTIONAL_LOCKS:"0", GIT_TERMINAL_PROMPT:"0", GIT_TEMPLATE_DIR:"/dev/null",
+    GIT_ALLOW_PROTOCOL:"file", GIT_NO_REPLACE_OBJECTS:"1"};
+}
+
+export const contractGitArgs = Object.freeze(["-c","core.hooksPath=/dev/null","-c","core.fsmonitor=false",
+  "-c","submodule.recurse=false","-c","maintenance.auto=false","-c","gc.auto=0"]);
+
+// Reject executable or indirect local settings before asking Git to refresh the
+// index (status may run a clean filter). Unknown settings require a clean clone.
+export function assertSafeGitSource(root) {
+  const options={cwd:root,env:contractGitEnvironment(),timeout:5000,maxBuffer:8388608,
+    encoding:"utf8",stdio:["ignore","pipe","pipe"]};
+  const keys=execFileSync("git",["config","--no-includes","--null","--name-only","--list"],options).split("\0").filter(Boolean);
+  const allowed=/^(?:core\.(?:repositoryformatversion|filemode|bare|logallrefupdates|ignorecase|precomposeunicode)|user\.(?:name|email)|remote\.[^\n]+\.(?:url|fetch|pushurl)|branch\.[^\n]+\.(?:remote|merge|pushremote))$/;
+  if (!keys.every(key=>allowed.test(key))) throw new Error("Unsupported source Git configuration; use a clean local clone.");
+  const modes=execFileSync("git",[...contractGitArgs,"ls-files","--format=%(objectmode)"],options);
+  if (modes.split("\n").includes("160000")) throw new Error("Submodule checkouts require separate review.");
+}
+
 function runCommand(command, args, options = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
+    const contractGit = command === "git" && contractEnvironment.getStore() === true;
+    const child = spawn(command, contractGit ? [...contractGitArgs,...args] : args, {
       cwd: options.cwd,
-      env: options.env ?? process.env,
+      env: contractGit ? contractGitEnvironment() : options.env ?? process.env,
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -1593,7 +1621,8 @@ async function discoveryResponse(url, optional = false) {
   return response;
 }
 
-async function checkModelEndpoint(endpoint, modelId, provider, requiresTools = false) {
+async function checkModelEndpoint(endpoint, modelId, provider, requiresTools = false, beforeRequest = () => {}) {
+  beforeRequest();
   const response = await discoveryResponse(`${endpoint}/models`);
   if (!response.ok) throw new Error(`${provider} model endpoint returned HTTP ${response.status}`);
   const payload = await response.json();
@@ -1605,6 +1634,7 @@ async function checkModelEndpoint(endpoint, modelId, provider, requiresTools = f
   const versionURL = new URL("/api/version", root);
   const tagsURL = new URL("/api/tags", root);
   const optionalJson = async url => {
+    beforeRequest();
     const response = await discoveryResponse(url, true);
     return response?.ok ? response.json().catch(() => null) : null;
   };
@@ -2316,7 +2346,7 @@ async function main(argv) {
 // assignment bytes. Free-text scope and role labels are never interpreted as
 // authorization. This first adapter supports clean Git workspaces and one
 // tightly bounded read-only executor profile only.
-export { hypervisor };
+export { hypervisor, claimInvocation, validateInvocationPolicy, checkResultDirectory };
 // This prepares scope only. Offering, accepting and resuming remain explicit.
 function validateResultPolicy(policy) {
   if (!policy || Object.keys(policy).sort().join() !== "directory,retention" || typeof policy.directory !== "string" || !path.isAbsolute(policy.directory) || path.normalize(policy.directory) !== policy.directory || policy.retention !== "owner_managed") throw new Error("Invalid private result policy.");
@@ -2419,19 +2449,26 @@ export function buildBoundScope(inputs, endpoint, resultPolicy, invocationPolicy
   return JSON.stringify({ kind: executionWindow !== undefined ? "unified-harness-readonly-v5" : invocationPolicy !== undefined ? "unified-harness-readonly-v4" : resultPolicy === undefined ? "unified-harness-readonly-v2" : "unified-harness-readonly-v3", assignment_sha256: binding.assignment_sha256, binding_sha256: binding.binding_sha256, endpoint, ...(resultPolicy === undefined ? {} : {result_policy:{directory:resultPolicy.directory,retention:resultPolicy.retention}}), ...(invocationPolicy === undefined ? {} : {invocation_policy:{directory:invocationPolicy.directory,mode:invocationPolicy.mode}}), ...(executionWindow === undefined ? {} : {execution_window:{not_before:executionWindow.not_before,expires_at:executionWindow.expires_at}}) });
 }
 
-export async function contractRoundtrip({ packet, assignmentPath, endpoint, outputRoot, endpointCheck, completionRequest, bindingInputs, resultPolicy, invocationPolicy, executionWindow }) {
+export async function contractRoundtrip(options) {
+  return contractEnvironment.run(true, () => executeContractRoundtrip(options));
+}
+
+async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outputRoot, endpointCheck, completionRequest, bindingInputs, resultPolicy, invocationPolicy, executionWindow, packagePolicy }) {
   if (outputRoot !== undefined) throw new Error("Contract round trips cannot use an unbound evidence destination.");
   // Snapshot caller-owned records before the first asynchronous boundary.
   bindingInputs = bindingInputs === undefined ? undefined : structuredClone(bindingInputs);
   resultPolicy = resultPolicy === undefined ? undefined : structuredClone(resultPolicy);
   invocationPolicy = invocationPolicy === undefined ? undefined : structuredClone(invocationPolicy);
   executionWindow = executionWindow === undefined ? undefined : structuredClone(executionWindow);
+  packagePolicy = packagePolicy === undefined ? undefined : structuredClone(packagePolicy);
+  let recheckPackage;
   let lastObservedTime = Date.now();
   const checkFreshness = () => {
     if (executionWindow === undefined) return;
     const now = Date.now();
     if (now < lastObservedTime || inspectExecutionWindow(executionWindow,now).state !== "within_window") throw new Error("Execution window unavailable, expired, or clock regressed.");
     lastObservedTime = now;
+    recheckPackage?.();
   };
   packet = structuredClone(packet);
   hypervisor.validatePacket(packet);
@@ -2445,9 +2482,24 @@ export async function contractRoundtrip({ packet, assignmentPath, endpoint, outp
   if (!["Review", "Research"].includes(offered.dispatch_kind) || !offered.engineering_purpose) throw new Error("only routed read-only review or research is supported");
   let scope;
   try { scope = JSON.parse(offered.scope); } catch { throw new Error("scope must be the explicit executor binding"); }
-  const integrated = ["unified-harness-readonly-v2", "unified-harness-readonly-v3", "unified-harness-readonly-v4", "unified-harness-readonly-v5"].includes(scope?.kind);
+  const packageBound = scope?.kind === "unified-harness-readonly-v6";
+  if (packageBound !== (packagePolicy !== undefined)) throw new Error("Package policy must match accepted scope version");
+  if (packageBound) {
+    if (endpointCheck !== undefined || completionRequest !== undefined) throw new Error("Package contracts require production discovery and provider paths");
+    const { buildPackageScope, verifyPackagePolicy } = await import("./integrated.mjs");
+    const exactScope = buildPackageScope({ bindingInputs, endpoint, resultPolicy, invocationPolicy, executionWindow, packagePolicy });
+    if (offered.scope !== exactScope || Date.parse(packagePolicy.intakeReview.assessment.reviewedAt) > Date.parse(offered.created_at)) {
+      throw new Error("Package scope differs from the reviewed offer or review occurred after offer");
+    }
+    recheckPackage = () => {
+      const current = verifyPackagePolicy(bindingInputs, packagePolicy);
+      if (JSON.stringify(current) !== JSON.stringify(scope.package_binding)) throw new Error("Package binding changed");
+    };
+    endpointCheck = (url, model, provider, needsTools) => checkModelEndpoint(url, model, provider, needsTools, checkFreshness);
+  }
+  const integrated = packageBound || ["unified-harness-readonly-v2", "unified-harness-readonly-v3", "unified-harness-readonly-v4", "unified-harness-readonly-v5"].includes(scope?.kind);
   if (integrated) {
-    if (offered.scope !== buildBoundScope(bindingInputs, endpoint, resultPolicy, invocationPolicy, executionWindow)) throw new Error("integrated scope or endpoint differs from accepted binding");
+    if (!packageBound && offered.scope !== buildBoundScope(bindingInputs, endpoint, resultPolicy, invocationPolicy, executionWindow)) throw new Error("integrated scope or endpoint differs from accepted binding");
     const intake = JSON.parse(bindingInputs.intakeJson);
     const profile = JSON.parse(bindingInputs.profileJson);
     const workspace = JSON.parse(bindingInputs.workspaceJson);
@@ -2462,6 +2514,7 @@ export async function contractRoundtrip({ packet, assignmentPath, endpoint, outp
   if (JSON.stringify(offered.authority.allowed) !== JSON.stringify(["execute-read-only"]) || !offered.authority.prohibited.includes("write-source") || !offered.authority.prohibited.includes("external-network")) throw new Error("explicit read-only authority declarations are required");
   const supportedProhibitions = new Set(["commit", "push", "merge", "deploy", "external-account-actions", "third-party-contact", "write-source", "external-network"]);
   if (offered.authority.prohibited.some(label => !supportedProhibitions.has(label))) throw new Error("unsupported or conflicting authority prohibition");
+  assertSafeGitSource(packet.workspace.root);
   const root = await resolveProjectRoot(packet.workspace.root);
   const git = async args => {
     const result = await runCommand("git", args, {cwd:root, timeoutMs:10000});
@@ -2470,7 +2523,7 @@ export async function contractRoundtrip({ packet, assignmentPath, endpoint, outp
   };
   const branch = await git(["branch", "--show-current"]) || "(detached HEAD)";
   const revision = await git(["rev-parse", "HEAD"]);
-  const status = await git(["status", "--porcelain=v1", "--untracked-files=normal"]);
+  const status = await git(["status", "--porcelain=v1", "--untracked-files=normal", "--ignore-submodules=all"]);
   if (status || root !== packet.workspace.root || `${root}#${branch}` !== packet.workspace.identity || revision !== packet.workspace.revision || packet.workspace.status_digest !== sha256("") || assignment.resources.base_ref !== revision) throw new Error("workspace identity, clean state or revision does not match the accepted packet");
   const resultDirectoryIdentity = resultPolicy === undefined ? null : checkResultDirectory(resultPolicy, root);
   checkFreshness();
@@ -2513,6 +2566,10 @@ export async function contractRoundtrip({ packet, assignmentPath, endpoint, outp
     if (executionWindow !== undefined) {
       receipt.schema_version = "unified.contract-executor-receipt.v5";
       receipt.execution_window = executionWindow;
+    }
+    if (packageBound) {
+      receipt.schema_version = "unified.contract-executor-receipt.v6";
+      receipt.package_binding = scope.package_binding;
     }
     const resultReceipt = {...receipt, receipt_sha256:sha256(JSON.stringify(receipt))};
     invocation?.finish("completed",resultReceipt.receipt_sha256);

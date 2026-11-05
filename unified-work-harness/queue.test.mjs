@@ -1,0 +1,326 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { execFileSync, spawn } from 'node:child_process';
+import { createServer } from 'node:http';
+import { DatabaseSync } from 'node:sqlite';
+import { mkdtempSync, mkdirSync, realpathSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { setTimeout as wait } from 'node:timers/promises';
+import { buildBoundScope, contractRoundtrip, hypervisor, inspectBundledSource, sha256 } from './bundle.mjs';
+import { createQueue, dispatchNext, inspectQueue, proposeGoal, readAttended, respondAttended, reconcileInterrupted, reviewCandidate, stopQueue } from './queue.mjs';
+
+function fixture(t, endpoint = 'http://127.0.0.1:1/v1', packageSupport, dispatch = true) {
+  const temp = realpathSync(mkdtempSync(path.join(tmpdir(),'queue-test-')));
+  t.after(() => rmSync(temp,{recursive:true,force:true}));
+  const dir = name => { const p=path.join(temp,name); mkdirSync(p,{mode:0o700}); return p; };
+  const root = dir('repo'), ledger = dir('ledger'), directory = dir('queue');
+  const git = (...args) => execFileSync('git',args,{cwd:root,encoding:'utf8'}).trim();
+  git('init','-q');
+  writeFileSync(path.join(root,'source.txt'),'reference');
+  git('add','source.txt');
+  git('-c','user.name=Test','-c','user.email=test@example.invalid','commit','-qm','fixture');
+  const revision = git('rev-parse','HEAD');
+  const workspace = {root,revision,identity:root+'#'+git('branch','--show-current'),status_digest:sha256('')};
+  const until = offset => new Date(Date.now()+offset).toISOString();
+  const invocationPolicy = {directory:ledger,mode:'single_attempt'};
+  function candidate(id) {
+    const outcome = 'Read source.txt and return its synthetic value for '+id+'.';
+    const checks = ['Review source and executor evidence'];
+    const assignment = {
+      schema_version:'unified-harness.agent-assignment.v1', assignment_id:'assignment_'+id, outcome,
+      exclusions:['Do not contact external systems.'],
+      assignee:{type:'agent',provider:'mlx',model_id:'mlx-community/test-model',processing:'local',accountable_human:'owner'},
+      authority:{mode:'read_only',allowed_read_paths:['source.txt'],allowed_paths:[],allow_test_changes:false},
+      data:{classification:'public',contains_sensitive_personal_data:false,contains_secrets:false,external_processing_allowed:false},
+      resources:{base_ref:revision,timeout_seconds:30,max_steps:4,max_output_bytes:65536},
+      supervision:{priority:'normal',target_date:null,available_effort_minutes:10,dependencies:[],decision_owner:'owner',may_pause:true,feedback_route:'Report any concern to owner.'},
+      acceptance:{checks:[{command:'node',args:['--version'],timeout_seconds:10,expected_result:'zero'}],reviewer:'reviewer',require_changes:false},
+      escalation:{stop_conditions:['Stop if scope is unclear.'],contact:'owner'},
+    };
+    const intake = {outcome,exclusions:assignment.exclusions,assignee:{kind:'agent',id:'worker'},accountableHuman:'owner',authority:{allowed:['execute-read-only'],prohibited:['write-source','external-network']},dataClass:'public',resources:{effortMinutes:10,deadline:'none',dependencies:[],reviewerAvailability:'available'},acceptance:{checks,reviewer:'reviewer'},escalation:{stopConditions:assignment.escalation.stop_conditions,contact:'owner',mayPause:true},concerns:[]};
+    const profile = {primary:'0xB',requiredCapabilities:['readonly_roundtrip'],effectCeiling:['read','write','git','provider','network',...(dispatch?['dispatch']:[])],requestedEffects:dispatch?['dispatch']:[],sourceSha256:inspectBundledSource().sha256};
+    const bindingInputs = {profileJson:JSON.stringify(profile),assignmentJson:JSON.stringify(assignment),workspaceJson:JSON.stringify(workspace),intakeJson:JSON.stringify(intake)};
+    const assignmentPath = path.join(temp,id+'.json');
+    writeFileSync(assignmentPath,bindingInputs.assignmentJson);
+    const executionWindow = {not_before:until(-60000),expires_at:until(60000)};
+    const packagePolicy = packageSupport && {
+      profileRequest: {...profile, sourceSha256:packageSupport.packageInventory().sourceSha256,
+        requiredCapabilities:['readonly_roundtrip','assignment_intake','sequential_queue']},
+      intakeReview:packageSupport.reviewIntake(bindingInputs.intakeJson,{
+        by:'reviewer',disposition:'clear',authority:'confirmed',scope:'consistent',concerns:'clear',
+        availableMinutes:10,reviewerAvailable:true,evidenceRef:'synthetic intake review',reviewedAt:until(-10000),expiresAt:until(60000),
+      }),
+    };
+    const scope = packagePolicy
+      ? packageSupport.buildPackageScope({bindingInputs,endpoint,invocationPolicy,executionWindow,packagePolicy})
+      : buildBoundScope(bindingInputs,endpoint,undefined,invocationPolicy,executionWindow);
+    let packet = hypervisor.createPacket({id,owner:'worker',objective:outcome,mode:'Review',workspace,authorization:['execute-read-only'],grantedBy:'owner'});
+    packet.authorization.prohibited.push('write-source','external-network');
+    packet = hypervisor.offerAssignment(packet,{scope,acceptanceEvidence:JSON.stringify(checks),engineeringPurpose:'0xB',assigner:'owner',reviewer:'reviewer'});
+    packet = hypervisor.acceptAssignment(packet,{by:'worker',assignmentDigest:hypervisor.currentAssignment(packet).digest,note:'Synthetic acceptance'});
+    packet.status='active'; packet.handoff.current_writer='worker';
+    packet.checkpoints.push({at:packet.work_contract.acceptance.at,kind:'resumed',note:'Synthetic resume',owner:'worker',workspace:workspace.identity,reconciled:false});
+    return {packet, endpoint, assignmentPath, bindingInputs, invocationPolicy, executionWindow, ...(packagePolicy && {packagePolicy})};
+  }
+  const first=candidate('first'), second=candidate('second');
+  const packets=[first.packet,second.packet];
+  const goal = {owner:'owner',objective:'Evaluate the selected synthetic reads.',stopConditions:['Missing evidence'],tasks:packets.map(p=>({id:p.task_id,outcome:p.objective})),selectedIds:['first','second']};
+  const config = {goal,packets,deadline:until(60000),providerBudgets:{mlx:{attempts:2,workerSeconds:60}}};
+  return {directory, dir, temp, first, second, config};
+}
+
+test('explicit goal, accepted identity, ceiling, expiration and cancellation govern admission', async t => {
+  const f = fixture(t);
+  assert.equal(proposeGoal(f.config.goal).execution_authorized,false);
+  assert.throws(()=>proposeGoal({...f.config.goal,selectedIds:['unselected']}));
+  assert.throws(()=>createQueue(f.directory,{...f.config,packets:[f.second.packet,f.first.packet]}));
+  const config={...f.config,deadline:new Date(Date.now()+750).toISOString(),providerBudgets:{mlx:{attempts:2,workerSeconds:1}}};
+  createQueue(f.directory,config);
+  assert.throws(()=>createQueue(f.directory,config));
+  await assert.rejects(dispatchNext(f.directory,f.second),/order/);
+  await assert.rejects(dispatchNext(f.directory,f.first),/budget/);
+  await assert.rejects(dispatchNext(f.directory,{...f.first,endpointCheck:()=>({})}),/documented/);
+  await wait(775);
+  await assert.rejects(dispatchNext(f.directory,f.first),/expired/);
+  const snapshot=inspectQueue(f.directory);
+  assert.equal(snapshot.stopped,1);
+  assert.equal(snapshot.jobs[0].state,'expired');
+  assert.equal(snapshot.remaining[0].attempts,2);
+  const dir=f.dir('cancel');
+  createQueue(dir,f.config);
+  stopQueue(dir);
+  await assert.rejects(dispatchNext(dir,f.first),/stopped/);
+  assert.deepEqual(inspectQueue(dir).jobs.map(job=>job.state),['cancelled','cancelled']);
+});
+
+async function simulatedProvider(t) {
+  const server=createServer((req,res)=>res.end(JSON.stringify({data:[{id:'mlx-community/test-model'}]})));
+  await new Promise((resolve,reject)=>server.once('error',reject).listen(0,'127.0.0.1',resolve));
+  t.after(()=>new Promise(resolve=>server.close(resolve)));
+  return 'http://127.0.0.1:'+server.address().port+'/v1';
+}
+function installWorker(t,f,program) {
+  const bin=f.dir('bin'), original=process.env.PATH;
+  writeFileSync(path.join(bin,'opencode'),'#!/usr/bin/env node\n'+program,{mode:0o700});
+  process.env.PATH=[bin,original].join(path.delimiter);
+  t.after(()=>{process.env.PATH=original;});
+}
+
+test('running work excludes a concurrent caller and review gates advancement after restart', async t => {
+  const f=fixture(t,await simulatedProvider(t));
+  const events=[{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'reference'}}},{type:'text',part:{text:'reference'}}];
+  installWorker(t,f,'for (const e of '+JSON.stringify(events)+') console.log(JSON.stringify(e));');
+  createQueue(f.directory,f.config);
+  const active=dispatchNext(f.directory,f.first);
+  await assert.rejects(dispatchNext(f.directory,f.first),/unavailable/);
+  const receipt=await active;
+  const module=new URL('./queue.mjs',import.meta.url).href;
+  const snapshot=JSON.parse(execFileSync(process.execPath,['--input-type=module','-e',
+    'import {inspectQueue} from '+JSON.stringify(module)+'; console.log(JSON.stringify(inspectQueue(process.argv[1])))', f.directory],{encoding:'utf8'}));
+  assert.equal(snapshot.jobs[0].receipt,receipt.receipt_sha256);
+  await assert.rejects(dispatchNext(f.directory,f.second),/unavailable/);
+  const review={assignmentDigest:receipt.assignment_digest,reviewer:'reviewer',receiptHash:receipt.receipt_sha256,evidenceHash:sha256('independent review'),accept:true};
+  assert.throws(()=>reviewCandidate(f.directory,{...review,reviewer:'worker'}));
+  reviewCandidate(f.directory,review);
+  const another=await dispatchNext(f.directory,f.second);
+  reviewCandidate(f.directory,{...review,assignmentDigest:another.assignment_digest,receiptHash:another.receipt_sha256,accept:false});
+  assert.deepEqual(inspectQueue(f.directory).jobs.map(j=>j.state),['reviewed','rejected']);
+  assert.equal(inspectQueue(f.directory).remaining[0].attempts,0);
+  assert.ok(!readFileSync(path.join(f.directory,'queue.sqlite')).includes(Buffer.from('Evaluate the selected synthetic reads.')));
+});
+
+test('accepted read-only work without dispatch authority cannot enter the worker process', async t => {
+  const f = fixture(t,undefined,undefined,false);
+  createQueue(f.directory,f.config);
+  await assert.rejects(dispatchNext(f.directory,f.first),/effect ceiling/);
+  assert.equal(inspectQueue(f.directory).remaining[0].attempts,2);
+});
+
+test('v6 queued dispatch rechecks the full package profile and reviewed intake', async t => {
+  const [{buildPackageScope},{packageInventory},{reviewIntake}] = await Promise.all([
+    import('./integrated.mjs'), import('./package.mjs'), import('./intake.mjs'),
+  ]);
+  const f = fixture(t,await simulatedProvider(t),{buildPackageScope,packageInventory,reviewIntake});
+  const events=[{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'reference'}}},{type:'text',part:{text:'reference'}}];
+  installWorker(t,f,'for (const e of '+JSON.stringify(events)+') console.log(JSON.stringify(e));');
+  createQueue(f.directory,f.config);
+  const changed = structuredClone(f.first);
+  changed.packagePolicy.profileRequest.requiredCapabilities.pop();
+  await assert.rejects(dispatchNext(f.directory,changed),/pinned sequential/);
+  const receipt = await dispatchNext(f.directory,f.first);
+  assert.equal(receipt.schema_version,'unified.contract-executor-receipt.v6');
+  assert.equal(inspectQueue(f.directory).jobs[0].receipt,receipt.receipt_sha256);
+});
+
+test('a completed direct invocation cannot be promoted to a queue result on recovery', async t => {
+  const f = fixture(t, await simulatedProvider(t));
+  const events = [{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'reference'}}},{type:'text',part:{text:'reference'}}];
+  installWorker(t,f,'for (const e of '+JSON.stringify(events)+') console.log(JSON.stringify(e));');
+  const direct = await contractRoundtrip(f.first);
+  createQueue(f.directory,f.config);
+  // Crash after queue admission and before this queue's worker could claim the contract.
+  const db = new DatabaseSync(path.join(f.directory,'queue.sqlite'));
+  try { db.exec("UPDATE jobs SET state='running' WHERE seq=1"); } finally { db.close(); }
+  const recovery = reconcileInterrupted(f.directory,{packet:f.first.packet,owner:'owner',
+    supervisorExited:true,evidenceHash:sha256('verified exit; separate direct completion')});
+  assert.deepEqual(recovery,{state:'reconciliation_required',invocation_state:'completed'});
+  assert.equal(inspectQueue(f.directory).jobs[0].receipt,null);
+  assert.throws(()=>reviewCandidate(f.directory,{assignmentDigest:direct.assignment_digest,reviewer:'reviewer',
+    receiptHash:direct.receipt_sha256,evidenceHash:sha256('other invocation'),accept:true}),/pending candidate/);
+  await assert.rejects(dispatchNext(f.directory,f.second),/stopped/);
+});
+
+async function assertWorkerExited(marker) {
+  const pid = Number(readFileSync(marker,'utf8'));
+  assert.ok(Number.isSafeInteger(pid) && pid > 0);
+  for (let i=0; i<100; i++) {
+    try { process.kill(pid,0); }
+    catch (error) { if (error.code==='ESRCH') return; throw error; }
+    await wait(50);
+  }
+  assert.fail('Worker process still exists after cancellation.');
+}
+
+test('stopping a live queue terminates its worker and preserves the charged attempt', async t=>{
+  const f=fixture(t,await simulatedProvider(t));
+  const marker=path.join(f.temp,'started');
+  installWorker(t,f,'require("node:fs").writeFileSync('+JSON.stringify(marker)+',String(process.pid)); setInterval(()=>{},1000);');
+  createQueue(f.directory,f.config);
+  const active=dispatchNext(f.directory,f.first);
+  const rejection=assert.rejects(active,/stopped/);
+  for(let i=0;i<100 && !existsSync(marker);i++) await wait(50);
+  assert.ok(existsSync(marker));
+  stopQueue(f.directory);
+  await rejection;
+  await assertWorkerExited(marker);
+  assert.deepEqual(inspectQueue(f.directory).jobs.map(j=>j.state),['failed','cancelled']);
+  assert.equal(inspectQueue(f.directory).remaining[0].attempts,1);
+});
+
+test('a killed supervisor leaves an uncertain attempt blocked on restart', async t => {
+  const f = fixture(t, await simulatedProvider(t));
+  const marker = path.join(f.temp, 'active-worker');
+  installWorker(t, f, 'require("node:fs").writeFileSync('+JSON.stringify(marker)+',String(process.pid)); setInterval(()=>{},1000);');
+  createQueue(f.directory, f.config);
+  const source = 'import {dispatchNext} from '+JSON.stringify(new URL('./queue.mjs',import.meta.url).href)+
+    '; let text=""; for await (const chunk of process.stdin) text+=chunk; await dispatchNext(process.argv[1],JSON.parse(text));';
+  const supervisor = spawn(process.execPath,['--input-type=module','-e', source, f.directory], {stdio:['pipe','ignore','ignore']});
+  supervisor.stdin.end(JSON.stringify(f.first));
+  const closed = new Promise((resolve, reject) => supervisor.once('close', resolve).once('error', reject));
+  try {
+    for(let i=0;i<160 && !existsSync(marker);i++) await wait(50);
+    assert.ok(existsSync(marker));
+    supervisor.kill('SIGKILL');
+    await closed;
+    await assertWorkerExited(marker);
+    await assert.rejects(dispatchNext(f.directory,f.first),/unavailable/);
+    await assert.rejects(dispatchNext(f.directory,f.second),/unavailable/);
+    const state = inspectQueue(f.directory);
+    assert.equal(state.jobs[0].state,'running');
+    assert.equal(state.remaining[0].attempts,1);
+    const reconciliation = {packet:f.first.packet,owner:'owner',supervisorExited:true,evidenceHash:sha256('supervisor exit record')};
+    assert.throws(()=>reconcileInterrupted(f.directory,{...reconciliation,owner:'worker'}));
+    assert.equal(reconcileInterrupted(f.directory,reconciliation).state,'reconciliation_required');
+    assert.equal(inspectQueue(f.directory).jobs[1].state,'cancelled');
+  } finally {
+    supervisor.kill('SIGKILL');
+  }
+});
+
+
+async function attendedOffer(f, id, kind) {
+  const [{offerCoordination},{reviewIntake}] = await Promise.all([import('./coordination.mjs'),import('./intake.mjs')]);
+  const intake = {
+    outcome:'Review the synthetic note for '+id+'.', exclusions:['External contact'],
+    assignee:{kind,id:'worker-'+id}, accountableHuman:'owner', authority:{allowed:['review'],prohibited:['publish']},
+    dataClass:'public', resources:{effortMinutes:5,deadline:'none',dependencies:[],reviewerAvailability:'available'},
+    acceptance:{checks:['Check private evidence'],reviewer:'reviewer'},escalation:{stopConditions:['Missing inputs'],contact:'owner',mayPause:true},concerns:[],
+  };
+  const review = reviewIntake(JSON.stringify(intake),{by:'reviewer',disposition:'clear',authority:'confirmed',scope:'consistent',
+    concerns:'clear',availableMinutes:10,reviewerAvailable:true,evidenceRef:'synthetic intake record',
+    reviewedAt:new Date(Date.now()-1000).toISOString(),expiresAt:new Date(Date.now()+60000).toISOString()});
+  return offerCoordination({id,workspace:f.first.packet.workspace,purpose:'0xB',intake,review});
+}
+function mixedConfig(f, items) {
+  const tasks = items.map(item => {
+    const p=item.packet??item;
+    return {id:p.task_id,outcome:p.objective};
+  });
+  return {...f.config,packets:items,goal:{...f.config.goal,tasks,selectedIds:tasks.map(t=>t.id)}};
+}
+function reply(directory, digest, action, by, details={}) {
+  return respondAttended(directory,{assignmentDigest:digest,revision:readAttended(directory,digest).revision,
+    action,by,note:'Synthetic attended reply',...details});
+}
+
+test('mixed human, agent and hybrid work advances only on attended responses and review', async t => {
+  const f = fixture(t,await simulatedProvider(t));
+  const human = await attendedOffer(f,'analyst','human'), hybrid = await attendedOffer(f,'team','hybrid');
+  const h = hypervisor.currentAssignment(human.packet).digest, team = hypervisor.currentAssignment(hybrid.packet).digest;
+  const events=[{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'reference'}}},{type:'text',part:{text:'reference'}}];
+  installWorker(t,f,'for (const e of '+JSON.stringify(events)+') console.log(JSON.stringify(e));');
+  createQueue(f.directory,mixedConfig(f,[human,f.first.packet,hybrid]));
+  const initial = readAttended(f.directory,h);
+  assert.deepEqual(initial.record,human);
+  assert.throws(()=>reply(f.directory,team,'accept','worker-team'),/order/);
+  await assert.rejects(dispatchNext(f.directory,{packet:human.packet}));
+  await assert.rejects(dispatchNext(f.directory,f.first),/unavailable/);
+  assert.throws(()=>reply(f.directory,h,'resume','worker-analyst'));
+  assert.throws(()=>reply(f.directory,h,'accept','worker-team'));
+  reply(f.directory,h,'accept','worker-analyst');
+  assert.throws(()=>reply(f.directory,h,'resume','worker-analyst',{revision:initial.revision}),/Stale/);
+  reply(f.directory,h,'resume','worker-analyst');
+  reply(f.directory,h,'pause','worker-analyst',{note:'Preserve calculation reference in record.'});
+  const recover = 'import {readAttended} from '+JSON.stringify(new URL('./queue.mjs',import.meta.url).href)+
+    '; console.log(JSON.stringify(readAttended(process.argv[1],process.argv[2]).record.packet.checkpoints.at(-1)))';
+  const checkpoint = JSON.parse(execFileSync(process.execPath,['--input-type=module','-e',recover,f.directory,h],{encoding:'utf8'}));
+  assert.equal(checkpoint.note,'Preserve calculation reference in record.');
+  const evidence={evidence:'private report reference'};
+  assert.throws(()=>reply(f.directory,h,'submit','worker-analyst',evidence));
+  reply(f.directory,h,'resume','worker-analyst');
+  reply(f.directory,h,'submit','worker-analyst',evidence);
+  assert.throws(()=>reply(f.directory,h,'approve','worker-analyst',evidence));
+  assert.throws(()=>reviewCandidate(f.directory,{assignmentDigest:h,reviewer:'reviewer',receiptHash:sha256('forged'),evidenceHash:sha256('forged'),accept:true}));
+  reply(f.directory,h,'rework','reviewer',evidence);
+  reply(f.directory,h,'resume','worker-analyst');
+  reply(f.directory,h,'submit','worker-analyst',evidence);
+  reply(f.directory,h,'approve','reviewer',evidence);
+  await assert.rejects(dispatchNext(f.directory,f.first),/unavailable/);
+  reply(f.directory,h,'close','reviewer',evidence);
+  const receipt = await dispatchNext(f.directory,f.first);
+  assert.throws(()=>reply(f.directory,team,'accept','worker-team'),/order/);
+  reviewCandidate(f.directory,{assignmentDigest:receipt.assignment_digest,reviewer:'reviewer',receiptHash:receipt.receipt_sha256,evidenceHash:sha256('private review'),accept:true});
+  reply(f.directory,team,'accept','worker-team');
+  reply(f.directory,team,'resume','worker-team');
+  reply(f.directory,team,'submit','worker-team',evidence);
+  reply(f.directory,team,'approve','reviewer',evidence);
+  reply(f.directory,team,'close','reviewer',evidence);
+  const status=inspectQueue(f.directory);
+  assert.deepEqual(status.jobs.map(j=>j.state),['reviewed','reviewed','reviewed']);
+  assert.equal(status.remaining[0].attempts,1);
+  assert.ok(!JSON.stringify(status).includes('private report reference'));
+});
+
+test('attended refusal, stop and expiry retain a recoverable response record without provider budgets',async t=>{
+  const f = fixture(t);
+  const human = await attendedOffer(f,'analyst','human'), hybrid = await attendedOffer(f,'team','hybrid');
+  const config={...mixedConfig(f,[hybrid,human]),providerBudgets:{}};
+  const digest = hypervisor.currentAssignment(hybrid.packet).digest;
+  createQueue(f.directory,config);
+  assert.throws(()=>reply(f.directory,digest,'declined','owner',{checkpoint:'owner to revise the offer'}));
+  reply(f.directory,digest,'declined','worker-team',{checkpoint:'owner to revise the offer'});
+  assert.equal(readAttended(f.directory,digest).record.packet.work_contract.disposition,'declined');
+  assert.deepEqual(inspectQueue(f.directory).jobs.map(j=>j.state),['declined','cancelled']);
+  for(const terminal of ['cancelled','expired']){
+    const directory=f.dir(terminal);
+    createQueue(directory,{...config,deadline:new Date(Date.now()+(terminal==='expired'?800:60000)).toISOString()});
+    reply(directory,digest,'accept','worker-team');
+    reply(directory,digest,'resume','worker-team');
+    const previous=readAttended(directory,digest);
+    if(terminal==='expired') await wait(825); else stopQueue(directory);
+    assert.throws(()=>reply(directory,digest,'submit','worker-team',{evidence:'late report'}),/expired|stopped/);
+    assert.deepEqual(readAttended(directory,digest),previous);
+    assert.deepEqual(inspectQueue(directory).jobs.map(j=>j.state),[terminal,'cancelled']);
+  }
+});

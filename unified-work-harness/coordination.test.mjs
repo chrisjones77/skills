@@ -1,0 +1,53 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {offerCoordination,inspectCoordination,respond,handoff} from "./coordination.mjs";
+import {contractRoundtrip} from "./bundle.mjs";
+
+const intake = {outcome:"Review a pump report",exclusions:["editing"],assignee:{kind:"human",id:"worker"},accountableHuman:"owner",authority:{allowed:["review"],prohibited:["publish"]},dataClass:"public",resources:{effortMinutes:20,deadline:"none",dependencies:[],reviewerAvailability:"available"},acceptance:{checks:["Inspect evidence"],reviewer:"reviewer"},escalation:{stopConditions:["unclear scope"],contact:"owner",mayPause:true},concerns:[]};
+const workspace = {root:"/synthetic",identity:"/synthetic#main",revision:"a".repeat(40),status_digest:"b".repeat(64)};
+import { reviewIntake } from "./intake.mjs";
+const reviewed = intake => ({intake,review:reviewIntake(JSON.stringify(intake),{by:"reviewer",disposition:"clear",authority:"confirmed",scope:"consistent",concerns:"clear",availableMinutes:20,reviewerAvailable:true,evidenceRef:"decision#1",reviewedAt:new Date(Date.now()-1000).toISOString(),expiresAt:new Date(Date.now()+60000).toISOString()})});
+const draft = kind => offerCoordination({...reviewed({...intake,assignee:{kind,id:"worker"}}),workspace,id:"review-1",purpose:"0xB"});
+const step = (r,action,by,extra={}) => respond(r,action,{by,note:"Synthetic recorded response",assignmentDigest:inspectCoordination(r).assignmentDigest,...extra});
+for(const kind of ["human","agent","hybrid"]) test(kind+" attended review lifecycle",async()=>{
+  let r=draft(kind);
+  assert.throws(()=>step(r,"resume","worker"));
+  r=step(r,"accept","worker");
+  r=step(r,"resume","worker");
+  await assert.rejects(contractRoundtrip({packet:r.packet}),/binding/);
+  r=step(r,"submit","worker",{evidence:"report#1"});
+  assert.throws(()=>step(r,"approve","worker",{evidence:"report#1"}));
+  r=step(r,"approve","reviewer",{evidence:"report#1"});
+  assert.equal(step(r,"close","reviewer",{evidence:"decision#1"}).packet.status,"complete");
+});
+test("concern, alternate answer and transfer preserve attribution and require fresh acceptance",()=>{
+  let r=step(draft("human"),"clarify","worker",{concernId:"units",question:"Which unit?",human:"lead"});
+  const transfer = rec => handoff(rec,{assignmentDigest:inspectCoordination(rec).assignmentDigest,by:"owner",note:"Change assigned analyst",...reviewed({...intake,assignee:{kind:"hybrid",id:"team"}})});
+  assert.throws(()=>transfer(r));
+  r=step(r,"answer","owner",{concernId:"units",answer:"Check with lead"});
+  r=step(r,"reassess","worker",{concernId:"units",decision:"ambiguous",responseDigest:r.packet.clarifications[0].responses.at(-1).digest});
+  r=step(r,"reroute","owner",{concernId:"units",human:"alternate"});
+  r=step(r,"answer","alternate",{concernId:"units",answer:"Use kPa"});
+  r=step(r,"reassess","worker",{concernId:"units",decision:"clear",responseDigest:r.packet.clarifications[0].responses.at(-1).digest});
+  const next=transfer(r);
+  assert.equal(next.predecessors[0].packet.clarifications[0].responses[1].by,"alternate");
+  assert.throws(()=>respond(next,"accept",{by:"team",assignmentDigest:inspectCoordination(r).assignmentDigest}));
+  assert.equal(step(next,"accept","team").packet.work_contract.disposition,"accepted");
+  next.predecessors[0].packet.next_action="changed";
+  assert.throws(()=>inspectCoordination(next));
+});
+
+test("decline requires a new offer and preserves superseded review scope",async()=>{
+  const { reoffer } = await import("./coordination.mjs");
+  const declined = step(draft("human"),"declined","worker",{checkpoint:"Narrow the request"});
+  assert.throws(()=>step(declined,"accept","worker"));
+  const next = reoffer(declined,{by:"owner",assignmentDigest:inspectCoordination(declined).assignmentDigest,
+    note:"Reduce scope",...reviewed({...intake,outcome:"Review only the pressure units"})});
+  assert.equal(next.packet.work_contract.assignments.length,2);
+  assert.deepEqual(next.revisions[0].intake,declined.intake);
+  const altered=structuredClone(next); altered.revisions[0].intake.accountableHuman="stranger";
+  assert.throws(()=>inspectCoordination(altered),/identity/);
+  assert.equal(next.packet.work_contract.disposition,"offered");
+  assert.equal(next.packet.work_contract.events[1].kind,"declined");
+  assert.throws(()=>step(next,"accept","worker",{assignmentDigest:inspectCoordination(declined).assignmentDigest}));
+});

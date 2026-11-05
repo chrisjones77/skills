@@ -1,0 +1,2 @@
+Stock display — reading guide, revision 2
+Empty means the recorded count is zero. Available means at least one item was counted.

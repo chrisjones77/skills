@@ -47,12 +47,28 @@ test("live local model processes an explicitly synthetic read-only assignment", 
     const endpoint = "http://127.0.0.1:11434/v1";
     const intake = {outcome:assignment.outcome,exclusions:assignment.exclusions,assignee:{kind:"agent",id:packet.owner},accountableHuman:"synthetic owner",authority:{allowed:["execute-read-only"],prohibited:["write-source","external-network"]},dataClass:"public",resources:{effortMinutes:10,deadline:"none",dependencies:[],reviewerAvailability:"available"},acceptance:{checks:["Inspect source-read evidence and token output"],reviewer:"synthetic reviewer"},escalation:{stopConditions:assignment.escalation.stop_conditions,contact:"synthetic owner",mayPause:true},concerns:[]};
     const bindingInputs = {profileJson:JSON.stringify({primary:"0xB",requiredCapabilities:["readonly_roundtrip"],effectCeiling:["read","write","provider","git","network"],sourceSha256:inspectBundledSource().sha256}),intakeJson:JSON.stringify(intake),assignmentJson:source,workspaceJson:JSON.stringify(packet.workspace)};
-    packet = hypervisor.offerAssignment(packet,{scope:buildBoundScope(bindingInputs,endpoint,resultPolicy,invocationPolicy,executionWindow),acceptanceEvidence:JSON.stringify(intake.acceptance.checks),engineeringPurpose:"0xB",assigner:"synthetic owner",reviewer:"synthetic reviewer"});
+    const usePackage = process.env.UNIFIED_LIVE_PACKAGE === "1";
+    let packagePolicy;
+    let scope;
+    if (usePackage) {
+      const {reviewIntake} = await import("./intake.mjs");
+      const {packageInventory} = await import("./package.mjs");
+      const {buildPackageScope} = await import("./integrated.mjs");
+      // This is a disposable synthetic actor and fixture. Real callers obtain an independent review and source pin.
+      packagePolicy = {
+        profileRequest:{...JSON.parse(bindingInputs.profileJson),requiredCapabilities:["readonly_roundtrip","assignment_intake"],sourceSha256:packageInventory().sourceSha256},
+        intakeReview:reviewIntake(bindingInputs.intakeJson,{by:intake.acceptance.reviewer,disposition:"clear",
+          authority:"confirmed",scope:"consistent",concerns:"clear",availableMinutes:10,reviewerAvailable:true,
+          evidenceRef:"synthetic live fixture",reviewedAt:new Date().toISOString(),expiresAt:executionWindow.expires_at})
+      };
+      scope = buildPackageScope({bindingInputs,endpoint,resultPolicy,invocationPolicy,executionWindow,packagePolicy});
+    } else scope = buildBoundScope(bindingInputs,endpoint,resultPolicy,invocationPolicy,executionWindow);
+    packet = hypervisor.offerAssignment(packet,{scope,acceptanceEvidence:JSON.stringify(intake.acceptance.checks),engineeringPurpose:"0xB",assigner:"synthetic owner",reviewer:"synthetic reviewer"});
     packet = hypervisor.acceptAssignment(packet,{by:"synthetic worker",assignmentDigest:hypervisor.currentAssignment(packet).digest,note:"Synthetic acceptance for this test only"});
     packet.status="active"; packet.handoff.current_writer="synthetic worker";
     packet.checkpoints.push({at:packet.work_contract.acceptance.at,kind:"resumed",note:"Synthetic test resume",owner:packet.owner,workspace:packet.workspace.identity,reconciled:false});
-    const receipt = await contractRoundtrip({packet,assignmentPath,endpoint,bindingInputs,resultPolicy,invocationPolicy,executionWindow});
-    assert.equal(receipt.schema_version,"unified.contract-executor-receipt.v5");
+    const receipt = await contractRoundtrip({packet,assignmentPath,endpoint,bindingInputs,resultPolicy,invocationPolicy,executionWindow,packagePolicy});
+    assert.equal(receipt.schema_version,usePackage ? "unified.contract-executor-receipt.v6" : "unified.contract-executor-receipt.v5");
     console.log("Live receipt:", JSON.stringify(receipt));
     assert.equal(receipt.executor_evidence.disposition, "candidate");
     assert.ok(receipt.executor_evidence.agent.read_calls > 0, "a completed read must be observable");

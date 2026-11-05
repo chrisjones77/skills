@@ -1,9 +1,13 @@
 ---
 name: unified-work-harness
-description: Coordinate bounded professional engineering and advisory work through purpose routing, accepted work contracts, and a local read-only agent executor. Use for an authorized contract-to-executor round trip or review of its evidence.
+description: Coordinate engineering and advisory work using QVCH profiles, human and hybrid work contracts, reviewed intake, queued local review and scoped candidate changes.
 ---
 
 # Unified work harness
+
+Start with the [package resolver](package-guide.md) and [capability crosswalk](capabilities.md). For a human-led task, use the [worked engineering and advisory methods](methods.md). For an assignment, record [intake review](intake.md) and follow the [attended lifecycle](coordination.md). For new package-bound read-only work use [the v6 contract](integrated.md). For execution, select [supervised sequential review](queue.md) or [scoped candidate changes](candidate.md). The operator and recipient must establish actual authority for the selected path.
+
+## Original bundle and compatibility interfaces
 
 This self-contained package combines three layers: QVCH-style purpose routing, a Hypervisor v1 work contract, and a read-only agent executor. It coordinates bounded work. The bundled runtime uses Node.js built-ins only; it does not import another skill or repository. A real run additionally needs Git, OpenCode, and an explicitly approved local model endpoint. An endpoint on loopback is not proof that the model processes data locally; verify the model and deployment independently.
 
@@ -40,10 +44,7 @@ provider. These broad labels are not permissions or substitutes for the exact
 contract, path, endpoint and isolation checks. Effect metadata for partial or
 planned capabilities is incomplete, not evidence that they have no effects.
 
-The broader core—including intake and concern handling, specialist guidance,
-human/hybrid contract descriptions, dispatch, queues, provider interfaces, and
-candidate-change execution—is planned or partial unless the profile says
-otherwise. Presence in the capability inventory is not implementation or
+The legacy bundle inventory describes its original embedded capabilities. Consult the package crosswalk for human methods and the additional entry points distributed beside this module. Presence in the capability inventory is not implementation or
 validation. Do not route dependent work to an unavailable capability or widen
 the current executor's read-only authority.
 
@@ -166,4 +167,4 @@ The Hypervisor and executor implementations are embedded in `bundle.mjs`; the co
 
 Run `node --test unified-work-harness/*.test.mjs` to run all deterministic checks and exercise a synthetic accepted contract through the real bundled executor with a simulated agent. The test does not demonstrate a live model, an authenticated identity, or deployment readiness.
 
-For an explicitly authorized local-only smoke test, start a verified tool-capable local chat model and run `UNIFIED_LIVE_TEST=1 UNIFIED_LOCAL_MODEL=<model-id> node --test unified-work-harness/live-roundtrip.test.mjs`. The test creates a disposable synthetic repository, accepts a synthetic v5 contract, asks for a source token, and checks the private artifact's hash and token content. It rejects a worker-binary test override and removes its synthetic artifacts on completion. Add `UNIFIED_LIVE_STRICT=1` for the opt-in `acceptance.response_format: "single_ascii_token"` contract, supported only for read-only OpenCode: the executor rejects responses that are not one unquoted ASCII token (surrounding whitespace is ignored). It validates shape, not factual correctness; the test separately compares the synthetic value. Uncertainty must still be reported, even when doing so causes rejection. The hash-only receipt cannot establish answer correctness. The test does not evaluate professional competence or verify production authorization. A candidate requires a completed source read and a nonempty subsequent response. If provider metadata explicitly says the model lacks tool calling, the adapter rejects it before invoking OpenCode; absent metadata is not proof of capability.
+For an explicitly authorized local-only smoke test, start a verified tool-capable local chat model and run `UNIFIED_LIVE_TEST=1 UNIFIED_LOCAL_MODEL=<model-id> node --test unified-work-harness/live-roundtrip.test.mjs`. The test creates a disposable synthetic repository, accepts a synthetic v5 contract, asks for a source token, and checks the private artifact's hash and token content. The fixture uses the configured OpenCode on PATH and removes its synthetic artifacts on completion. Add `UNIFIED_LIVE_STRICT=1` for the opt-in `acceptance.response_format: "single_ascii_token"` contract, supported only for read-only OpenCode: the executor rejects responses that are not one unquoted ASCII token (surrounding whitespace is ignored). It validates shape, not factual correctness; the test separately compares the synthetic value. Uncertainty must still be reported, even when doing so causes rejection. The hash-only receipt cannot establish answer correctness. The test does not evaluate professional competence or verify production authorization. A candidate requires a completed source read and a nonempty subsequent response. If provider metadata explicitly says the model lacks tool calling, the adapter rejects it before invoking OpenCode; absent metadata is not proof of capability.

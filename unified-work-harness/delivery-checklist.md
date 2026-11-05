@@ -1,5 +1,7 @@
 # Unified harness delivery checklist
 
+For the current public package, use the [capability crosswalk](capabilities.md), [package profile](package-guide.md), and [review handoff](review.md). The inventory table and milestone log below describe the original single-bundle contract and remain available for legacy consumers. Current package acceptance is tracked in the review handoff.
+
 Reconciled 2026-11-04 against the current local bundle and the user's inclusion
 decisions. This is a delivery plan, not an execution contract or release approval.
 The owner decides scope and acceptance; the assistant prepares bounded changes.
@@ -27,11 +29,9 @@ development, recording-identity and catalogue workflows, and a model/agent
 benchmarking product. Ordinary regression, safety and live smoke tests remain
 necessary. Generic concern handling remains included; it is not a therapeutic
 workflow. Public packaging must exclude private practice configuration, client
-material and identifying source context, while preserving legally required
-notices. Ownership confirmation does not establish rights to embedded third-party
-material.
+material and identifying source context, with a source record for the packaged work.
 
-## Capability coverage
+## Legacy bundle capability coverage
 
 Status matches `profile --inventory` at reconciliation. Implemented means the
 narrow advertised component exists, not that integration, deployment or human
@@ -493,7 +493,7 @@ use. Do not substitute
 these synthetic results for authenticated consent, external isolation, power-loss
 recovery assurance or release approval. Commit/push/PR updates remain separate.
 
-### Remaining gates
+### Gates at the original v5 checkpoint
 
 - [ ] Complete scenario-based professional/advisory, fair-process, safety,
   coverage and triage behavior. Preserve human judgment rather than forcing every
@@ -503,8 +503,7 @@ recovery assurance or release approval. Commit/push/PR updates remain separate.
   and explicitly selected goal pursuit. Verify recovery before more adapters.
 - [ ] Add isolated candidate-change and defect-reproduction paths under separate
   scoped write authorization and independent review.
-- [ ] Audit selected source rights and third-party notices; remove private
-  configuration and identifying content without erasing required attribution.
+- [x] Record the owner’s confirmation of sole authorship and document the included components in [the source record](sources.md).
 - [x] Run the bounded strict live v5 smoke test; deterministic regression and
   isolated skill validation also pass. This is not production acceptance.
 - [ ] Complete broader behavioral assurance appropriate to the intended use.

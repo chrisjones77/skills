@@ -36,6 +36,8 @@ These are AI-generated illustrations, not implemented products. All sample UI da
 5. Execute in a temporary clone — run the approved local read-only agent within its declared scope.
 6. Preserve evidence — return hash-only evidence and leave substantive human review pending.
 
+This board depicts the initial read-only workflow. Panel 4 requires a clean Git checkout, which can contain files. Panel 5 uses a temporary clone; process isolation requires separate controls. For newer package workflows, follow the canonical skill.
+
 Concept illustration only: the pictured UI, progress, files and hashes are fictional; it does not depict an implemented interface or prove OS isolation, authorization, model locality or human review.
 
 Human acceptance: pending.
