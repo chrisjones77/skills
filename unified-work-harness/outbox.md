@@ -59,7 +59,8 @@ not emit those lower-level facts without observing them. Its task attempt field 
 null; accepted assignment digests remain available for correlation.
 
 The producer instance and sequence persist in the original database across process restart.
-The producer revision hashes queue.mjs and outbox.mjs. If that implementation changes,
+The producer revision hashes queue.mjs and outbox.mjs as observed on disk; it is an identity
+claim, not loaded-code attestation or source approval. If that implementation changes,
 further recording transitions hold pending review of a newly created queue; pending events
 remain readable and acknowledgeable through their original identities. There is no automatic
 migration, clearing of old records, or renewal of an accepted offer. Package changes also
@@ -69,8 +70,8 @@ Event provenance is producer_declared: the code reports the state it recorded, w
 identity and real human decisions remain the host's responsibility. The source emits only
 task IDs, accepted digests, code/state labels, timestamps and evidence hashes. No outcome,
 response note, actor name, prompt or raw worker error is copied. These identifiers can still
-be sensitive. The explicit recording option authorizes additional private metadata storage;
-the owner must establish location, access and retention before enabling it.
+be sensitive. The explicit recording option selects additional private metadata storage; it grants no
+authority. The owner must establish permission, location, access and retention before enabling it.
 
 ## Failures, stopping and recovery
 

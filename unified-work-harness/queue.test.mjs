@@ -635,3 +635,16 @@ for(const version of ['v5','v6']) test(version+' records reservation and reviewe
   assert.ok(!events.some(e=>e.kind==='attempt_claimed'||e.kind==='execution_started'));
   assert.equal(inspectQueue(f.directory).remaining[0].attempts,1);assert.equal(inspectQueue(f.directory).jobs[0].state,'reviewed');
 });
+
+test('outbox distinguishes an active stop request from confirmed worker termination',async t=>{
+  const f=fixture(t,await simulatedProvider(t));
+  installWorker(t,f,'setInterval(()=>{},1000);');
+  createQueue(f.directory,{...f.config,recording:{mode:'transactional-outbox-v1'}});
+  const active=dispatchNext(f.directory,f.first);stopQueue(f.directory);
+  await assert.rejects(active);
+  const events=readPendingEvents(f.directory).map(r=>r.event);
+  assert.ok(events.some(e=>e.task.id==='first'&&e.kind==='stop_recorded'&&e.detail.state==='stop_requested'));
+  assert.ok(events.some(e=>e.task.id==='second'&&e.kind==='stop_recorded'&&e.detail.state==='cancelled'));
+  assert.ok(!events.some(e=>e.detail.state==='terminated'||e.kind==='attempt_claimed'));
+  assert.equal(inspectQueue(f.directory).stopped,1);
+});
