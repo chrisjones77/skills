@@ -5,11 +5,15 @@ import * as cryptoModule from "node:crypto";
 const {createHash, randomUUID} = cryptoModule;
 import {
   existsSync,
+  openSync,
+  closeSync,
+  fsyncSync,
   lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -18,6 +22,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { StringDecoder } from "node:string_decoder";
 // Self-contained Hypervisor and executor bundle. See LICENSE.
 const hypervisor = (() => {
 const createHash = (algorithm) => cryptoModule.createHash(algorithm);
@@ -417,6 +422,211 @@ function createPacket({ id, objective, owner, mode, workspace, authorization, gr
 
 return {validatePacket, createPacket, ...work};
 })();
+// Profile inspection is metadata-only. It neither discovers external skills nor
+// authenticates the caller's declared authority or starts an executor.
+const PURPOSES = Object.freeze({
+  "0x1": "build", "0x2": "maintain", "0x3": "diagnose", "0x4": "investigate",
+  "0x5": "record", "0x6": "communicate", "0x7": "design", "0x8": "represent",
+  "0x9": "prioritize", "0xA": "teach", "0xB": "verify", "0xC": "inspect",
+  "0xD": "sustain", "0xE": "coordinate", "0xF": "envision",
+});
+const PROFILE_EFFECTS = new Set(["read", "write", "provider", "dispatch", "git", "network"]);
+const PROFILE_CAPABILITIES = Object.freeze({
+  purpose_selection: "implemented",
+  readonly_roundtrip: "implemented",
+  embedded_source_binding: "implemented",
+  qvch_source_resolution: "partial",
+  assignment_intake: "partial",
+  human_hybrid_contracts: "planned",
+  engineering_safety: "planned",
+  call_response: "partial",
+  ai_lifecycle: "partial",
+  professional_practice: "partial",
+  fair_process: "planned",
+  bounded_dispatch: "planned",
+  coverage_review: "partial",
+  issue_triage: "partial",
+  advisory_workflow: "partial",
+  sequential_queue: "planned",
+  goal_pursuit: "planned",
+  provider_facade: "planned",
+  multiple_adapters: "partial",
+  candidate_changes: "partial",
+});
+
+// Fixed, bundled metadata only: requests cannot supply registries or loaders.
+const PROFILE_DEPENDENCIES = Object.freeze({
+  qvch_source_resolution: Object.freeze(["embedded_source_binding"]),
+});
+const PROFILE_REQUIRED_EFFECTS = Object.freeze({
+  // Read-only describes the source workspace, not all process side effects.
+  readonly_roundtrip: Object.freeze(["read", "write", "provider", "git", "network"]),
+});
+
+export function inspectBundledSource() {
+  return {
+    source_id: "unified-work-harness/bundle.mjs",
+    sha256: createHash("sha256").update(readFileSync(new URL(import.meta.url))).digest("hex"),
+    trust_status: "byte_identity_only",
+  };
+}
+
+export function listWorkCapabilities() {
+  return Object.entries(PROFILE_CAPABILITIES).map(([name, status]) => ({
+    name,
+    status,
+    source: status === "planned" ? "not_implemented" : "embedded",
+    dependencies: [...(PROFILE_DEPENDENCIES[name] ?? [])],
+    required_effects: [...(PROFILE_REQUIRED_EFFECTS[name] ?? [])],
+    effect_requirements_status: status === "implemented" ? "declared" : "incomplete",
+  }));
+}
+
+export function inspectWorkProfile(request = {}) {
+  const fields = new Set(["primary", "companions", "requiredCapabilities", "requestedEffects", "effectCeiling", "sourceSha256"]);
+  if (!request || typeof request !== "object" || Array.isArray(request) || Object.keys(request).some((key) => !fields.has(key))) throw new Error("invalid profile request");
+  const { primary, companions = [], requiredCapabilities = [], requestedEffects = [], effectCeiling = null } = request;
+  if (!Object.hasOwn(PURPOSES, primary)) throw new Error("select one primary purpose from 0x1 through 0xF; 0x0 is orientation only");
+  if (!Array.isArray(companions) || companions.length > 2 || companions.some((code) => !Object.hasOwn(PURPOSES, code)) || new Set(companions).size !== companions.length || companions.includes(primary)) throw new Error("select at most two distinct companion purposes");
+  if (!Array.isArray(requiredCapabilities) || requiredCapabilities.length > 32 || requiredCapabilities.some((name) => typeof name !== "string" || !Object.hasOwn(PROFILE_CAPABILITIES, name)) || new Set(requiredCapabilities).size !== requiredCapabilities.length) throw new Error("invalid required capability list");
+  const validEffects = (effects) => Array.isArray(effects) && effects.length <= PROFILE_EFFECTS.size && effects.every((effect) => PROFILE_EFFECTS.has(effect)) && new Set(effects).size === effects.length;
+  if (!validEffects(requestedEffects) || (effectCeiling !== null && !validEffects(effectCeiling))) throw new Error("invalid declared effect list");
+  if (request.sourceSha256 !== undefined && (typeof request.sourceSha256 !== "string" || !/^[0-9a-f]{64}$/.test(request.sourceSha256))) throw new Error("invalid source pin");
+  const source = inspectBundledSource();
+  const sourcePinStatus = request.sourceSha256 === undefined ? "missing" : request.sourceSha256 === source.sha256 ? "matched" : "mismatch";
+  const resolved = new Set();
+  const visit = (name) => {
+    if (resolved.has(name)) return;
+    resolved.add(name);
+    for (const dependency of PROFILE_DEPENDENCIES[name] ?? []) visit(dependency);
+  };
+  requiredCapabilities.forEach(visit);
+  const resolvedNames = [...resolved].sort();
+  const unresolved = resolvedNames.filter((name) => PROFILE_CAPABILITIES[name] !== "implemented").map((name) => ({ capability: name, status: PROFILE_CAPABILITIES[name] }));
+  const requiredEffects = [...new Set(resolvedNames.flatMap((name) => PROFILE_REQUIRED_EFFECTS[name] ?? []))].sort();
+  const effectiveEffects = [...new Set([...requestedEffects, ...requiredEffects])].sort();
+  const outsideCeiling = effectCeiling === null ? [] : effectiveEffects.filter((effect) => !effectCeiling.includes(effect));
+  const inventory = listWorkCapabilities();
+  return {
+    schema_version: "unified-harness.profile-inspection.v2",
+    bundled_source: source,
+    source_pin_status: sourcePinStatus,
+    primary: { code: primary, command: PURPOSES[primary] },
+    companions: companions.map((code) => ({ code, command: PURPOSES[code] })),
+    required_capabilities: requiredCapabilities.map((name) => ({ name, status: PROFILE_CAPABILITIES[name], source: PROFILE_CAPABILITIES[name] === "planned" ? "not_implemented" : "embedded" })),
+    unresolved_capabilities: unresolved,
+    resolved_capabilities: resolvedNames.map((name) => inventory.find((entry) => entry.name === name)),
+    required_effects: requiredEffects,
+    declared_effect_ceiling: effectCeiling === null ? null : [...effectCeiling],
+    requested_effects: [...requestedEffects],
+    outside_declared_ceiling: outsideCeiling,
+    profile_status: unresolved.length || outsideCeiling.length || effectCeiling === null || sourcePinStatus !== "matched" ? "hold" : "resolved_for_review",
+    execution_authorized: false,
+    authorization_status: "unverified",
+    note: "Metadata only: independently verify source identity, authorization, runtime permissions, consent, and required review before any action.",
+  };
+}
+
+// Intake inspection is deliberately non-authoritative and does not create,
+// offer, accept, dispatch, or persist an assignment. Return only missing-field
+// labels and broad risk flags, not the supplied request or personal details.
+export function inspectWorkIntake(request = {}) {
+  const fields = new Set(["outcome", "exclusions", "assignee", "accountableHuman", "authority", "dataClass", "resources", "acceptance", "escalation", "concerns"]);
+  if (!request || typeof request !== "object" || Array.isArray(request) || Object.keys(request).some((key) => !fields.has(key))) throw new Error("invalid intake request");
+  const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+  const textValue = (value) => typeof value === "string" && value.trim().length > 0 && value.length <= 2048;
+  const strings = (value, minimum = 0) => Array.isArray(value) && value.length >= minimum && value.length <= 32 && value.every(textValue);
+  const only = (value, keys) => object(value) && Object.keys(value).every((key) => keys.includes(key));
+  const deadline = (value) => {
+    if (value === "none") return true;
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(`${value}T00:00:00Z`);
+    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  };
+  const missing = [];
+  if (!textValue(request.outcome)) missing.push("outcome");
+  if (!strings(request.exclusions, 1)) missing.push("exclusions");
+  if (!only(request.assignee, ["kind", "id"]) || !["human", "agent", "hybrid"].includes(request.assignee.kind) || !textValue(request.assignee.id)) missing.push("assignee");
+  if (!textValue(request.accountableHuman)) missing.push("accountable_human");
+  if (!only(request.authority, ["allowed", "prohibited"]) || !strings(request.authority.allowed, 1) || !strings(request.authority.prohibited, 1)) missing.push("authority");
+  if (!["public", "internal", "restricted"].includes(request.dataClass)) missing.push("data_classification");
+  if (!only(request.resources, ["effortMinutes", "dependencies", "reviewerAvailability", "deadline"]) || !Number.isInteger(request.resources.effortMinutes) || request.resources.effortMinutes < 1 || request.resources.effortMinutes > 10080 || !strings(request.resources.dependencies) || !["available", "unavailable", "unknown"].includes(request.resources.reviewerAvailability) || !deadline(request.resources.deadline)) missing.push("resources");
+  if (!only(request.acceptance, ["checks", "reviewer"]) || !strings(request.acceptance.checks, 1) || !textValue(request.acceptance.reviewer)) missing.push("acceptance");
+  if (!only(request.escalation, ["stopConditions", "contact", "mayPause"]) || !strings(request.escalation.stopConditions, 1) || !textValue(request.escalation.contact) || request.escalation.mayPause !== true) missing.push("escalation");
+  if (!strings(request.concerns)) missing.push("concerns");
+  const concernsPresent = Array.isArray(request.concerns) && request.concerns.length > 0;
+  const conflictingAuthority = strings(request.authority?.allowed, 1) && strings(request.authority?.prohibited, 1) && request.authority.allowed.some((effect) => request.authority.prohibited.includes(effect));
+  const restrictedData = request.dataClass === "restricted";
+  const reviewerUnavailable = request.resources?.reviewerAvailability !== "available";
+  return {
+    schema_version: "unified-harness.intake-inspection.v1",
+    intake_status: missing.length || concernsPresent || conflictingAuthority || restrictedData || reviewerUnavailable ? "hold" : "complete_for_review",
+    missing_fields: missing,
+    concerns_present: concernsPresent,
+    conflicting_authority: conflictingAuthority,
+    authority_conflict_check: "exact_label_overlap_only",
+    restricted_data_requires_separate_review: restrictedData,
+    reviewer_availability_unverified: reviewerUnavailable ? "not_available_or_unknown" : "declared_available",
+    assignee_kind: ["human", "agent", "hybrid"].includes(request.assignee?.kind) ? request.assignee.kind : "unknown",
+    capacity_status: "not_independently_verified",
+    authorization_status: "unverified",
+    recipient_acceptance: "not_recorded",
+    execution_authorized: false,
+    note: "A complete record is not consent, verified authority, sufficient capacity, or permission to execute. Assess workload and other impacts on people without attributing wellbeing needs to an agent.",
+  };
+}
+
+// Preparation only. Inputs use compact JSON.stringify encoding, preserving key
+// and array order. Requiring an exact re-encoding rejects duplicate keys and
+// ambiguous whitespace/number encodings. No caller-supplied inspection receipts.
+export function buildDraftBinding(inputs) {
+  try {
+    const keys = ["profileJson", "intakeJson", "assignmentJson", "workspaceJson"];
+    if (!inputs || Object.keys(inputs).sort().join() !== [...keys].sort().join()) throw new Error();
+    const parse = (text) => {
+      if (typeof text !== "string" || Buffer.byteLength(text, "utf8") > 262144) throw new Error();
+      const value = JSON.parse(text);
+      if (!value || Array.isArray(value) || typeof value !== "object" || JSON.stringify(value) !== text) throw new Error();
+      return value;
+    };
+    const [profile, intake, rawAssignment, workspace] = keys.map(key => parse(inputs[key]));
+    const inspection = inspectWorkProfile(profile);
+    if (inspection.profile_status !== "resolved_for_review" || !profile.requiredCapabilities?.includes("readonly_roundtrip")) throw new Error();
+    if (inspectWorkIntake(intake).intake_status !== "complete_for_review" || intake.assignee.kind !== "agent") throw new Error();
+    const a = validateAssignment(rawAssignment);
+    const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+    if (a.authority.mode !== "read_only" || a.authority.allowed_paths.length || a.authority.allow_test_changes || a.assignee.processing !== "local" || a.data.external_processing_allowed || (a.worker?.adapter ?? "opencode") !== "opencode" || a.acceptance.require_changes) throw new Error();
+    if (!same(a.acceptance.checks, [{command:"node",args:["--version"],timeout_seconds:10,expected_result:"zero"}])) throw new Error();
+    if (!same(intake.authority.allowed, ["execute-read-only"]) || !same(intake.authority.prohibited, ["write-source", "external-network"])) throw new Error();
+    if (a.outcome !== intake.outcome || !same(a.exclusions, intake.exclusions) || a.assignee.accountable_human !== intake.accountableHuman || a.supervision.decision_owner !== intake.accountableHuman || a.acceptance.reviewer !== intake.acceptance.reviewer || a.data.classification !== intake.dataClass) throw new Error();
+    if (a.supervision.available_effort_minutes !== intake.resources.effortMinutes || a.supervision.target_date !== (intake.resources.deadline === "none" ? null : intake.resources.deadline) || !same(a.supervision.dependencies, intake.resources.dependencies) || a.supervision.may_pause !== intake.escalation.mayPause || a.escalation.contact !== intake.escalation.contact || !same(a.escalation.stop_conditions, intake.escalation.stopConditions)) throw new Error();
+    if (Object.keys(workspace).sort().join() !== "identity,revision,root,status_digest" || typeof workspace.root !== "string" || !path.isAbsolute(workspace.root) || typeof workspace.identity !== "string" || !workspace.identity.startsWith(`${workspace.root}#`) || workspace.identity.length <= workspace.root.length + 1 || !/^[a-f0-9]{40}$/.test(workspace.revision) || workspace.status_digest !== sha256("") || a.resources.base_ref !== workspace.revision) throw new Error();
+    const body = {
+      schema_version: "unified-harness.draft-binding.v1",
+      encoding: "compact-json-stringify-utf8-v1",
+      profile_sha256: sha256(inputs.profileJson),
+      intake_sha256: sha256(inputs.intakeJson),
+      assignment_sha256: sha256(inputs.assignmentJson),
+      workspace_sha256: sha256(inputs.workspaceJson),
+      bundle_sha256: inspection.bundled_source.sha256,
+      status: "draft_for_review",
+      workspace_status: "declared_not_verified",
+      recipient_acceptance: "not_recorded",
+      execution_authorized: false,
+    };
+    return { ...body, binding_sha256: sha256(JSON.stringify(body)) };
+  } catch {
+    // Validation errors may include caller-supplied keys or values. Do not expose them.
+    throw new Error("Draft binding rejected: invalid, held, or inconsistent inputs.");
+  }
+}
+
+export function verifyDraftBinding(binding, inputs) {
+  const expected = buildDraftBinding(inputs);
+  if (JSON.stringify(binding) !== JSON.stringify(expected)) throw new Error("Draft binding rejected: record mismatch.");
+  return true; // Consistency only; never acceptance or execution authorization.
+}
+
 const capabilities = (() => {
 /** Calibrated, non-authoritative model operating envelopes. */
 const MODEL_CAPABILITY_PROFILES = Object.freeze([
@@ -1263,13 +1473,14 @@ export function buildDirectJsonRequest(assignment, contextBundle) {
 }
 
 export function summarizeOpenCodeEvent(event) {
-  const summary = { type: event?.type ?? "unknown" };
-  if (typeof event?.timestamp === "number") summary.timestamp = event.timestamp;
-  if (typeof event?.sessionID === "string") summary.session_id = event.sessionID;
+  const label = (value, allowed) => allowed.includes(value) ? value : "unknown";
+  const summary = { type: label(event?.type, ["step_start", "tool_use", "text", "step_finish", "error"]) };
+  if (Number.isFinite(event?.timestamp)) summary.timestamp = event.timestamp;
+  if (typeof event?.sessionID === "string") summary.session_id_hash = sha256(event.sessionID);
   const part = event?.part;
   if (event?.type === "tool_use" && isObject(part)) {
-    summary.tool = part.tool ?? "unknown";
-    summary.status = part.state?.status ?? "unknown";
+    summary.tool = label(part.tool, ["read", "write", "edit", "patch", "apply_patch", "glob", "grep", "list"]);
+    summary.status = label(part.state?.status, ["pending", "running", "completed", "error"]);
     summary.input_hash = sha256(JSON.stringify(part.state?.input ?? null));
     summary.output_hash = sha256(String(part.state?.output ?? ""));
   } else if (event?.type === "text" && isObject(part)) {
@@ -1277,11 +1488,14 @@ export function summarizeOpenCodeEvent(event) {
     summary.text_bytes = Buffer.byteLength(text);
     summary.text_hash = sha256(text);
   } else if (event?.type === "step_finish" && isObject(part)) {
-    summary.reason = part.reason ?? "unknown";
-    summary.tokens = part.tokens ?? null;
+    summary.reason = label(part.reason, ["stop", "length", "tool-calls", "error", "unknown"]);
+    summary.tokens = {};
+    for (const key of ["total", "input", "output", "reasoning"]) {
+      if (Number.isSafeInteger(part.tokens?.[key]) && part.tokens[key] >= 0) summary.tokens[key] = part.tokens[key];
+    }
   } else if (event?.type === "error") {
-    summary.error_name = event.error?.name ?? "unknown";
-    summary.status_code = event.error?.data?.statusCode ?? null;
+    summary.error_name_hash = sha256(String(event.error?.name ?? "unknown"));
+    summary.status_code = Number.isInteger(event.error?.data?.statusCode) && event.error.data.statusCode >= 100 && event.error.data.statusCode <= 599 ? event.error.data.statusCode : null;
     summary.message_hash = sha256(String(event.error?.data?.message ?? ""));
   }
   return summary;
@@ -1562,7 +1776,7 @@ async function createCandidatePatch(worktree, filenames) {
   return diff.stdout;
 }
 
-async function runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint }) {
+async function runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, capturePrivateResult = false }) {
   const executable = process.env.UNIFIED_HARNESS_SUBAGENT_OPENCODE_BIN || "opencode";
   const prompt = buildAgentPrompt(assignment);
   const isolatedHome = path.join(artifactDirectory, "state", "home");
@@ -1591,6 +1805,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
   const events = [];
   const violations = [];
   let stdoutBuffer = "";
+  const stdoutDecoder = new StringDecoder("utf8");
   let stdoutBytes = 0;
   let stderr = "";
   let steps = 0;
@@ -1600,6 +1815,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
   let timedOut = false;
   let proposalText = "";
   let responseText = "";
+  let privateResponse = "";
   let finishReason = null;
   let usage = null;
   const permittedTools = new Set(["read"]);
@@ -1634,16 +1850,18 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
             stop("completed read was missing a valid in-scope path");
           }
         }
-        if (!permittedTools.has(tool)) stop(`prohibited tool requested: ${tool}`);
+        if (!permittedTools.has(tool)) stop("prohibited tool requested");
       }
       if (event.type === "text" && assignment.authority.mode === "structured_proposal") {
         proposalText += String(event.part?.text ?? "");
       }
       if (event.type === "text" && assignment.acceptance.response_format === "single_ascii_token") responseText += String(event.part?.text ?? "");
+      if (capturePrivateResult && event.type === "text" && readCalls > 0) privateResponse += String(event.part?.text ?? "");
       if (event.type === "text" && readCalls > 0 && String(event.part?.text ?? "").trim()) answerAfterRead = true;
       if (event.type === "step_finish") {
-        finishReason = event.part?.reason ?? null;
-        usage = event.part?.tokens ?? null;
+        const safeEvent = summarizeOpenCodeEvent(event);
+        finishReason = safeEvent.reason;
+        usage = safeEvent.tokens;
       }
       if (event.type === "error") violations.push("OpenCode reported a provider or execution error");
     } catch {
@@ -1657,7 +1875,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
       stop(`output budget exceeded: ${stdoutBytes}/${assignment.resources.max_output_bytes} bytes`);
       return;
     }
-    stdoutBuffer += chunk;
+    stdoutBuffer += stdoutDecoder.write(chunk);
     const lines = stdoutBuffer.split("\n");
     stdoutBuffer = lines.pop() ?? "";
     lines.forEach(inspectLine);
@@ -1675,7 +1893,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
     child.on("close", (code, signal) => resolve({ code, signal }));
   });
   clearTimeout(timer);
-  inspectLine(stdoutBuffer);
+  inspectLine(stdoutBuffer + stdoutDecoder.end());
   if (assignment.acceptance.response_format === "single_ascii_token" && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(responseText.trim())) violations.push("response violates single_ascii_token format");
   writeFileSync(path.join(artifactDirectory, "events.ndjson"), `${events.map((event) => JSON.stringify(event)).join("\n")}\n`);
   return {
@@ -1692,6 +1910,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
     stderr_hash: sha256(stderr),
     violations,
     proposal_text: proposalText,
+    ...(capturePrivateResult ? { private_response: privateResponse } : {}),
   };
 }
 
@@ -1907,6 +2126,8 @@ export async function runHarness({
   outputRoot,
   endpointCheck = checkModelEndpoint,
   completionRequest = fetch,
+  capturePrivateResult = false,
+  beforeProvider = () => {},
 }) {
   const assignmentSource = readFileSync(path.resolve(cwd, assignmentPath), "utf8");
   const assignment = validateAssignment(JSON.parse(assignmentSource));
@@ -1914,6 +2135,7 @@ export async function runHarness({
   endpoint ??= PROVIDER_PROFILES[assignment.assignee.provider].defaultEndpoint;
   if (!isCodex) assertLoopbackEndpoint(endpoint);
   const projectRoot = await resolveProjectRoot(cwd);
+  beforeProvider();
   const modelRuntime = isCodex ? {} : await endpointCheck(endpoint, assignment.assignee.model_id, assignment.assignee.provider, (assignment.worker?.adapter ?? "opencode") === "opencode") ?? {};
 
   const runId = `${assignment.assignment_id}-${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID().slice(0, 8)}`;
@@ -1945,19 +2167,20 @@ export async function runHarness({
     const providerLeaseWaitMs = providerLease?.waitedMs ?? 0;
     let agentResult;
     try {
+      beforeProvider();
       agentResult = adapter === "codex"
         ? await runCodex({ assignment, worktree, artifactDirectory })
         : DIRECT_ADAPTERS.has(adapter)
         ? await runDirectJson({ assignment, worktree, artifactDirectory, endpoint, request: completionRequest })
         : adapter === "aider"
           ? await runAider({ assignment, worktree, artifactDirectory, endpoint })
-          : await runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint });
+          : await runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, capturePrivateResult });
     } finally {
       providerLease?.release();
       providerLease = null;
     }
     agentResult.provider_lease_wait_ms = providerLeaseWaitMs;
-    const { proposal_text: proposalText, ...agentEvidence } = agentResult;
+    const { proposal_text: proposalText, private_response: privateResponse, ...agentEvidence } = agentResult;
     const changedFiles = await collectChangedFiles(worktree);
     const policyViolations = evaluateChangedFiles(assignment, changedFiles);
     if (assignment.authority.mode === "read_only" && agentResult.read_calls < 1) {
@@ -2013,7 +2236,7 @@ export async function runHarness({
       human_approval_required: true,
     };
     writeFileSync(path.join(artifactDirectory, "evidence.json"), `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 });
-    return { artifactDirectory, evidence };
+    return { artifactDirectory, evidence, ...(capturePrivateResult && disposition === "candidate" ? { privateResponse } : {}) };
   } catch (error) {
     const failureEvidence = {
       schema_version: "unified-harness.agent-evidence.v1",
@@ -2076,7 +2299,122 @@ async function main(argv) {
 // authorization. This first adapter supports clean Git workspaces and one
 // tightly bounded read-only executor profile only.
 export { hypervisor };
-export async function contractRoundtrip({ packet, assignmentPath, endpoint, outputRoot, endpointCheck, completionRequest }) {
+// This prepares scope only. Offering, accepting and resuming remain explicit.
+function validateResultPolicy(policy) {
+  if (!policy || Object.keys(policy).sort().join() !== "directory,retention" || typeof policy.directory !== "string" || !path.isAbsolute(policy.directory) || path.normalize(policy.directory) !== policy.directory || policy.retention !== "owner_managed") throw new Error("Invalid private result policy.");
+}
+
+function checkResultDirectory(policy, sourceRoot) {
+  try {
+    validateResultPolicy(policy);
+    const directory = policy.directory;
+    const stat = lstatSync(directory);
+    if (!process.getuid || !stat.isDirectory() || stat.isSymbolicLink() || stat.uid !== process.getuid() || (stat.mode & 0o777) !== 0o700 || realpathSync(directory) !== directory || directory === sourceRoot || directory.startsWith(`${sourceRoot}${path.sep}`)) throw new Error();
+    return { dev: stat.dev, ino: stat.ino };
+  } catch { throw new Error("Private result directory rejected."); }
+}
+
+function validateInvocationPolicy(policy) {
+  if (!policy || Object.keys(policy).sort().join() !== "directory,mode" || policy.mode !== "single_attempt") throw new Error("Invalid invocation policy.");
+  validateResultPolicy({directory:policy.directory,retention:"owner_managed"});
+}
+
+function durableExclusiveJson(directory, name, value) {
+  let fd;
+  try {
+    fd = openSync(path.join(directory,name), "wx", 0o600);
+    writeFileSync(fd, JSON.stringify(value));
+    fsyncSync(fd);
+  } finally { if (fd !== undefined) closeSync(fd); }
+  const dirFd = openSync(directory,"r");
+  try { fsyncSync(dirFd); } finally { closeSync(dirFd); }
+}
+
+// A claim is never deleted or reset, even if writing it fails part way through.
+function claimInvocation(policy, digest, sourceRoot) {
+  validateInvocationPolicy(policy);
+  const privatePolicy = {directory:policy.directory,retention:"owner_managed"};
+  const identity = checkResultDirectory(privatePolicy, sourceRoot);
+  const claim = {schema_version:"unified-harness.invocation-claim.v1",assignment_digest:digest,state:"claimed",claimed_at:new Date().toISOString()};
+  try {
+    try {
+      lstatSync(path.join(policy.directory,`${digest}.terminal.json`));
+      throw new Error("terminal record exists");
+    } catch (error) { if (error.code !== "ENOENT") throw error; }
+    durableExclusiveJson(policy.directory, `${digest}.claim.json`, claim);
+  }
+  catch { throw new Error("Invocation claim unavailable or already exists; reconcile without retrying."); }
+  return {
+    receipt: {assignment_digest:digest,claim_sha256:sha256(JSON.stringify(claim))},
+    finish(state, evidenceHash) {
+      try {
+        if (JSON.stringify(checkResultDirectory(privatePolicy,sourceRoot)) !== JSON.stringify(identity)) throw new Error();
+        durableExclusiveJson(policy.directory, `${digest}.terminal.json`, {schema_version:"unified-harness.invocation-terminal.v1",assignment_digest:digest,claim_sha256:sha256(JSON.stringify(claim)),state,evidence_sha256:evidenceHash});
+      } catch { throw new Error("Invocation terminal state unavailable; reconcile without retrying."); }
+    },
+  };
+}
+
+export function inspectInvocation(policy, assignmentDigest) {
+  validateInvocationPolicy(policy);
+  if (!/^[a-f0-9]{64}$/.test(assignmentDigest)) throw new Error("Invalid invocation identity.");
+  checkResultDirectory({directory:policy.directory,retention:"owner_managed"}, "/");
+  const base = {assignment_digest:assignmentDigest,execution_authorized:false,retry_authorized:false};
+  const read = (suffix) => {
+    const file = path.join(policy.directory, `${assignmentDigest}.${suffix}.json`);
+    const stat = lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.uid !== process.getuid() || (stat.mode & 0o777) !== 0o600 || stat.size > 65536) throw new Error();
+    return JSON.parse(readFileSync(file,"utf8"));
+  };
+  try {
+    const claim = read("claim");
+    if (claim.schema_version !== "unified-harness.invocation-claim.v1" || claim.assignment_digest !== assignmentDigest || claim.state !== "claimed") throw new Error();
+    const terminal = read("terminal");
+    if (terminal.schema_version !== "unified-harness.invocation-terminal.v1" || terminal.assignment_digest !== assignmentDigest || terminal.claim_sha256 !== sha256(JSON.stringify(claim)) || !["completed","failed"].includes(terminal.state) || !/^[a-f0-9]{64}$/.test(terminal.evidence_sha256)) throw new Error();
+    return {...base,state:terminal.state,evidence_sha256:terminal.evidence_sha256};
+  } catch {
+    // Includes malformed, truncated, missing-terminal and permission errors.
+    return {...base,state:"unclaimed_or_uncertain",requires_reconciliation:true};
+  }
+}
+
+function validateExecutionWindow(window) {
+  const validTime = value => typeof value === "string" && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+  if (!window || Object.keys(window).sort().join() !== "expires_at,not_before" || !validTime(window.not_before) || !validTime(window.expires_at) || Date.parse(window.expires_at) <= Date.parse(window.not_before)) throw new Error("Invalid execution window.");
+}
+
+export function inspectExecutionWindow(window, now = Date.now()) {
+  validateExecutionWindow(window);
+  if (!Number.isFinite(now)) throw new Error("Invalid observation time.");
+  return {state:now < Date.parse(window.not_before) ? "not_yet_valid" : now >= Date.parse(window.expires_at) ? "expired" : "within_window",execution_authorized:false};
+}
+
+export function buildBoundScope(inputs, endpoint, resultPolicy, invocationPolicy, executionWindow) {
+  const binding = buildDraftBinding(inputs);
+  assertLoopbackEndpoint(endpoint);
+  if (resultPolicy !== undefined) validateResultPolicy(resultPolicy);
+  if (invocationPolicy !== undefined) validateInvocationPolicy(invocationPolicy);
+  if (executionWindow !== undefined) {
+    validateExecutionWindow(executionWindow);
+    if (invocationPolicy === undefined) throw new Error("Execution window requires an invocation ledger.");
+  }
+  return JSON.stringify({ kind: executionWindow !== undefined ? "unified-harness-readonly-v5" : invocationPolicy !== undefined ? "unified-harness-readonly-v4" : resultPolicy === undefined ? "unified-harness-readonly-v2" : "unified-harness-readonly-v3", assignment_sha256: binding.assignment_sha256, binding_sha256: binding.binding_sha256, endpoint, ...(resultPolicy === undefined ? {} : {result_policy:{directory:resultPolicy.directory,retention:resultPolicy.retention}}), ...(invocationPolicy === undefined ? {} : {invocation_policy:{directory:invocationPolicy.directory,mode:invocationPolicy.mode}}), ...(executionWindow === undefined ? {} : {execution_window:{not_before:executionWindow.not_before,expires_at:executionWindow.expires_at}}) });
+}
+
+export async function contractRoundtrip({ packet, assignmentPath, endpoint, outputRoot, endpointCheck, completionRequest, bindingInputs, resultPolicy, invocationPolicy, executionWindow }) {
+  if (outputRoot !== undefined) throw new Error("Contract round trips cannot use an unbound evidence destination.");
+  // Snapshot caller-owned records before the first asynchronous boundary.
+  bindingInputs = bindingInputs === undefined ? undefined : structuredClone(bindingInputs);
+  resultPolicy = resultPolicy === undefined ? undefined : structuredClone(resultPolicy);
+  invocationPolicy = invocationPolicy === undefined ? undefined : structuredClone(invocationPolicy);
+  executionWindow = executionWindow === undefined ? undefined : structuredClone(executionWindow);
+  let lastObservedTime = Date.now();
+  const checkFreshness = () => {
+    if (executionWindow === undefined) return;
+    const now = Date.now();
+    if (now < lastObservedTime || inspectExecutionWindow(executionWindow,now).state !== "within_window") throw new Error("Execution window unavailable, expired, or clock regressed.");
+    lastObservedTime = now;
+  };
   packet = structuredClone(packet);
   hypervisor.validatePacket(packet);
   const contract = packet.work_contract;
@@ -2084,10 +2422,19 @@ export async function contractRoundtrip({ packet, assignmentPath, endpoint, outp
   const checkpoint = packet.checkpoints.at(-1);
   if (!checkpoint || checkpoint.kind !== "resumed" || checkpoint.owner !== packet.owner || checkpoint.workspace !== packet.workspace.identity || !Number.isFinite(Date.parse(checkpoint.at)) || Date.parse(checkpoint.at) < Date.parse(contract.acceptance.at)) throw new Error("a matching resume checkpoint after acceptance is required");
   const offered = hypervisor.currentAssignment(packet);
+  checkFreshness();
+  if (executionWindow !== undefined && (Date.parse(offered.created_at) > Date.parse(contract.acceptance.at) || Date.parse(contract.acceptance.at) > Date.now() || Date.parse(checkpoint.at) > Date.now())) throw new Error("Contract timestamps are inconsistent or in the future.");
   if (!["Review", "Research"].includes(offered.dispatch_kind) || !offered.engineering_purpose) throw new Error("only routed read-only review or research is supported");
   let scope;
   try { scope = JSON.parse(offered.scope); } catch { throw new Error("scope must be the explicit executor binding"); }
-  if (!scope || Array.isArray(scope) || Object.keys(scope).sort().join(",") !== "assignment_sha256,kind" || scope.kind !== "unified-harness-readonly-v1" || !/^[a-f0-9]{64}$/.test(scope.assignment_sha256 ?? "")) throw new Error("unsupported executor scope binding");
+  const integrated = ["unified-harness-readonly-v2", "unified-harness-readonly-v3", "unified-harness-readonly-v4", "unified-harness-readonly-v5"].includes(scope?.kind);
+  if (integrated) {
+    if (offered.scope !== buildBoundScope(bindingInputs, endpoint, resultPolicy, invocationPolicy, executionWindow)) throw new Error("integrated scope or endpoint differs from accepted binding");
+    const intake = JSON.parse(bindingInputs.intakeJson);
+    const profile = JSON.parse(bindingInputs.profileJson);
+    const workspace = JSON.parse(bindingInputs.workspaceJson);
+    if (packet.owner !== intake.assignee.id || offered.recipient !== intake.assignee.id || offered.assigner !== intake.accountableHuman || offered.reviewer !== intake.acceptance.reviewer || offered.engineering_purpose !== profile.primary || offered.acceptance_evidence !== JSON.stringify(intake.acceptance.checks) || ["root", "identity", "revision", "status_digest"].some(key => packet.workspace[key] !== workspace[key])) throw new Error("integrated contract identity or review criteria mismatch");
+  } else if (bindingInputs !== undefined || resultPolicy !== undefined || invocationPolicy !== undefined || executionWindow !== undefined || !scope || Array.isArray(scope) || Object.keys(scope).sort().join(",") !== "assignment_sha256,kind" || scope.kind !== "unified-harness-readonly-v1" || !/^[a-f0-9]{64}$/.test(scope.assignment_sha256 ?? "")) throw new Error("unsupported executor scope binding");
   const source = readFileSync(assignmentPath, "utf8");
   if (sha256(source) !== scope.assignment_sha256) throw new Error("executor assignment differs from accepted scope");
   const assignment = validateAssignment(JSON.parse(source));
@@ -2095,6 +2442,8 @@ export async function contractRoundtrip({ packet, assignmentPath, endpoint, outp
   if (assignment.outcome !== offered.outcome || assignment.acceptance.reviewer !== offered.reviewer || assignment.assignee.accountable_human !== offered.assigner || assignment.supervision.decision_owner !== offered.assigner || assignment.acceptance.require_changes) throw new Error("executor assignment does not preserve contract outcome or roles");
   if (assignment.acceptance.checks.length !== 1 || JSON.stringify(assignment.acceptance.checks[0]) !== JSON.stringify({command:"node",args:["--version"],timeout_seconds:10,expected_result:"zero"})) throw new Error("only the fixed read-only runtime check is supported");
   if (JSON.stringify(offered.authority.allowed) !== JSON.stringify(["execute-read-only"]) || !offered.authority.prohibited.includes("write-source") || !offered.authority.prohibited.includes("external-network")) throw new Error("explicit read-only authority declarations are required");
+  const supportedProhibitions = new Set(["commit", "push", "merge", "deploy", "external-account-actions", "third-party-contact", "write-source", "external-network"]);
+  if (offered.authority.prohibited.some(label => !supportedProhibitions.has(label))) throw new Error("unsupported or conflicting authority prohibition");
   const root = await resolveProjectRoot(packet.workspace.root);
   const git = async args => {
     const result = await runCommand("git", args, {cwd:root, timeoutMs:10000});
@@ -2105,14 +2454,18 @@ export async function contractRoundtrip({ packet, assignmentPath, endpoint, outp
   const revision = await git(["rev-parse", "HEAD"]);
   const status = await git(["status", "--porcelain=v1", "--untracked-files=normal"]);
   if (status || root !== packet.workspace.root || `${root}#${branch}` !== packet.workspace.identity || revision !== packet.workspace.revision || packet.workspace.status_digest !== sha256("") || assignment.resources.base_ref !== revision) throw new Error("workspace identity, clean state or revision does not match the accepted packet");
-  const temporaryRoot = mkdtempSync(path.join(tmpdir(), "unified-work-harness-"));
+  const resultDirectoryIdentity = resultPolicy === undefined ? null : checkResultDirectory(resultPolicy, root);
+  checkFreshness();
+  const invocation = invocationPolicy === undefined ? null : claimInvocation(invocationPolicy,offered.digest,root);
+  let temporaryRoot;
   try {
+    temporaryRoot = mkdtempSync(path.join(tmpdir(), "unified-work-harness-"));
     const clone = path.join(temporaryRoot, "checkout");
     const pinnedAssignmentPath = path.join(temporaryRoot, "accepted-assignment.json");
     writeFileSync(pinnedAssignmentPath, source, {mode:0o600});
     const result = await runCommand("git", ["clone", "--no-local", "--no-hardlinks", "--", root, clone], {cwd:temporaryRoot, timeoutMs:30000});
     if (result.code !== 0) throw new Error("isolated checkout creation failed");
-    const run = await runHarness({assignmentPath:pinnedAssignmentPath, cwd:clone, endpoint, outputRoot:outputRoot ?? path.join(temporaryRoot, "evidence"), ...(endpointCheck ? {endpointCheck} : {}), ...(completionRequest ? {completionRequest} : {})});
+    const run = await runHarness({assignmentPath:pinnedAssignmentPath, cwd:clone, endpoint, outputRoot:outputRoot ?? path.join(temporaryRoot, "evidence"), beforeProvider:checkFreshness, capturePrivateResult:resultPolicy !== undefined, ...(endpointCheck ? {endpointCheck} : {}), ...(completionRequest ? {completionRequest} : {})});
     if (run.evidence.assignment_hash !== scope.assignment_sha256 || run.evidence.base_commit !== revision) throw new Error("executor evidence does not bind the accepted assignment and revision");
     if (run.evidence.disposition !== "candidate" || run.evidence.changed_files.length) {
       const reasons = [];
@@ -2124,17 +2477,65 @@ export async function contractRoundtrip({ packet, assignmentPath, endpoint, outp
       if (!run.evidence.acceptance.every(item => item.passed)) reasons.push("acceptance check failed");
       throw new Error(`executor did not return an unchanged read-only candidate (${reasons.join(", ") || "check evidence"})`);
     }
-    const receipt = {schema_version:"unified.contract-executor-receipt.v1", work_id:offered.work_id, assignment_revision:offered.revision, assignment_digest:offered.digest, executor_assignment_sha256:scope.assignment_sha256, workspace_revision:revision, executor_evidence:run.evidence, review_status:"pending", packet_status_unchanged:true};
-    return {...receipt, receipt_sha256:sha256(JSON.stringify(receipt))};
+    let privateArtifact;
+    if (resultPolicy !== undefined) {
+      if (typeof run.privateResponse !== "string" || !run.privateResponse.trim()) throw new Error("Private result unavailable.");
+      const artifact = JSON.stringify({schema_version:"unified-harness.private-result.v1", assignment_digest:offered.digest, binding_sha256:scope.binding_sha256, workspace_revision:revision, allowed_read_paths:assignment.authority.allowed_read_paths, review_criteria:JSON.parse(bindingInputs.intakeJson).acceptance.checks, response:run.privateResponse, response_sha256:sha256(run.privateResponse), response_selection:"concatenated_text_events_after_first_completed_read", review_status:"pending"});
+      if (JSON.stringify(checkResultDirectory(resultPolicy, root)) !== JSON.stringify(resultDirectoryIdentity)) throw new Error("Private result directory changed.");
+      const name = `result-${randomUUID()}.json`;
+      try { writeFileSync(path.join(resultPolicy.directory, name), artifact, {flag:"wx",mode:0o600}); }
+      catch { throw new Error("Private result write failed; inspect approved destination for a partial artifact."); }
+      privateArtifact = {name, sha256:sha256(artifact), bytes:Buffer.byteLength(artifact), retention:"owner_managed"};
+    }
+    const receipt = {schema_version:resultPolicy !== undefined ? "unified.contract-executor-receipt.v3" : integrated ? "unified.contract-executor-receipt.v2" : "unified.contract-executor-receipt.v1", ...(privateArtifact ? {private_result:privateArtifact} : {}), ...(integrated ? {binding_sha256:scope.binding_sha256} : {}), work_id:offered.work_id, assignment_revision:offered.revision, assignment_digest:offered.digest, executor_assignment_sha256:scope.assignment_sha256, workspace_revision:revision, executor_evidence:run.evidence, review_status:"pending", packet_status_unchanged:true};
+    if (invocation) {
+      receipt.schema_version = "unified.contract-executor-receipt.v4";
+      receipt.invocation = invocation.receipt;
+    }
+    if (executionWindow !== undefined) {
+      receipt.schema_version = "unified.contract-executor-receipt.v5";
+      receipt.execution_window = executionWindow;
+    }
+    const resultReceipt = {...receipt, receipt_sha256:sha256(JSON.stringify(receipt))};
+    invocation?.finish("completed",resultReceipt.receipt_sha256);
+    return resultReceipt;
+  } catch (error) {
+    invocation?.finish("failed",sha256(error instanceof Error ? error.message : "unknown failure"));
+    throw error;
   } finally {
-    rmSync(temporaryRoot, {recursive:true, force:true});
+    if (temporaryRoot) rmSync(temporaryRoot, {recursive:true, force:true});
   }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
-  if (args.length !== 7 || args[0] !== "roundtrip" || args[1] !== "--packet" || args[3] !== "--assignment" || args[5] !== "--endpoint") {
-    console.error("Usage: node bundle.mjs roundtrip --packet PACKET.json --assignment ASSIGNMENT.json --endpoint http://127.0.0.1:8000/v1");
+  if (args.length === 3 && args[0] === "intake" && args[1] === "--request") {
+    try {
+      const intake = inspectWorkIntake(JSON.parse(readFileSync(args[2], "utf8")));
+      console.log(JSON.stringify(intake));
+      if (intake.intake_status === "hold") process.exitCode = 2;
+    } catch {
+      console.error("Intake rejected: invalid request or unavailable file.");
+      process.exitCode = 1;
+    }
+  } else if (args.length === 2 && args[0] === "profile" && args[1] === "--inventory") {
+    try {
+      console.log(JSON.stringify({ schema_version: "unified-harness.capability-inventory.v2", bundled_source: inspectBundledSource(), capabilities: listWorkCapabilities(), execution_authorized: false }));
+    } catch {
+      console.error("Inventory rejected: bundled source unavailable.");
+      process.exitCode = 1;
+    }
+  } else if (args.length === 3 && args[0] === "profile" && args[1] === "--request") {
+    try {
+      const profile = inspectWorkProfile(JSON.parse(readFileSync(args[2], "utf8")));
+      console.log(JSON.stringify(profile));
+      if (profile.profile_status === "hold") process.exitCode = 2;
+    } catch {
+      console.error("Profile rejected: invalid request or unavailable file.");
+      process.exitCode = 1;
+    }
+  } else if (args.length !== 7 || args[0] !== "roundtrip" || args[1] !== "--packet" || args[3] !== "--assignment" || args[5] !== "--endpoint") {
+    console.error("Usage: node bundle.mjs intake --request REQUEST.json | profile --inventory | profile --request REQUEST.json | roundtrip --packet PACKET.json --assignment ASSIGNMENT.json --endpoint http://127.0.0.1:8000/v1");
     process.exitCode = 2;
   } else {
     try {

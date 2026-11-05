@@ -8,6 +8,12 @@ coordination runtime, without treating its checks as authority or judgment.
 The [unified work harness](unified-work-harness/SKILL.md) bundles a Hypervisor
 contract validator and a narrowly gated, read-only agent executor.
 It preserves the accepted contract and leaves review to a human.
+The [delivery checklist](unified-work-harness/delivery-checklist.md) tracks the
+selected capabilities, remaining acceptance gates and next integrated workflow.
+Run its local deterministic suite with `node --test unified-work-harness/*.test.mjs`.
+Live-model execution is opt-in and skipped by default; the CLI is the legacy v1
+path, while the integrated v5 API adds bound context, a single-attempt ledger
+and an execution start window. Neither path supplies authenticated consent.
 
 ## Workflow storyboards
 
