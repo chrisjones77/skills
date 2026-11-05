@@ -21,15 +21,21 @@ For a quick rendition or an end-to-end review cut with planning up front, read t
 
 Build a section map and a separate lyric-payoff map before choosing a shot count. Identify lines whose object, action, contradiction or emotional turn needs its own image. Build a shot table with start/end (unset until timed), lyric or instrumental cue, scene reference, camera motion, factual coverage, and continuity constraints. Reprise a visual motif for choruses; show instrumental breaks without stale captions. Keep credits and emotional targets aligned with the source. Read [editorial-coverage.md](references/editorial-coverage.md) for payoff, pace, action and revision checks.
 
-Present a reviewable illustrated storyboard, then continue rendering without adding an approval gate unless the user requested one. Use image-generation tools for art. Specify consistent cast, palette, lighting, age, clothing, and vehicles. Generate individual production shots in the output aspect ratio; storyboard page orientation is independent. A portrait review sheet does not authorize portrait art in a landscape video. Contact-sheet crops are preview-only unless the user explicitly accepts that compromise after seeing the output-size crop. Inspect subjects, action, text and safe areas at final display size.
+Present a reviewable illustrated storyboard, then continue rendering without adding an approval gate unless the user requested one. Use image-generation tools for art. Specify consistent cast, palette, lighting, age, clothing, and vehicles. Generate individual production shots in the output aspect ratio; storyboard page orientation is independent. A portrait review sheet does not authorize portrait art in a landscape video. Contact-sheet crops are preview-only unless the user explicitly accepts that compromise after seeing the output-size crop.
 
-Treat the illustrated treatment as a deliverable in its own right. Use a portable HTML storyboard with embedded images or a PDF. Keep visual storytelling and captions legible on a phone. Avoid rapid flashes. Distinguish moving still images from generated character animation.
+For a quick-render tier, establish an explicit source-ID/duration lock and a baseline of roughly one shot per ten seconds. Adjust pacing at standout lines and plan the sequence once before generating. Use bounded assets and provide a small inline mobile review copy; do not substitute production crops with contact-sheet crops.
+
+Where action matters, require ordered before/after states to verify visual change. Report source-art count, edit segments, and actual visual changes separately from the final render.
+
+Inspect subjects, action, text and safe areas at final display size.
+
+Deliver a portable illustrated `treatment.html` with embedded images, or a PDF when that format is requested. Keep the treatment in stable storage, use relative audio paths where applicable, identify the source and revision, and index it in the repository without importing local media. Keep visual storytelling and captions legible on a phone. Avoid rapid flashes. Distinguish moving still images from generated character animation.
 
 ## 3. Establish timing honestly
 
 Read [timing-and-review.md](references/timing-and-review.md) before captioning.
 
-- Preserve the lyric draft separately from the performance transcript and display captions.
+- Preserve the lyric draft separately from the performance transcript, display captions, ASR, listening review, human acceptance, and release approval. Do not convert a release approval into a claimed listening procedure.
 - Obtain word/phrase times from transcription or manual listening when available. Treat ASR as fallible, particularly over music and repeated choruses.
 - Verify repeated sections separately. Record unresolved words and estimated intervals; do not silently overwrite the lyric draft.
 - If only estimated timings are possible, label them as estimates. Never claim a listening review based on transcription alone.
@@ -40,7 +46,7 @@ Read [timing-and-review.md](references/timing-and-review.md) before captioning.
 
 Read [render-manifest.md](references/render-manifest.md). Use `scripts/render_video.py MANIFEST.json OUTPUT.mp4` for a basic full-frame moving-stills edit, or adapt it for a designed title/caption layout. Use an available font and FFmpeg with libass when burning captions. The renderer accepts already prepared art and optional ASS; it does not generate art or transcribe.
 
-Keep project inputs relative to the manifest. Record dimensions, FPS, shot boundaries, source audio, caption basis, and asset provenance. Do not hard-code a song duration, workstation path, branding, or family identity into reusable code. Preserve edits to captions rather than regenerating over them unannounced.
+Keep project inputs relative to the manifest. Preserve historical manifests and portable kits unchanged; append release and preservation receipts separately so status is reconciled without rewriting source artifacts. Record dimensions, FPS, shot boundaries, source audio, caption basis, and asset provenance. Do not hard-code a song duration, workstation path, branding, or family identity into reusable code. Preserve edits to captions rather than regenerating over them unannounced.
 
 Render each clip to a temporary file, verify it, then assemble. Validate every clip before concatenation. Use bounded concurrency or sequential rendering; wait for all processes. Failed or incomplete clips must block export. Stage outputs and atomically replace the destination only after validation. Do not hide a short picture stream by freezing its last frame or relying on container duration.
 
@@ -65,3 +71,14 @@ Render the video inline when the host supports it, especially when requested. Pu
 
 Workflow inspiration: https://aituber.app/blog/suno-song-to-music-video/ (DIY scene images, section assembly, motion, lyric timing, export). This skill implements the workflow locally and does not require that service. Consult current official documentation only when making current platform, licensing, or distribution claims; do not infer music rights from possession of an MP3.
 
+## 7. Stand-down
+
+Provide a stand-down path that preserves source and output files, records the published version, leaves production unchanged, and inventories worktrees without cleanup.
+
+## 8. Limits and Disclaimers
+
+This workflow provides structural and continuity validation. It does NOT:
+- Establish "pixel truth" (absolute visual fidelity across all devices/codecs).
+- Provide legal clearance or guarantee non-infringement of rights.
+- Ensure professional compliance with broadcasting or accessibility standards.
+- Replace a qualified human review for final aesthetic or legal acceptance.
