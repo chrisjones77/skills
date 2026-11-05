@@ -99,3 +99,59 @@ human-acceptance limitations remain unchanged. Git retains the previous manifest
 | call-and-response-harness | `c88d6ce38d64de4ff582f21bd202681e64e81f98` | `a4cf24e8336bea73392b740aa527ae935e24835b` |
 | engineering-work-safety | `5b79188121dce989d9603fd7004c77c8315ff3a9` | `7647350a84f484fa0ad32c460b7eeb256b83a898` |
 | forward-deployed-ai-engineer | `7d1b05464142c7fe02e00c1dffcfb94a9ac1b9fd` | `a0f80cf6c2678afa340da93f0b72c09965cff474` |
+
+
+## AI Operational Governance integration — 2026-11-05
+
+The thirteen-board inventory is now complete. The new board was generated with the built-in
+image_gen tool; its exact prompt, selected PNG digest, source entrypoint binding and initial
+lineage stage are recorded in the gallery JSON. AI visual inspection covered all six panels
+and their principal labels. The owner is marked proposed, the gateway requires approval,
+timing is before external action, test cases are not tested, and evidence/decision are separate.
+Decorative checks are illustration, not test results. Human acceptance remains pending.
+
+The source snapshot is `fb3e9f17255757fa1fdd158f6d0da4d00b98065c`. All source entrypoint
+bindings were reconciled. Build Music Video had added a one-shot-method reference and clarified
+storyboard deliverability; comparison with the prior pinned source confirmed the illustrated
+six-step workflow remains applicable. Its existing image and revision history were retained.
+
+Checks completed:
+
+- skill-creator quick_validate passed for ai-operational-governance.
+- Current inventory, PNG/source hashes, six-step transcripts, lineage, links and offline HTML
+  structure passed scripts/validate_storyboards.py.
+- All six negative cases passed in temporary copies: changed PNG bytes, changed skill source,
+  escaping link, external image URL, extra skill, and broken lineage parent were rejected.
+- All new skill Markdown reference links resolved; git whitespace checks passed.
+- In-app browser opened the local gallery; the navigation link reached the new board, its PNG
+  loaded, and its six-step transcript expanded. Desktop screenshot inspection showed the
+  rendered image and readable transcript. At 390 by 844, document scroll width equalled viewport
+  width (390), the image loaded at natural width 1672 and rendered width 360, and text wrapped.
+  Keyboard Return collapsed the transcript and the amber focus outline was visible. The
+  viewport override was reset and the test tab closed. This is bounded browser QA, not a
+  screen-reader audit or accessibility-conformance claim. The full PNG link and transcript
+  support reading the detailed board beyond its small mobile overview.
+
+The skill now includes an optional QVCH bolt-on guide and staged UWH implementation plan.
+No live profile, UWH module, installed skill, provider or runtime gate was changed or tested.
+The constitution is draft v0.2.0, with owner ratification still pending. Current-head CI is
+recorded on PR #26 after the integration commit; local checks do not establish a remote result.
+
+
+## Independent recorder foundation revision — 2026-11-05
+
+The AI Operational Governance entrypoint and references now distinguish an independent
+recorder interface, both QVCH/UWH producers, Git-first storage and read-only presentation.
+They add reviewed reciprocal feedback and keep runtime implementation in issue #27,
+separate from PR #24's merge scope. Draft constitution: v0.3.0, ratification pending.
+
+The gallery source snapshot is `d51472a0570a5b87cb366b09665f778f66d75d50`. The existing six-panel image still depicts
+the applicable obligation, owner, control, timing, test and evidence workflow. The PNG and
+its generation/lineage history are unchanged. Source reconciliation is not a new pixel
+review or human acceptance. The previously recorded browser checks apply to the unchanged
+layout and asset; browser interaction was not rerun for this documentation revision.
+
+Skill-creator validation, local skill reference links, constitution version/scaffold checks,
+gallery structural/source/asset/lineage validation and Git whitespace checks passed locally.
+No recorder, adapter, outbox, monitor or live harness behavior was implemented or validated.
+Current-head hosted checks are recorded separately on PR #26.
