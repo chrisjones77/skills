@@ -1,0 +1,10 @@
+{
+  "revision": "f5ffbde38ffebaf83f181038c65a6117c0c8e236",
+  "files": {
+    "bundle.mjs": "440a65b591505471caf9a638e0c629214c4d665ec91a4f43e9c0be0f7c7e2965",
+    "coordination.mjs": "20572ea9e94386703d8032d533ac6bc7917da95741a1f1f0c6053a58f27bac8f",
+    "intake.mjs": "2ecbc9634256d79f164e85fea4675a353ad21c701d580c9cded23fda910d151e",
+    "package.mjs": "c62626e0a7313956916117e47f100ac7babd36eacd0ad4eac9daf59500c0d347",
+    "package-files.json": "2b649fc03bf78def858b2cfeb21ce84f0076a3f78b75ca91baf0b2ad73264cb7"
+  }
+}
