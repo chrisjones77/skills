@@ -26,7 +26,8 @@ Lean Compliance product or a claim of permission to reproduce its materials.
 ## Interpretation and limits
 
 The skill's explicit control states, latency questions, degraded operation, bypass checks,
-measurement denominators, and worked example are practical elaborations, not quotations
+measurement denominators, independent recorder/interface design, reviewed feedback, and
+worked example are practical elaborations, not quotations
 or a complete method supplied by Laqua. Validate them against the actual workflow.
 
 The article invokes the Conant–Ashby theorem and proposes a digital twin connected by

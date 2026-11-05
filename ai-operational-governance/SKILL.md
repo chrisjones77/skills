@@ -91,14 +91,28 @@ Do not call a system safe, compliant, continuously assured, or hard real-time on
 strength of this method. A policy model or digital twin is an optional design choice;
 its fidelity, coverage, maintenance, and connection to enforcement require evidence.
 
-## Use as an optional harness bolt-on
+## Preserve independent observation and reviewed feedback
 
-For QVCH routing or UWH integration, read
-[the harness integration guide](references/harness-integration.md). Keep canonical purpose
-codes unchanged. Separate a passive bus-monitor view, retained event ledger, and active
-control path. Use existing authorized task and contract records; do not create a competing
-ledger or add unsupported fields to strict runtime packets. The guide supplies an optional
-method and a staged implementation proposal, not an installed resolver or runtime adapter.
+When a recorder is useful, give it a versioned interface independent of the system or
+harness being observed. Producers retain their authoritative state and enforcement;
+the recorder preserves evidence, a storage adapter persists it, and a monitor presents
+read-only views. Independence of responsibility does not require a separate service or
+database. A Git adapter can be a proportionate first implementation.
+
+Keep purpose, lifecycle observation, persistence progress and human disposition distinct.
+A missing event is unknown; a recorded event does not prove the promised action occurred.
+Define recording-failure behavior against the actual operating commitment. Replay must
+not execute work, change agreements, or renew authority.
+
+Use observations to propose improvements to methods and controls. Record the affected
+revision, evidence, decision owner and compatibility impact; adopt reviewed changes at a
+checkpoint without silently changing active accepted work. Feedback improves the system
+only when an appropriate decision and effective action follow.
+
+For optional QVCH/UWH use, read [the harness integration guide](references/harness-integration.md).
+It maps both producers to an independent recorder and the Git-first demonstration in
+[issue #27](https://github.com/chrisjones77/skills/issues/27). This skill remains usable without
+those harnesses or a recorder installed. The guide is design guidance, not a runtime adapter.
 
 ## Deliver the smallest useful decision record
 

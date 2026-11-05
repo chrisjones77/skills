@@ -1,11 +1,11 @@
 <!--
 Sync Impact Report
-Version: 0.1.0 -> 0.2.0 (optional harness integration and record/control boundaries)
-Principles modified: none; the existing principles now also constrain optional harness guidance.
-Sections expanded: Scope and Source Boundaries (canonical codes, authoritative records, no-action replay).
+Version: 0.2.0 -> 0.3.0 (independent evidence architecture and reviewed feedback)
+Principles expanded: I. Outcomes and Evidence Are Distinct; IV. Effectiveness Requires Bounded Evidence.
+Sections expanded: Scope and Source Boundaries; Development and Review.
 Sections added: none.
 Sections removed: none.
-Deferred: ratification by the repository owner; live QVCH/UWH adoption and runtime implementation.
+Deferred: owner ratification; recorder/Git/monitor implementation and harness adoption in issue #27.
 Template: resolved successfully using the supplied Spec Kit resolver and core scaffold,
 bootstrapped without Physician Scheduling project presets, overrides, or hooks.
 -->
@@ -16,7 +16,9 @@ bootstrapped without Physician Scheduling project presets, overrides, or hooks.
 ### I. Outcomes and Evidence Are Distinct
 
 The skill MUST distinguish controls that produce governed outcomes from records that
-support evaluation. It MUST retain useful evidence and recognize records connected to
+support evaluation. A recorder interface MUST remain independent of its producers;
+recording, storage, presentation and enforcement responsibilities MUST be distinguished.
+It MUST retain useful evidence and recognize records connected to
 active control. Activity counts alone MUST NOT establish operating effectiveness.
 
 ### II. Applicable Obligations Have Accountable Owners
@@ -38,7 +40,8 @@ tolerances or claim that retrospective correction prevents an irreversible harm.
 The skill MUST distinguish proposed, implemented, tested, and accepted controls and state
 what available evidence covers. Outcome and response measures MUST identify their exposure
 or time basis when used. Neither generated explanations nor completed records establish
-safety, compliance, certification, or hard real-time performance.
+safety, compliance, certification, or hard real-time performance. Observation gaps and
+uncertain outcomes MUST remain visible; local save, commit and push MUST remain distinct.
 
 ### V. Guidance Is Proportionate and Attributed
 
@@ -55,7 +58,9 @@ The primary source is Laqua's November 5, 2026 newsletter, documented in the ski
 reference. Do not redistribute the supplied email, recipient metadata, or complete PDF.
 Optional QVCH/UWH guidance MUST preserve canonical purpose codes, existing authoritative
 contract and attempt records, and the distinction between observation and enforcement.
-A replay MUST NOT initiate side effects or contract transitions.
+A replay MUST NOT initiate side effects or contract transitions. Git is the proposed first
+recorder adapter, not a required architecture for every use of this skill. Runtime work is
+tracked in issue #27 and does not expand PR #24's merge scope.
 Using the skill confers no authority to deploy, communicate externally, assign people,
 or accept residual risk.
 
@@ -65,7 +70,9 @@ Changes MUST preserve the five principles, keep the entrypoint concise, and plac
 conditional detail in linked references. Validate skill structure, local links, source
 attribution, and behavior against a realistic example. Record checks and unresolved limits
 without representing editorial validation as operating-system assurance. Changes to executable
-helpers, if introduced later, require meaningful execution checks.
+helpers, if introduced later, require meaningful execution checks. Feedback into QVCH, UWH
+or this method MUST identify evidence, target revision, decision owner and compatibility
+impact, and MUST be adopted through review at a checkpoint rather than silent propagation.
 
 ## Governance
 
@@ -76,4 +83,4 @@ minor for new or materially expanded principles, patch for clarifications. Revie
 against this constitution; disclose exceptions and obtain the owner's decision before treating
 them as accepted. This document does not grant operational authorization.
 
-**Version**: 0.2.0 | **Ratified**: TODO(RATIFICATION_DATE): pending owner adoption | **Last Amended**: 2026-11-05
+**Version**: 0.3.0 | **Ratified**: TODO(RATIFICATION_DATE): pending owner adoption | **Last Amended**: 2026-11-05
