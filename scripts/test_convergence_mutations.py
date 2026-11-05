@@ -11,7 +11,7 @@ PKG = 'unified-work-harness'
 # target and control are actual TAP names, not input substrings used as evidence
 cases = [
     ('worker-redirect', 'bundle.mjs',
-     'await runGuardedOpenCode({ assignment, worktree, artifactDirectory, endpoint, getTempParent, capturePrivateResult }, beforeProvider)',
+     'await runGuardedOpenCode({ assignment, worktree, artifactDirectory, endpoint, getTempParent, capturePrivateResult }, beforeProvider, beforeCompletion)',
      'await runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, getTempParent, capturePrivateResult })',
      'integrated', 'OpenCode completion after a source read, upstream status 307',
      'OpenCode completion after a source read, upstream status 200', 'the second listener must receive no requests'),

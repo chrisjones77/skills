@@ -585,6 +585,8 @@ export function inspectWorkIntake(request = {}) {
   };
 }
 
+const maxAssignmentBytes = 262144;
+
 // Preparation only. Inputs use compact JSON.stringify encoding, preserving key
 // and array order. Requiring an exact re-encoding rejects duplicate keys and
 // ambiguous whitespace/number encodings. No caller-supplied inspection receipts.
@@ -593,7 +595,7 @@ export function buildDraftBinding(inputs) {
     const keys = ["profileJson", "intakeJson", "assignmentJson", "workspaceJson"];
     if (!inputs || Object.keys(inputs).sort().join() !== [...keys].sort().join()) throw new Error();
     const parse = (text) => {
-      if (typeof text !== "string" || Buffer.byteLength(text, "utf8") > 262144) throw new Error();
+      if (typeof text !== "string" || Buffer.byteLength(text, "utf8") > maxAssignmentBytes) throw new Error();
       const value = JSON.parse(text);
       if (!value || Array.isArray(value) || typeof value !== "object" || JSON.stringify(value) !== text) throw new Error();
       return value;
@@ -2046,7 +2048,7 @@ export function isQueueWorkerProcess() {
 // OpenCode's HTTP client follows redirects. Give that client a per-run local
 // endpoint whose only upstream is the accepted completion route. node:http
 // streams both directions without following redirects or decoding SSE.
-async function runGuardedOpenCode(options, beforeProvider) {
+async function runGuardedOpenCode(options, beforeLaunch, beforeCompletion) {
   const target = new URL(options.endpoint + "/chat/completions");
   const token = randomUUID();
   let denied = false;
@@ -2056,7 +2058,7 @@ async function runGuardedOpenCode(options, beforeProvider) {
       res.writeHead(403).end();
       return;
     }
-    try { beforeProvider(); }
+    try { beforeCompletion(); }
     catch { denied = true; }
     if (denied) { res.writeHead(403).end(); return; }
     const upstream = httpRequest(target, {
@@ -2095,6 +2097,7 @@ async function runGuardedOpenCode(options, beforeProvider) {
     mkdirSync(state, {recursive:true, mode:0o700});
     const configPath = path.join(state, "guarded-opencode.json");
     writeFileSync(configPath, JSON.stringify(config), {mode:0o600, flag:"wx"});
+    beforeLaunch();
     const result = await runOpenCode({...options, configPath});
     if (denied) result.violations.push("provider request or redirect outside accepted authority");
     return result;
@@ -2493,9 +2496,10 @@ export async function runHarness({
   completionRequest = fetch,
   capturePrivateResult = false,
   beforeProvider = () => {},
+  beforeCompletion = beforeProvider,
   getTempParent = tmpdir,
 }) {
-  const assignmentSource = readFileSync(path.resolve(cwd, assignmentPath), "utf8");
+  const assignmentSource = readAssignmentBytes(path.resolve(cwd, assignmentPath)).toString("utf8");
   const assignment = validateAssignment(JSON.parse(assignmentSource));
   const isCodex = assignment.assignee.provider === "codex";
   endpoint ??= PROVIDER_PROFILES[assignment.assignee.provider].defaultEndpoint;
@@ -2552,7 +2556,7 @@ export async function runHarness({
         ? await runDirectJson({ assignment, worktree, artifactDirectory, endpoint, request: completionRequest })
         : adapter === "aider"
           ? await runAider({ assignment, worktree, artifactDirectory, endpoint })
-        : await runGuardedOpenCode({ assignment, worktree, artifactDirectory, endpoint, getTempParent, capturePrivateResult }, beforeProvider);
+        : await runGuardedOpenCode({ assignment, worktree, artifactDirectory, endpoint, getTempParent, capturePrivateResult }, beforeProvider, beforeCompletion);
     } finally {
       providerLease?.release();
       providerLease = null;
@@ -2660,7 +2664,7 @@ function usage() {
 async function main(argv) {
   const [command, assignmentPath, endpointArgument] = argv;
   if (!command || !assignmentPath) throw new Error(usage());
-  const source = readFileSync(path.resolve(assignmentPath), "utf8");
+  const source = readAssignmentBytes(path.resolve(assignmentPath)).toString("utf8");
   const assignment = validateAssignment(JSON.parse(source));
   const endpoint = endpointArgument ?? PROVIDER_PROFILES[assignment.assignee.provider].defaultEndpoint;
   if (command === "validate") {
@@ -2848,6 +2852,26 @@ export function verifyBoundPacketIdentity(packet, offered, bindingInputs) {
   if (packet.owner !== intake.assignee.id || offered.recipient !== intake.assignee.id || offered.assigner !== intake.accountableHuman || offered.reviewer !== intake.acceptance.reviewer || offered.engineering_purpose !== profile.primary || offered.acceptance_evidence !== JSON.stringify(intake.acceptance.checks) || ["root", "identity", "revision", "status_digest"].some(key => packet.workspace[key] !== workspace[key])) throw new Error("integrated contract identity or review criteria mismatch");
 }
 
+// Inspect and read the same descriptor. Nonblocking open refuses to wait for
+// a FIFO writer; one byte of lookahead detects growth without chasing EOF.
+export function readAssignmentBytes(filename, expectedSize) {
+  const fd = openSync(filename, fsFlags.O_RDONLY | fsFlags.O_NONBLOCK | fsFlags.O_NOCTTY);
+  try {
+    const st = fstatSync(fd);
+    if (!st.isFile() || st.size > maxAssignmentBytes || (expectedSize !== undefined && st.size !== expectedSize))
+      throw Error("Assignment file differs from accepted scope or is not a bounded regular file");
+    const bytes = Buffer.alloc(st.size + 1);
+    let used = 0;
+    while (used < bytes.length) {
+      const n = readSync(fd, bytes, used, bytes.length - used, used);
+      if (!n) break;
+      used += n;
+    }
+    if (used !== st.size) throw Error("Assignment file changed while reading");
+    return bytes.subarray(0, used);
+  } finally { closeSync(fd); }
+}
+
 export async function contractRoundtrip(options) {
   return contractEnvironment.run(true, () => executeContractRoundtrip(options));
 }
@@ -2863,11 +2887,11 @@ async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outp
   let recheckPackage;
   let lastObservedTime = Date.now();
   let getTempParent;
-  const checkFreshness = () => {
+  const checkFreshness = (starting = true) => {
     getTempParent?.();
     if (executionWindow === undefined) return;
     const now = Date.now();
-    if (now < lastObservedTime || inspectExecutionWindow(executionWindow,now).state !== "within_window") throw new Error("Execution window unavailable, expired, or clock regressed.");
+    if (now < lastObservedTime || (starting && inspectExecutionWindow(executionWindow,now).state !== "within_window")) throw new Error("Execution window unavailable, expired, or clock regressed.");
     lastObservedTime = now;
     recheckPackage?.();
   };
@@ -2896,8 +2920,9 @@ async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outp
     if (!packageBound && offered.scope !== buildBoundScope(bindingInputs, endpoint, resultPolicy, invocationPolicy, executionWindow)) throw new Error("integrated scope or endpoint differs from accepted binding");
     verifyBoundPacketIdentity(packet, offered, bindingInputs);
   } else if (bindingInputs !== undefined || resultPolicy !== undefined || invocationPolicy !== undefined || executionWindow !== undefined || !scope || Array.isArray(scope) || Object.keys(scope).sort().join(",") !== "assignment_sha256,kind" || scope.kind !== "unified-harness-readonly-v1" || !/^[a-f0-9]{64}$/.test(scope.assignment_sha256 ?? "")) throw new Error("unsupported executor scope binding");
-  const source = readFileSync(assignmentPath, "utf8");
-  if (sha256(source) !== scope.assignment_sha256) throw new Error("executor assignment differs from accepted scope");
+  const bytes = readAssignmentBytes(assignmentPath, integrated ? Buffer.byteLength(bindingInputs.assignmentJson) : undefined);
+  if (sha256(bytes) !== scope.assignment_sha256) throw new Error("executor assignment differs from accepted scope");
+  const source = new TextDecoder("utf-8", {fatal:true, ignoreBOM:true}).decode(bytes);
   const assignment = validateAssignment(JSON.parse(source));
   if (assignment.authority.mode !== "read_only" || assignment.authority.allowed_paths.length || assignment.authority.allow_test_changes || assignment.assignee.processing !== "local" || assignment.data.external_processing_allowed || (assignment.worker?.adapter ?? "opencode") !== "opencode") throw new Error("executor assignment is outside the read-only local profile");
   if (assignment.outcome !== offered.outcome || assignment.acceptance.reviewer !== offered.reviewer || assignment.assignee.accountable_human !== offered.assigner || assignment.supervision.decision_owner !== offered.assigner || assignment.acceptance.require_changes) throw new Error("executor assignment does not preserve contract outcome or roles");
@@ -2927,7 +2952,7 @@ async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outp
     temporaryRoot = mkdtempSync(path.join(getTempParent(), "unified-work-harness-"));
     const pinnedAssignmentPath = path.join(temporaryRoot, "accepted-assignment.json");
     writeFileSync(pinnedAssignmentPath, source, {mode:0o600});
-    const run = await runHarness({assignmentPath:pinnedAssignmentPath, cwd:root, endpoint, getTempParent, outputRoot:outputRoot ?? path.join(temporaryRoot, "evidence"), beforeProvider:checkFreshness, capturePrivateResult:resultPolicy !== undefined, ...(endpointCheck ? {endpointCheck} : {}), ...(completionRequest ? {completionRequest} : {})});
+    const run = await runHarness({assignmentPath:pinnedAssignmentPath, cwd:root, endpoint, getTempParent, outputRoot:outputRoot ?? path.join(temporaryRoot, "evidence"), beforeProvider:checkFreshness, beforeCompletion:() => checkFreshness(false), capturePrivateResult:resultPolicy !== undefined, ...(endpointCheck ? {endpointCheck} : {}), ...(completionRequest ? {completionRequest} : {})});
     if (run.evidence.assignment_hash !== scope.assignment_sha256 || run.evidence.base_commit !== revision) throw new Error("executor evidence does not bind the accepted assignment and revision");
     if (run.evidence.disposition !== "candidate" || run.evidence.changed_files.length) {
       const reasons = [];

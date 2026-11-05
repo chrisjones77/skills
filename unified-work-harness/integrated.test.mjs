@@ -161,16 +161,23 @@ function streamReadCompletion(res, askForRead, hasSource, filename = 'source.txt
 
 // With UNIFIED_TEST_INSTALLED_OPENCODE=1 this same provider drives the installed
 // worker through its read tool. The deterministic lane uses an HTTP client that follows redirects.
-for (const beforeRead of [false,true]) for (const status of (beforeRead ? redirectStatuses : [...redirectStatuses,200])) {
+const windowCases = ['v5 expires before launch','v5 expires after launch','v6 intake expires after launch'];
+for (const beforeRead of [false,true]) for (const scenario of (beforeRead ? redirectStatuses : [...redirectStatuses,200,...windowCases])) {
+  const windowCase = typeof scenario === 'string';
+  const status = windowCase ? 200 : scenario;
   const stage = beforeRead ? 'before a source read' : 'after a source read';
-  test('OpenCode completion '+stage+', upstream status '+status, async t => {
-    let sourcePosts = 0, firstPosts = 0;
+  test(windowCase ? 'OpenCode window: '+scenario : 'OpenCode completion '+stage+', upstream status '+status, async t => {
+    let sourcePosts = 0, firstPosts = 0, completionPosts = 0;
+    let expiry, advanced = false;
+    const expire = () => { if (!advanced) { advanced=true; t.mock.method(Date,'now',()=>expiry); } };
     const destination = await observeDestination(t);
     const port = await listen(t,'127.0.0.1',async (req,res) => {
       if (req.url !== '/prefix/v1/chat/completions') {
+        if (scenario === 'v5 expires before launch' && req.url.endsWith('/models')) expire();
         res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[{name:'synthetic:local'}],version:'test'}));
         return;
       }
+      completionPosts++;
       const chunks = [];
       for await (const chunk of req) chunks.push(chunk);
       const body = Buffer.concat(chunks).toString();
@@ -189,9 +196,14 @@ for (const beforeRead of [false,true]) for (const status of (beforeRead ? redire
       }
       // Title generation gets a short text reply. The initial task gets a tool call.
       const askForRead = !hasSource && JSON.parse(body).tools?.length;
+      if (windowCase && askForRead) expire();
       streamReadCompletion(res, askForRead, hasSource);
     });
     const {inputs,temp,accept} = fixture(t,`http://127.0.0.1:${port}/prefix/v1`,'source.txt',20);
+    if (windowCase) {
+      expiry = Date.parse(scenario.startsWith('v5') ? inputs.executionWindow.expires_at : inputs.packagePolicy.intakeReview.assessment.expiresAt);
+      if (scenario.startsWith('v5')) delete inputs.packagePolicy;
+    }
     if (process.env.UNIFIED_TEST_INSTALLED_OPENCODE !== '1') {
       const bin = path.join(temp,'bin');
       mkdirSync(bin);
@@ -203,6 +215,11 @@ for (const beforeRead of [false,true]) for (const status of (beforeRead ? redire
     const first=await fetch(baseURL+'/chat/completions',{method:'POST',headers:{authorization:'Bearer '+apiKey},body:'{"messages":[]}'});
     if(!first.ok) {process.exitCode=1;return;}
     throw Error('unexpected first completion');
+  }
+  if (${windowCase}) {
+    const first=await fetch(baseURL+'/chat/completions',{method:'POST',headers:{authorization:'Bearer '+apiKey},body:'{"tools":["read"]}'});
+    if(!first.ok) throw Error('worker could not start');
+    await first.text();
   }
   const token = fs.readFileSync('source.txt','utf8');
   console.log(JSON.stringify({type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:token}}}));
@@ -216,11 +233,18 @@ for (const beforeRead of [false,true]) for (const status of (beforeRead ? redire
       process.env.PATH = bin+path.delimiter+previous;
       t.after(() => { process.env.PATH = previous; });
     }
-    const packet = accept(buildPackageScope(inputs));
+    const packet = accept(inputs.packagePolicy ? buildPackageScope(inputs) :
+      buildBoundScope(inputs.bindingInputs,inputs.endpoint,inputs.resultPolicy,inputs.invocationPolicy,inputs.executionWindow));
     const run = contractRoundtrip({...inputs,packet});
-    if (status === 200) assert.equal((await run).review_status,'pending');
+    const success = status === 200 && (!windowCase || scenario === 'v5 expires after launch');
+    if (success) assert.equal((await run).review_status,'pending');
     else await assert.rejects(run);
-    if(beforeRead) assert.ok(firstPosts>0,'the accepted upstream must receive the initial completion');
+    if (windowCase) {
+      assert.equal(advanced,true);
+      assert.equal(completionPosts>0,scenario !== 'v5 expires before launch');
+      assert.equal(sourcePosts>0,success);
+      assert.equal(inspectInvocation(inputs.invocationPolicy,hypervisor.currentAssignment(packet).digest).state,success?'completed':'failed');
+    } else if(beforeRead) assert.ok(firstPosts>0,'the accepted upstream must receive the initial completion');
     else assert.ok(sourcePosts > 0,'the accepted upstream must receive the file token');
     assert.deepEqual(destination.requests,[],'the second listener must receive no requests');
   });
@@ -371,6 +395,7 @@ for (const status of redirectStatuses) test('direct completion refuses redirect 
 
 for (const [expireAfter, title, host = '127.0.0.1', prefix = ''] of [
   [null, 'reviewed and accepted v6 produces a package-bound candidate receipt'],
+  [null, 'direct v6 rejects FIFO and oversized assignments before effects and preserves the accepted attempt'],
   [null, 'IPv6 loopback with a path prefix completes the accepted v6 contract', '::1', '/prefix'],
   ['/v1/models', 'expiry during discovery stops additional metadata requests and consumes the attempt'],
   ['/api/tags', 'expiry after discovery stops the worker and consumes the attempt'],
@@ -417,6 +442,22 @@ for (const event of [
       assert.ok(!readdirSync(temp).includes('executed'));
       assert.equal(inspectInvocation(inputs.invocationPolicy,digest).state,'failed');
     } else {
+      if (title.startsWith('direct v6 rejects FIFO')) {
+        const fifo = path.join(temp,'assignment.fifo'), large = path.join(temp,'large.json');
+        execFileSync('mkfifo',[fifo]);
+        writeFileSync(large,Buffer.alloc(262145,32));
+        // A blocked synchronous open cannot be interrupted by an in-process test timer.
+        const probe = `import {contractRoundtrip} from ${JSON.stringify(new URL('./bundle.mjs',import.meta.url).href)};
+          const opts=JSON.parse(process.argv[1]);
+          try {await contractRoundtrip(opts);process.exitCode=1;}
+          catch(e){if(!/not a bounded regular file/.test(e.message))throw e;}`;
+        execFileSync(process.execPath,['--input-type=module','-e',probe,JSON.stringify({...inputs,packet,assignmentPath:fifo})],
+          {timeout:5000,killSignal:'SIGKILL'});
+        await assert.rejects(contractRoundtrip({...inputs,packet,assignmentPath:large}),/not a bounded regular file/);
+        assert.deepEqual(routes,[]);
+        assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
+        assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
+      }
       const receipt = await contractRoundtrip({...inputs,packet});
       assert.deepEqual(routes.sort(), ['/api/tags','/api/version','/v1/models'].map(route => prefix + route));
       assert.equal(receipt.schema_version,'unified.contract-executor-receipt.v6');

@@ -435,6 +435,11 @@ retry is supplied. V5 adds the start-window gate below. This is a local review,
 not independent crash/power-loss assurance. Planned queue/dispatch capabilities
 remain unchanged.
 
+Direct and queued contract dispatch read assignment bytes from one nonblocking
+regular-file descriptor. All assignment files, including legacy v1 files,
+are limited to 256 KiB. A FIFO, an oversized file or a byte mismatch is
+refused before discovery or an invocation claim (before reservation for queues).
+
 ### Execution start window v5
 
 Pass `executionWindow` as a fifth argument to `buildBoundScope` and the same
@@ -460,7 +465,10 @@ If the first checks fail, no claim or provider request occurs. Expiry or clock
 regression detected after claiming fails that attempt without automatic retry;
 normal v4 reconciliation applies. Endpoint discovery may already have happened
 if expiry occurs during provider preflight. A worker already launched is governed
-by its existing timeout, not forcibly stopped at window expiry. The v5 receipt
+by its existing timeout, not forcibly stopped at window expiry. The relay still
+checks its credential, method, accepted route and redirect policy on every
+request; it also rechecks storage identity and clock regression, and for v6,
+the package and intake review. The v5 receipt
 records the accepted window and retains pending human review. There is no implicit
 relationship between this UTC window and the intake's calendar target date.
 

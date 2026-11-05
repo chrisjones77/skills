@@ -15,6 +15,8 @@ const inventory=packageInventory(), rows=[];
 function family(id,file,capabilities,control,...cases){rows.push({id,file:file+'.test.mjs',capabilities,control,cases});}
 const codes=[301,302,303,307,308];
 const prefix='OpenCode completion after a source read, upstream status ';
+const windows=['v5 expires before launch','v5 expires after launch','v6 intake expires after launch'];
+family('time.worker','integrated',[],prefix+200,...windows.map(s=>'OpenCode window: '+s));
 family('transport.worker','integrated',['provider_facade'],prefix+200,...codes.map(n=>prefix+n),
   ...codes.map(n=>'OpenCode completion before a source read, upstream status '+n));
 if (mode === 'worker') {
@@ -38,6 +40,7 @@ if(mode==='suite'){
     ...['v5','v6'].flatMap(v=>['verifies the source before creating queue storage','refuses a relocated queue before reservation'].map(s=>v+' '+s)),
     'explicit goal, accepted identity, ceiling, expiration and cancellation govern admission');
   family('storage.identity','integrated',[],'reviewed and accepted v6 produces a package-bound candidate receipt',
+    'direct v6 rejects FIFO and oversized assignments before effects and preserves the accepted attempt',
     ...[1,2,3,4,5,6].map(v=>'v'+v+' verifies each accepted scope field before effects'),
     'physical ancestry refuses an aliased private directory','v6 refuses a temporary parent inside the checkout before discovery or claim',
     'v6 refuses a replaced temp parent and leaves its contents alone during cleanup');
@@ -70,7 +73,7 @@ if(mode==='worker'){
 }
 const files=(mode==='worker'?['integrated.test.mjs']:readdirSync(pkg).filter(f=>f.endsWith('.test.mjs'))).map(f=>path.join(pkg,f));
 const passed=new Set(), allowedSkips=['live local candidate edit through both accepted HTTP protocols','live local model processes an explicitly synthetic read-only assignment'];
-for await(const {type,data} of run({files,concurrency:4,...(mode==='worker'?{testNamePatterns:[/^OpenCode (isolates |completion (before|after) a source read,)/]}:{})})){
+for await(const {type,data} of run({files,concurrency:4,...(mode==='worker'?{testNamePatterns:[/^OpenCode (isolates |window: |completion (before|after) a source read,)/]}:{})})){
   if(!['test:pass','test:fail'].includes(type))continue;
   const key=path.basename(data.file??'')+':'+data.name;
   if(data.skip || data.todo){
