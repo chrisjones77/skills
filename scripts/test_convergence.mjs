@@ -77,11 +77,13 @@ if(mode==='suite'){
     ...['v5','v6'].map(v=>v+' rejects substituted policies before reservation and accepts the original envelope'),
     ...['v5','v6'].map(v=>v+' matches the packet workspace and resume before charging'),
     ...['v5','v6'].flatMap(v=>['verifies the source before creating queue storage','refuses a relocated queue before reservation'].map(s=>v+' '+s)),
+    ...['v5','v6'].map(v=>v+' queue requires a new resume after reviewer rework'),
     'v5 self-review cannot enter a queue or advance an older queue',
     'provider refuses a queue copied into another selected workspace',
     'attended replies require the original queue location after restart',
     'explicit goal, accepted identity, ceiling, expiration and cancellation govern admission');
   family('storage.identity','integrated',[],'reviewed and accepted v6 produces a package-bound candidate receipt',
+    'direct v6 rework rejects the prior resume before discovery or claim',
     'v6 refuses a terminal receipt when its in-flight claim changes',
     'strict format checks the post-read answer with and without result capture',
     'direct v6 rejects FIFO and oversized assignments before effects and preserves the accepted attempt',
@@ -100,6 +102,18 @@ if(mode==='suite'){
     ...['replacement claim','artifact hard link','artifact symlink','wrong artifact mode','artifact truncated','damaged in-flight claim'].map(s=>'candidate recovery: '+s));
   family('attended.sequence','coordination',['human_hybrid_contracts','call_response'],'concern, alternate answer and transfer preserve attribution and require fresh acceptance',
     'attended lifecycle enforces the transition and actor table');
+  family('history.work','coordination',[],'work event history: reviewed revision retains its earlier workspace',
+    ...['opening before offer','acceptance before offer','review before acceptance','rework before submission','wrong opening actor',
+      'duplicate opening','missing opening','unattributed acceptance','reviewer impersonation','missing review event','wrong review digest',
+      'review state mismatch','backdated review via public response','backdated revision','submit requires an active resumed writer',
+      'submit cannot predate resume'].map(s=>'work event history: '+s));
+  family('history.resume','coordination',[],'attended resume history: explicit same millisecond resume',
+    ...['prior checkpoint','same millisecond prior checkpoint','older unbound checkpoint','ambiguous unbound checkpoint',
+      'later legacy resume','different revision','different event count','revised offer rejects the old checkpoint'].map(s=>'attended resume history: '+s),
+    ...['stale digest','wrong recipient','not accepted','already active','unresolved concern','before checkpoint','future resume','no note'].map(s=>'resume admission: '+s),
+    ...['pause','resolved clarification'].map(s=>'resume after hold: '+s),
+    ...['no resume','wrong writer','wrong workspace','resume after submission','checkpoint bound to another event',
+      'rework consumes a distinct resume','superseded workspace substitution'].map(s=>'submitted checkpoint history: '+s));
   family('time.lease','roundtrip',[],'equivalent endpoint URLs share a provider lease until release','concurrent stale lease recovery preserves the replacement owner');
   family('recovery.queue','queue',['sequential_queue'],'running work excludes a concurrent caller and review gates advancement after restart',
     'stop blocks both decisions on a pending provider receipt',
@@ -109,6 +123,7 @@ if(mode==='suite'){
     ...['openai_chat','ollama_chat'].map(a=>a+' observes response limits, integrity and private evidence'),
     ...['openai_chat','ollama_chat'].map(a=>a+' admits only its canonical route and bounded token budget'),
     ...['openai_chat','ollama_chat'].map(a=>a+' checks serialized request size before claiming'),
+    'candidate rework requires fresh resume before ledger claim',
     'defect reproduction safely returns a failing accepted data fixture','cancellation during a provider request blocks persistence and replay');
   family('package.methods','package-profile',['engineering_safety','fair_process','ai_lifecycle','professional_practice','coverage_review','issue_triage','advisory_workflow'],
     'manifest-only installation runs the documented offline walkthrough','all inventory entries resolve to inspected package bytes without conferring authority','changed guidance invalidates the accepted package pin');

@@ -52,9 +52,10 @@ export function inspectCoordination(record) {
   let previous = null;
   const seen = new Set();
   for (const item of [...record.predecessors, record]) {
-    h.validatePacket(item.packet);
+    if (!Array.isArray(item.revisions)) throw new Error("Invalid coordination revision history");
+    h.validatePacket(item.packet,item.revisions.map(revision=>revision.workspace));
     const a = h.currentAssignment(item.packet);
-    if (!Array.isArray(item.revisions) || item.revisions.length !== item.packet.work_contract.assignments.length - 1 ||
+    if (item.revisions.length !== item.packet.work_contract.assignments.length - 1 ||
         item.revisions.length > 64 || seen.has(a.digest)) throw new Error("Invalid coordination revision history");
     [...item.revisions, item].forEach(({intake,review,workspace}, index) => {
       const assignment = item.packet.work_contract.assignments[index];
@@ -104,19 +105,18 @@ export function respond(record, action, options) {
   else if (action === "reassess") packet = h.reassessClarification(p,options);
   else if (action === "reroute") packet = h.routeClarification(p,options);
   else if (["submit","rework","approve","close"].includes(action)) {
-    if (action === "submit" && p.status !== "active") throw new Error("Resume before submitting");
     packet = h.reviewWork(p,{...options,decision: action === "approve" ? "accept" : action});
-  } else if (["pause","resume"].includes(action)) {
-    if (by !== a.recipient || p.work_contract.disposition !== "accepted" ||
-        !["pending","rework"].includes(p.work_contract.review.status) ||
-        (action === "resume" && (p.status !== "paused" || p.clarifications?.some(c => c.status !== "resolved"))) ||
-        (action === "pause" && p.status !== "active")) throw new Error("Unavailable transition");
+  } else if (action === "resume") {
+    requireText(options.note,"checkpoint note");
+    packet = h.resumeAssignment(p,options);
+  } else if (action === "pause") {
+    if (by !== a.recipient || p.status !== "active") throw new Error("Unavailable transition");
     requireText(options.note,"checkpoint note");
     packet = structuredClone(p);
-    packet.status = action === "pause" ? "paused" : "active";
-    packet.handoff.current_writer = action === "pause" ? null : by;
-    packet.checkpoints.push({kind:action === "pause" ? "paused" : "resumed",owner:by,
-      workspace:p.workspace.identity,note:options.note,at:new Date().toISOString(),reconciled:false});
+    packet.status = "paused";
+    packet.handoff.current_writer = null;
+    packet.checkpoints.push({kind:"paused",owner:by,workspace:p.workspace.identity,note:options.note,
+      at:new Date().toISOString(),reconciled:false,assignment_digest:assignmentDigest,work_event_count:p.work_contract.events.length});
   } else throw new Error("Unknown coordination action");
   const next = {...structuredClone(record),packet};
   inspectCoordination(next);

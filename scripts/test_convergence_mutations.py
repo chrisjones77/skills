@@ -10,6 +10,15 @@ ROOT = Path(__file__).resolve().parents[1]
 PKG = 'unified-work-harness'
 # target and control are actual TAP names, not input substrings used as evidence
 cases = [
+    ('regressing-work-history', 'bundle.mjs', 'time < previousTime || time < created ||',
+     'time < created ||', 'coordination', 'work event history: rework before submission',
+     'work event history: reviewed revision retains its earlier workspace', 'invalid history admitted: rework before submission'),
+    ('stale-resume-count', 'bundle.mjs', 'cp.assignment_digest === assignment.digest && cp.work_event_count === eventCount',
+     'cp.assignment_digest === assignment.digest', 'coordination', 'attended resume history: different event count',
+     'attended resume history: explicit same millisecond resume', 'stale checkpoint admitted: different event count'),
+    ('missing-submission-resume', 'bundle.mjs', "if (e.kind === 'review-submit') {",
+     'if (false) {', 'coordination', 'submitted checkpoint history: no resume',
+     'work event history: reviewed revision retains its earlier workspace', 'submission has no matching resume: no resume'),
     ('redirected-terminal-write', 'bundle.mjs', 'durableExclusiveJson(directory, terminalName,',
      'durableExclusiveJson(policy.directory, terminalName,', 'roundtrip', 'ledger finalization: policy redirected',
      'ledger finalization: completed pair', 'finish must stay in the claimed directory'),

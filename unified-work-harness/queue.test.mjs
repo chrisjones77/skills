@@ -1,3 +1,4 @@
+import {reworkFixture} from './test-support.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { syncBuiltinESMExports } from 'node:module';
@@ -666,3 +667,26 @@ test('stop blocks both decisions on a pending provider receipt', async t => {
     assert.deepEqual(inspectQueue(f.directory),stopped);
   }
 });
+
+for(const version of ['v5','v6']) {
+  test(version+' queue requires a new resume after reviewer rework',async t=>{
+    const pkg=version==='v6' && {...await import('./integrated.mjs'),...await import('./package.mjs'),...await import('./intake.mjs')};
+    const requests=[], f=fixture(t,await simulatedProvider(t,requests),pkg||undefined);
+    installWorker(t,f,"console.log(JSON.stringify({type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'reference'}}}));console.log(JSON.stringify({type:'text',part:{text:'reference'}}));");
+    const {paused,stale}=reworkFixture(hypervisor,f.first.packet);
+    const staleEnvelope={...f.first,packet:stale};
+    assert.throws(()=>createQueue(f.directory,{...f.config,packets:[staleEnvelope,f.second]}),/resume checkpoint/i);
+    assert.deepEqual(readdirSync(f.directory),[]);
+    createQueue(f.directory,f.config);
+    const before=inspectQueue(f.directory);
+    await assert.rejects(dispatchNext(f.directory,staleEnvelope),/resume checkpoint/i);
+    assert.deepEqual(inspectQueue(f.directory),before);
+    assert.deepEqual(requests,[]);
+    assert.deepEqual(readdirSync(f.first.invocationPolicy.directory),[]);
+    const offer=hypervisor.currentAssignment(paused);
+    const packet=hypervisor.resumeAssignment(paused,{by:offer.recipient,assignmentDigest:offer.digest,note:'restart after review'});
+    const result=await dispatchNext(f.directory,{...f.first,packet});
+    assert.equal(result.assignment_digest,offer.digest);
+    assert.equal(inspectQueue(f.directory).remaining[0].attempts,1);
+  });
+}

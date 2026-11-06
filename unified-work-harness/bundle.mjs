@@ -60,7 +60,20 @@ function makeAssignment(packet, {scope, acceptanceEvidence, engineeringPurpose =
     authority:structuredClone(packet.authorization), created_at:at, digest:''};
   a.digest = assignmentDigest(a); return a;
 }
-function validateWorkContract(packet) {
+function matchesResume(checkpoints, index, assignment, eventCount, eventTime, workspace) {
+  const cp = checkpoints[index], preceding = checkpoints[index-1];
+  if (cp?.kind !== 'resumed' || cp.owner !== assignment.recipient || (workspace !== undefined && cp.workspace !== workspace) ||
+      !timestamp(cp.at)) return false;
+  const time = Date.parse(cp.at), previousCheckpointTime = Date.parse(preceding?.at);
+  if (time < eventTime || time < previousCheckpointTime) return false;
+  if (['assignment_digest','work_event_count','checkpoint_index'].some(key => Object.hasOwn(cp,key))) {
+    return cp.assignment_digest === assignment.digest && cp.work_event_count === eventCount && cp.checkpoint_index === index;
+  }
+  // A legacy resume can share the first acceptance tick, but after another
+  // transition its timestamp must distinguish it from the preceding event.
+  return (eventCount === 2 || time > eventTime) && (!preceding || preceding.kind === 'created' || time > previousCheckpointTime);
+}
+function validateWorkContract(packet, priorWorkspaces) {
   const w = packet.work_contract; if (w === undefined) return;
   if (!exact(w,['version','assignments','disposition','acceptance','events','review']) || w.version !== 1 || !Array.isArray(w.assignments) || !w.assignments.length || w.assignments.length>100 || !Array.isArray(w.events) || w.events.length>1000 || !statuses.includes(w.disposition)) throw Error('Invalid work contract.');
   for (const [i,a] of w.assignments.entries()) {
@@ -96,9 +109,9 @@ function validateWorkContract(packet) {
   }
   if (reviewStates.get(a.digest) !== w.review.status) throw Error('Review state does not match its recorded history.');
   const opened = new Set(), reofferRequired = new Set(), dispositionEvents = new Map(), reviewEvents = [];
-  let previousEventRevision = 0;
+  let previousEventRevision = 0, previousTime = -Infinity, nextCheckpoint = 0;
   let closed = false;
-  for (const e of w.events) {
+  for (const [index,e] of w.events.entries()) {
     if (closed) throw Error('Work events cannot follow review closure.');
     if (!exact(e, ['kind','by','note','at','assignment_digest']) || !text(e.by) || !text(e.note) || !timestamp(e.at)) throw Error('Invalid work event.');
     const assignment = w.assignments.find(item => item.digest === e.assignment_digest);
@@ -106,6 +119,23 @@ function validateWorkContract(packet) {
     const openingKind = assignment.revision === 1 ? 'offered' : 'revised';
     if (!opened.has(assignment.digest) && e.kind !== openingKind) throw Error('Assignment history requires its opening event.');
     if (opened.has(assignment.digest) && ['offered','revised'].includes(e.kind)) throw Error('Assignment history contains a repeated opening event.');
+    const time = Date.parse(e.at), created = Date.parse(assignment.created_at);
+    if (time < previousTime || time < created || (!opened.has(assignment.digest) && created < previousTime))
+      throw Error('Work event chronology conflicts with its offer or preceding events.');
+    if (e.kind === 'review-submit') {
+      // Consume checkpoints in sequence. Their work-event counts separate a
+      // pause or resume on the same clock tick but after this submission.
+      const firstUnused = nextCheckpoint;
+      while (nextCheckpoint < packet.checkpoints.length) {
+        const cp = packet.checkpoints[nextCheckpoint];
+        if (cp?.work_event_count > index || Date.parse(cp?.at) > time) break;
+        nextCheckpoint++;
+      }
+      const workspace = assignment.digest === a.digest ? packet.workspace.identity : priorWorkspaces?.[assignment.revision-1]?.identity;
+      if (nextCheckpoint === firstUnused || !matchesResume(packet.checkpoints,nextCheckpoint-1,assignment,index,previousTime,workspace))
+        throw Error('Submission history requires its own matching resume checkpoint.');
+    }
+    previousTime = time;
     const permittedActors = e.kind === 'offered' || e.kind === 'revised' || e.kind === 'timeout' ? [assignment.assigner]
       : ['accepted','declined','deferred','review-submit'].includes(e.kind) ? [assignment.recipient]
         : e.kind === 'withdrawn' ? [assignment.recipient, assignment.assigner]
@@ -128,9 +158,16 @@ function validateWorkContract(packet) {
   if (w.acceptance && (latestDisposition.by !== w.acceptance.by || latestDisposition.at !== w.acceptance.at)) throw Error('Acceptance does not match its work event.');
   const reviewProjection = w.review.history.map(r => [r.decision, r.by, r.note, r.at, r.assignment_digest]);
   if (!same(reviewEvents, reviewProjection)) throw Error('Review history does not match its work events.');
+  if (packet.status === 'active') {
+    if (w.disposition !== 'accepted' || packet.handoff.current_writer !== a.recipient ||
+        !matchesResume(packet.checkpoints,packet.checkpoints.length-1,a,w.events.length,previousTime,packet.workspace.identity))
+      throw Error('Active contract requires a current resume checkpoint matching its workspace and latest work event.');
+  }
 }
 function event(packet,kind,by,note,at) {
   if (!text(by) || !text(note) || !timestamp(at) || packet.work_contract.events.length>=1000) throw Error('Provide bounded actor, note and timestamp.');
+  if (Date.parse(at) < Date.parse(packet.checkpoints?.at(-1)?.at))
+    throw Error('Work event chronology precedes the latest checkpoint.');
   packet.work_contract.events.push({kind,by,note,at,assignment_digest:currentAssignment(packet).digest});packet.updated_at=at;
   return packet;
 }
@@ -138,10 +175,11 @@ function offerAssignment(packet, options) {
   if (packet.work_contract || packet.handoff.pending_transfer || packet.clarifications?.length) throw Error('Offer requires a new or explicitly unencumbered legacy packet.');
   const next=structuredClone(packet);
   next.work_contract={version:1,assignments:[],disposition:'offered',acceptance:null,events:[],review:{status:'pending',history:[]}};
-  next.work_contract.assignments.push(makeAssignment(next,options));
+  const at = options.at ?? new Date().toISOString();
+  next.work_contract.assignments.push(makeAssignment(next,{...options,at}));
   next.dispatch_kind=next.mode;next.engineering_purpose=options.engineeringPurpose??null;
   next.status='paused';next.handoff.current_writer=null;next.next_action='Recipient must explicitly accept the current assignment digest.';
-  event(next,'offered',currentAssignment(next).assigner,'Assignment offered; no acceptance inferred.',options.at??new Date().toISOString());validateWorkContract(next);return next;
+  event(next,'offered',currentAssignment(next).assigner,'Assignment offered; no acceptance inferred.',at);validateWorkContract(next);return next;
 }
 function acceptAssignment(packet,{by,assignmentDigest:pin,note,at=new Date().toISOString()}) {
   validateWorkContract(packet);const a=currentAssignment(packet);
@@ -149,6 +187,21 @@ function acceptAssignment(packet,{by,assignmentDigest:pin,note,at=new Date().toI
   const next=structuredClone(packet);next.work_contract.disposition='accepted';next.work_contract.acceptance={by,assignment_digest:pin,at};
   next.next_action='Accepted, not started. Revalidate workspace and explicitly resume.';
   event(next,'accepted',by,note,at);validateWorkContract(next);return next;
+}
+function resumeAssignment(packet, {by,assignmentDigest:pin,note,at=new Date().toISOString()}) {
+  validatePacket(packet);
+  const w = packet.work_contract, a = currentAssignment(packet);
+  if (!a || a.digest !== pin || by !== a.recipient || packet.status !== 'paused' || w.disposition !== 'accepted' ||
+      !['pending','rework'].includes(w.review.status) || pendingConcern(packet) || packet.handoff.pending_transfer ||
+      !text(note) || !timestamp(at) || Date.parse(at) > Date.now() || Date.parse(at) < Date.parse(packet.checkpoints.at(-1)?.at))
+    throw Error('Resume requires the accepted recipient, current assignment and a fresh checkpoint.');
+  const next = structuredClone(packet);
+  next.status='active'; next.handoff.current_writer=by;
+  next.checkpoints.push({kind:'resumed',owner:by,at,note,workspace:packet.workspace.identity,reconciled:false,
+    assignment_digest:pin,work_event_count:w.events.length,checkpoint_index:next.checkpoints.length});
+  next.updated_at=at;
+  validatePacket(next);
+  return next;
 }
 function reviseAssignment(packet,{outcome,scope,acceptanceEvidence,engineeringPurpose,by,note,at=new Date().toISOString()}) {
   validateWorkContract(packet);
@@ -187,6 +240,7 @@ function reviewWork(packet,{decision,by,note,evidence,at=new Date().toISOString(
   if (!w || w.disposition!=='accepted' || pendingConcern(packet) || packet.handoff.pending_transfer || packet.status==='complete' || !text(evidence)) throw Error('Review requires accepted work, evidence reference, and no unresolved concern.');
   const allowed=decision==='submit'?['pending','rework']:decision==='rework'||decision==='accept'?['submitted']:decision==='close'?['accepted']:[];
   if (!allowed.includes(w.review.status)) throw Error('Invalid review transition.');
+  if (decision==='submit' && packet.status!=='active') throw Error('Resume before submitting completion evidence.');
   if (decision==='submit' && by!==currentAssignment(packet).recipient) throw Error('Only the recipient submits completion evidence.');
   if (decision!=='submit' && by!==currentAssignment(packet).reviewer) throw Error('Only the declared reviewer may accept, request rework or close.');
   const next=structuredClone(packet);next.work_contract.review.status={submit:'submitted',rework:'rework',accept:'accepted',close:'closed'}[decision];
@@ -205,7 +259,7 @@ function integrityFindings(packet) {
   results.push(finding('authority-validity','unknown','Authority references are declared, not authenticated or externally resolved.'));
   return results;
 }
-return { currentAssignment, validateWorkContract, offerAssignment, acceptAssignment, reviseAssignment, recordDisposition, reviewWork };
+return { currentAssignment, validateWorkContract, offerAssignment, acceptAssignment, resumeAssignment, reviseAssignment, recordDisposition, reviewWork };
 })();
 const {currentAssignment, validateWorkContract} = work;
 const clarification = (() => {
@@ -279,7 +333,9 @@ function validateClarifications(packet) {
 }
 
 function event(packet, kind, concern, at) {
-  packet.checkpoints.push({ at, kind, concern_id: concern.id, status: concern.status });
+  const a = currentAssignment(packet);
+  packet.checkpoints.push({ at, kind, concern_id: concern.id, status: concern.status,
+    ...(a ? {assignment_digest:a.digest,work_event_count:packet.work_contract.events.length} : {}) });
   packet.next_action = clarificationNext(packet);
   packet.updated_at = at;
   validateClarifications(packet);
@@ -364,7 +420,7 @@ function digestPacket(packet) {
   return createHash('sha256').update(JSON.stringify(normalized)).digest('hex');
 }
 
-function validatePacket(packet) {
+function validatePacket(packet, priorWorkspaces) {
   const problems = [];
   if (!packet || typeof packet !== 'object' || Array.isArray(packet)) throw new Error('Invalid task packet: packet must be an object');
   if (packet.schema_version !== 1) problems.push('unsupported schema_version');
@@ -402,7 +458,7 @@ function validatePacket(packet) {
   if (pending && !['pending', 'acknowledged'].includes(pending.acknowledgement)) problems.push('invalid acknowledgement state');
   if (problems.length) throw new Error(`Invalid task packet: ${problems.join('; ')}`);
   validateClarifications(packet);
-  validateWorkContract(packet);
+  validateWorkContract(packet,priorWorkspaces);
   return [];
 }
 

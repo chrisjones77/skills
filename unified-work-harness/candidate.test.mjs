@@ -1,4 +1,4 @@
-import { redirectStatuses, observeDestination } from './test-support.mjs';
+import { redirectStatuses, observeDestination, reworkFixture } from './test-support.mjs';
 import {packageInventory} from "./package.mjs";
 import {reviewIntake} from "./intake.mjs";
 import test from "node:test";
@@ -471,5 +471,18 @@ test('candidate recovery: damaged in-flight claim',async t=>{
   assert.deepEqual(readdirSync(ledger),[digest+'.claim.json']);
   assert.equal(inspectInvocation(request.invocationPolicy,digest).requires_reconciliation,true);
   await assert.rejects(candidateRoundtrip({packet,request}),/claim unavailable or already exists/);
+  assert.equal(source.requests.length,1);
+});
+
+test('candidate rework requires fresh resume before ledger claim',async t=>{
+  const {request,source,accept}=await fixture(t);
+  const {paused,stale}=reworkFixture(hypervisor,accept());
+  await assert.rejects(candidateRoundtrip({packet:stale,request}),/resume checkpoint/i);
+  assert.deepEqual(readdirSync(request.invocationPolicy.directory),[]);
+  assert.equal(source.requests.length,0);
+  const offer=hypervisor.currentAssignment(paused);
+  const packet=hypervisor.resumeAssignment(paused,{by:offer.recipient,assignmentDigest:offer.digest,note:'resume revised work'});
+  const receipt=await candidateRoundtrip({packet,request});
+  assert.equal(receipt.assignment_digest,offer.digest);
   assert.equal(source.requests.length,1);
 });
