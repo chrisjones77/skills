@@ -1433,17 +1433,17 @@ export function buildDeterministicContext(assignment, worktree) {
   const files = [];
   let totalBytes = 0;
   for (const filename of filenames) {
-    const source = readFileSync(path.join(worktree, filename));
+    const source = readBoundedFileBytes(path.join(worktree, filename), maximumBytes - totalBytes,
+      fsFlags.O_NOFOLLOW, undefined, "Context file exceeds the byte budget or is not regular");
     let content;
     try {
-      content = new TextDecoder("utf-8", { fatal: true }).decode(source);
+      content = new TextDecoder("utf-8", { fatal:true, ignoreBOM:true }).decode(source);
     } catch {
       throw new Error(`context file is not valid UTF-8: ${filename}`);
     }
     const bytes = source.length;
     totalBytes += bytes;
-    if (totalBytes > maximumBytes) throw new Error(`deterministic context exceeds ${maximumBytes} bytes`);
-    files.push({ path: filename, bytes, sha256: sha256(content), content });
+    files.push({ path: filename, bytes, sha256: sha256(source), content });
   }
   if (files.length === 0) throw new Error("deterministic context contains no files");
   const bundle = JSON.stringify({ schema_version: "unified-harness.agent-context.v1", files });
@@ -2317,6 +2317,26 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
   };
 }
 
+// Returning from the async iterator cancels the remaining response body.
+async function readDirectCompletion(response, maximumBytes) {
+  let size = 0;
+  const chunks = [];
+  if (response.body) {
+    for await (const chunk of response.body) {
+      size += chunk.byteLength;
+      if (size > maximumBytes) return {size, hash:null, violation:`output budget exceeded: ${size}/${maximumBytes} bytes`};
+      chunks.push(chunk);
+    }
+  }
+  const bytes = Buffer.concat(chunks,size);
+  const hash = sha256(bytes);
+  let text;
+  try { text = new TextDecoder("utf-8",{fatal:true}).decode(bytes); }
+  catch { return {size, hash, violation:"endpoint returned invalid UTF-8"}; }
+  try { return {size, hash, payload:JSON.parse(text)}; }
+  catch { return {size, hash, violation:"endpoint returned malformed JSON"}; }
+}
+
 async function runDirectJson({ assignment, worktree, artifactDirectory, endpoint, request = fetch }) {
   const adapter = assignment.worker?.adapter ?? "direct_json";
   const generationConstraint = adapter === "direct_json" ? "json_schema" : "none";
@@ -2368,21 +2388,31 @@ async function runDirectJson({ assignment, worktree, artifactDirectory, endpoint
     body: JSON.stringify(requestBody),
     signal: AbortSignal.timeout(assignment.resources.timeout_seconds * 1_000),
   });
-  const responseText = await response.text();
-  const responseBytes = Buffer.byteLength(responseText);
+  const reply = await readDirectCompletion(response, assignment.resources.max_output_bytes);
   const violations = [];
   if (!response.ok) violations.push(`${adapter} endpoint returned HTTP ${response.status}`);
-  if (responseBytes > assignment.resources.max_output_bytes) violations.push(`output budget exceeded: ${responseBytes}/${assignment.resources.max_output_bytes} bytes`);
-  let payload = null;
-  try {
-    payload = JSON.parse(responseText);
-  } catch {
-    violations.push(`${adapter} endpoint returned malformed JSON`);
+  if (reply.violation) violations.push(reply.violation);
+  const choices = reply.payload?.choices;
+  let finishReason = null;
+  let proposalText = "";
+  if (!violations.length) {
+    if (!Array.isArray(choices) || choices.length !== 1) {
+      violations.push(`${adapter} completion must have exactly one choice`);
+    } else {
+      const choice = choices[0];
+      const message = choice?.message;
+      finishReason = choice?.finish_reason;
+      if (finishReason === "length") violations.push(`${adapter} completion exhausted its token budget`);
+      else if (finishReason !== "stop") violations.push(`${adapter} completion did not stop normally`);
+      if (message?.role !== "assistant") violations.push(`${adapter} endpoint returned a non-assistant message`);
+      if (message?.function_call != null || (message?.tool_calls != null &&
+          !(Array.isArray(message.tool_calls) && message.tool_calls.length === 0))) {
+        violations.push(`${adapter} endpoint requested a tool call`);
+      }
+      if (typeof message?.content === "string" && message.content.trim()) proposalText = message.content;
+      else violations.push(`${adapter} endpoint returned no proposal content`);
+    }
   }
-  const proposalText = payload?.choices?.[0]?.message?.content;
-  if (typeof proposalText !== "string" || !proposalText.trim()) violations.push(`${adapter} endpoint returned no proposal content`);
-  const finishReason = payload?.choices?.[0]?.finish_reason ?? null;
-  if (finishReason === "length") violations.push(`${adapter} completion exhausted its token budget`);
   writeFileSync(path.join(artifactDirectory, "events.ndjson"), `${JSON.stringify({
     type: "direct_completion",
     adapter,
@@ -2391,9 +2421,9 @@ async function runDirectJson({ assignment, worktree, artifactDirectory, endpoint
     reasoning_control: adapter === "direct_validated_json"
       ? (assignment.assignee.provider === "mlx" ? "chat_template_enable_thinking_false" : "none")
       : null,
-    status: response.ok ? "completed" : "failed",
-    response_bytes: responseBytes,
-    response_hash: sha256(responseText),
+    status: violations.length ? "failed" : "completed",
+    response_bytes: reply.size,
+    response_hash: reply.hash,
     context_hash: context.receipt.bundle_hash,
     ...preflight,
   })}\n`);
@@ -2413,11 +2443,11 @@ async function runDirectJson({ assignment, worktree, artifactDirectory, endpoint
     context: context.receipt,
     preflight,
     finish_reason: finishReason,
-    usage: payload?.usage ?? null,
+    usage: reply.payload?.usage ?? null,
     timed_out: false,
     stderr_hash: sha256(""),
     violations,
-    proposal_text: typeof proposalText === "string" ? proposalText : "",
+    proposal_text: violations.length ? "" : proposalText,
   };
 }
 
@@ -2895,12 +2925,12 @@ export function verifyBoundPacketIdentity(packet, offered, bindingInputs) {
 
 // Inspect and read the same descriptor. Nonblocking open refuses to wait for
 // a FIFO writer; one byte of lookahead detects growth without chasing EOF.
-export function readAssignmentBytes(filename, expectedSize) {
-  const fd = openSync(filename, fsFlags.O_RDONLY | fsFlags.O_NONBLOCK | fsFlags.O_NOCTTY);
+function readBoundedFileBytes(filename, maximumBytes, extraFlags, expectedSize, invalidFileMessage) {
+  const fd = openSync(filename, fsFlags.O_RDONLY | fsFlags.O_NONBLOCK | fsFlags.O_NOCTTY | extraFlags);
   try {
     const st = fstatSync(fd);
-    if (!st.isFile() || st.size > maxAssignmentBytes || (expectedSize !== undefined && st.size !== expectedSize))
-      throw Error("Assignment file differs from accepted scope or is not a bounded regular file");
+    if (!st.isFile() || st.size > maximumBytes || (expectedSize !== undefined && st.size !== expectedSize))
+      throw Error(invalidFileMessage);
     const bytes = Buffer.alloc(st.size + 1);
     let used = 0;
     while (used < bytes.length) {
@@ -2908,9 +2938,14 @@ export function readAssignmentBytes(filename, expectedSize) {
       if (!n) break;
       used += n;
     }
-    if (used !== st.size) throw Error("Assignment file changed while reading");
+    if (used !== st.size) throw Error("File changed while reading");
     return bytes.subarray(0, used);
   } finally { closeSync(fd); }
+}
+
+export function readAssignmentBytes(filename, expectedSize) {
+  return readBoundedFileBytes(filename, maxAssignmentBytes, 0, expectedSize,
+    "Assignment file differs from accepted scope or is not a bounded regular file");
 }
 
 export async function contractRoundtrip(options) {

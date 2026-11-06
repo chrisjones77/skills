@@ -34,6 +34,16 @@ if(mode==='suite'){
   family('worker.proposals','integrated',[],'direct proposal: authorized proposal',
     ...['outside grant','protected path','traversal','unauthorized test','truncated completion','oversized response','prompt budget'].map(s=>'direct proposal: '+s),
     'direct context rejects a grant below a symlink before sending source');
+  for (const adapter of ['schema-constrained','post-validated']) {
+    const prefix = 'direct reply '+adapter+': ';
+    family('worker.reply.'+adapter,'integrated',[],prefix+'complete',
+      ...['missing finish','filtered finish','second choice','wrong role','tool request','legacy function request'].map(s=>prefix+s));
+  }
+  family('worker.reply.bytes','integrated',[],'direct response stream: exact bytes',
+    'direct reply overflow closes the loopback response before EOF',
+    ...['one byte over','invalid UTF-8','malformed JSON','HTTP failure'].map(s=>'direct response stream: '+s));
+  family('worker.context.bytes','integrated',[],'direct directory context: at the aggregate limit',
+    ...['over the aggregate limit','invalid source UTF-8','nested symlink','missing grant'].map(s=>'direct directory context: '+s));
   family('worker.edits','integrated',[],'edit worker: staged authorized edit',
     ...['new ignored file','staged rename from outside scope','commit moved','unoffered file','BOM-prefixed unoffered file','unauthorized test','no changes'].map(s=>'edit worker: '+s),
     'edit worker refuses a new destination below a symlink before launch');

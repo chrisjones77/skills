@@ -10,6 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 PKG = 'unified-work-harness'
 # target and control are actual TAP names, not input substrings used as evidence
 cases = [
+    ('unbounded-direct-response', 'bundle.mjs',
+     'if (size > maximumBytes) return {size, hash:null, violation:', 'if (false) return {size, hash:null, violation:',
+     'integrated', 'direct response stream: one byte over', 'direct response stream: exact bytes',
+     'cancel the stream on the first over-budget byte'),
     ('symlinked-context-parent', 'bundle.mjs',
      'if (hasSymlinkComponent(worktree, normalized)) throw new Error(`declared context path crosses a symbolic link: ${normalized}`);',
      '// omit the ancestor check', 'integrated', 'direct context rejects a grant below a symlink before sending source',

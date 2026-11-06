@@ -815,8 +815,8 @@ for (const [label, trailer] of [
   });
 }
 
-function lowLevelFixture(t, prepareCheckout) {
-  const {inputs,temp} = fixture(t,'http://127.0.0.1:11434/v1','source.txt',30,prepareCheckout);
+function lowLevelFixture(t, prepareCheckout, endpoint = 'http://127.0.0.1:11434/v1') {
+  const {inputs,temp} = fixture(t,endpoint,'source.txt',30,prepareCheckout);
   const assignment = JSON.parse(inputs.bindingInputs.assignmentJson);
   assignment.authority.mode = 'structured_proposal';
   assignment.authority.allowed_paths = ['source.txt'];
@@ -856,7 +856,7 @@ for (const [label, options] of [
       assert.ok(JSON.parse(init.body).messages.some(m=>m.content.includes('cobalt-otter-47')));
       const content = structuredClone(proposal);
       if (options.path) content.changes[0].path = options.path;
-      return Response.json({choices:[{finish_reason:options.finish ?? 'stop',message:{content:JSON.stringify(content)}}],
+      return Response.json({choices:[{finish_reason:options.finish ?? 'stop',message:{role:'assistant',content:JSON.stringify(content)}}],
         padding:'x'.repeat(options.padding ?? 0)});
     });
     const file = path.join(artifactDirectory,'proposal.json');
@@ -885,7 +885,7 @@ test('direct context rejects a grant below a symlink before sending source', asy
   const requests = [];
   await assert.rejects(run(async (url,init)=>{
     requests.push(init.body);
-    return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify(proposal)}}]});
+    return Response.json({choices:[{finish_reason:'stop',message:{role:'assistant',content:JSON.stringify(proposal)}}]});
   }),error=>/symbolic link/.test(error.cause?.message));
   assert.deepEqual(requests,[]);
 });
@@ -999,3 +999,151 @@ for (const [label,trailer,violation] of [
     assert.ok(!log.includes('synthetic-error-canary') && !log.includes(proposal.summary));
   });
 }
+
+// Both direct adapters consume the same OpenAI-compatible response envelope.
+// Drive them through runHarness so a rejected reply cannot publish a proposal.
+for (const [label,provider,adapter] of [
+  ['schema-constrained','llamacpp','direct_json'],
+  ['post-validated','mlx','direct_validated_json'],
+]) {
+  const choice = {message:{role:'assistant',content:JSON.stringify(proposal)},finish_reason:'stop'};
+  for (const [scenario,reply,expectedViolation] of [
+    ['complete', {choices:[choice]}, null],
+    ['missing finish', {choices:[{message:choice.message}]}, /completion did not stop/],
+    ['filtered finish', {choices:[{...choice,finish_reason:'content_filter'}]}, /completion did not stop/],
+    ['second choice', {choices:[choice,choice]}, /exactly one choice/],
+    ['wrong role', {choices:[{...choice,message:{...choice.message,role:'user'}}]}, /assistant/],
+    ['tool request', {choices:[{...choice,message:{...choice.message,tool_calls:[{id:'synthetic'}]}}]}, /tool call/],
+    ['legacy function request', {choices:[{...choice,message:{...choice.message,function_call:{name:'read'}}}]}, /tool call/],
+  ]) {
+    test('direct reply '+label+': '+scenario, async t=>{
+      const {assignment,run} = lowLevelFixture(t);
+      assignment.assignee.provider = provider;
+      assignment.assignee.model_id = provider === 'mlx' ? 'mlx-community/test-model' : 'synthetic-local';
+      assignment.worker.adapter = adapter;
+      let requests = 0;
+      const {artifactDirectory,evidence} = await run(async (_url,init)=>{
+        requests++;
+        const sent = JSON.parse(init.body);
+        if (provider === 'mlx') assert.deepEqual(sent.chat_template_kwargs,{enable_thinking:false});
+        else assert.deepEqual(sent.json_schema.properties.changes.items.properties.path.enum,['source.txt']);
+        return Response.json(reply);
+      });
+      assert.equal(requests,1);
+      assert.equal(existsSync(path.join(artifactDirectory,'proposal.json')),!expectedViolation);
+      assert.equal(evidence.disposition,expectedViolation ? 'rejected' : 'proposal_candidate');
+      assert.equal(evidence.agent.generation_constraint,provider === 'mlx' ? 'none' : 'json_schema');
+      if (expectedViolation) assert.match(evidence.violations.join('\n'),expectedViolation);
+    });
+  }
+}
+
+for (const scenario of ['exact bytes','one byte over','invalid UTF-8','malformed JSON','HTTP failure']) {
+  test('direct response stream: '+scenario, async t=>{
+    const {assignment,run} = lowLevelFixture(t);
+    const limit = 1024;
+    assignment.resources.max_output_bytes = limit;
+    const change = structuredClone(proposal);
+    change.summary = 'Synthetic café';
+    const json = Buffer.from(JSON.stringify({choices:[{finish_reason:'stop',message:{role:'assistant',content:JSON.stringify(change)}}]}));
+    const first = Buffer.concat([json,Buffer.alloc(limit-json.length,0x20)]);
+    const split = first.indexOf(Buffer.from('é'))+1;
+    if (scenario === 'invalid UTF-8') first[split] = 0xff;
+    if (scenario === 'malformed JSON') first[0] = 0x21;
+    const chunks = [first.subarray(0,split),first.subarray(split)];
+    if (scenario === 'one byte over') chunks.push(Buffer.from(' '),Buffer.from('unneeded tail'));
+    let delivered = 0, cancelled = false;
+    const {artifactDirectory,evidence} = await run(async ()=>new Response(new ReadableStream({
+      pull(controller) {
+        if (delivered < chunks.length) controller.enqueue(chunks[delivered++]);
+        else controller.close();
+      },
+      cancel() { cancelled = true; },
+    },{highWaterMark:0}),{status:scenario==='HTTP failure' ? 503 : 200}));
+    const ok = scenario === 'exact bytes';
+    assert.equal(evidence.disposition,ok?'proposal_candidate':'rejected');
+    assert.equal(existsSync(path.join(artifactDirectory,'proposal.json')),ok);
+    const event = JSON.parse(readFileSync(path.join(artifactDirectory,'events.ndjson')));
+    if (scenario === 'one byte over') {
+      assert.equal(cancelled,true,'cancel the stream on the first over-budget byte');
+      assert.equal(delivered,3);
+      assert.equal(event.response_bytes,limit+1);
+      assert.equal(event.response_hash,null);
+    } else {
+      assert.equal(event.response_hash,sha256(first));
+      assert.equal(event.response_bytes,limit);
+    }
+    if (ok) assert.equal(JSON.parse(readFileSync(path.join(artifactDirectory,'proposal.json'))).summary,change.summary);
+    else assert.match(evidence.violations.join('\n'),{
+      'one byte over':/output budget exceeded/,'invalid UTF-8':/UTF-8/,'malformed JSON':/malformed JSON/,'HTTP failure':/HTTP 503/,
+    }[scenario]);
+    assert.equal(event.status,ok?'completed':'failed');
+  });
+}
+
+for (const scenario of ['at the aggregate limit','over the aggregate limit','invalid source UTF-8','nested symlink','missing grant']) {
+  test('direct directory context: '+scenario, async t=>{
+    const limit = 4096;
+    const header = Buffer.from('\uFEFFcafé');
+    const tail = Buffer.alloc(limit-header.length,0x78);
+    const {assignment,run} = lowLevelFixture(t,(root,temp)=>{
+      if (scenario === 'missing grant') return;
+      const dir = path.join(root,'inputs');
+      mkdirSync(dir);
+      writeFileSync(path.join(dir,'a.txt'),header);
+      mkdirSync(path.join(dir,'nested'));
+      const lastFile = path.join(dir,'nested','b.txt');
+      if (scenario === 'nested symlink') symlinkSync(path.join(temp,'unoffered'),lastFile);
+      else if (scenario === 'over the aggregate limit') writeFileSync(lastFile,Buffer.concat([tail,Buffer.from([0xff])]));
+      else writeFileSync(lastFile,scenario==='invalid source UTF-8' ? Buffer.from([0xff]) : tail);
+    });
+    assignment.authority.allowed_read_paths = ['inputs','inputs/a.txt'];
+    if (scenario === 'missing grant') assignment.authority.allowed_read_paths = ['inputs'];
+    assignment.worker.max_context_bytes = limit;
+    let requests = 0;
+    const result = run(async (_url,init)=>{
+      requests++;
+      const text = JSON.parse(init.body).messages.at(-1).content;
+      const sent = JSON.parse(text.split('Deterministic repository evidence (JSON):\n')[1]);
+      assert.deepEqual(sent.files.map(f=>f.path),['inputs/a.txt','inputs/nested/b.txt']);
+      assert.equal(sent.files[0].content,header.toString());
+      assert.equal(sent.files[0].sha256,sha256(header));
+      return Response.json({choices:[{finish_reason:'stop',message:{role:'assistant',content:JSON.stringify(proposal)}}]});
+    });
+    if (scenario === 'at the aggregate limit') {
+      const {evidence} = await result;
+      assert.equal(evidence.disposition,'proposal_candidate');
+      assert.equal(evidence.agent.context.total_bytes,limit);
+      assert.equal(requests,1);
+    } else {
+      const reason = {'over the aggregate limit':/context.*(budget|exceeds)/i,'invalid source UTF-8':/not valid UTF-8/,
+        'nested symlink':/symbolic link/,'missing grant':/path does not exist/}[scenario];
+      await assert.rejects(result,error=>reason.test(error.cause?.message));
+      assert.equal(requests,0);
+    }
+  });
+}
+
+test('direct reply overflow closes the loopback response before EOF', async t=>{
+  let finishObservation;
+  const closed = new Promise(resolve=>{finishObservation=resolve;});
+  let requests = 0, sentTail = false;
+  const port = await listen(t,'127.0.0.1',(req,res)=>{
+    requests++;
+    req.resume();
+    res.writeHead(200,{'content-type':'application/json'});
+    res.write(Buffer.alloc(1025,0x20));
+    // A client waiting for EOF will consume the tail and fail the assertion.
+    const fallback = setTimeout(()=>{sentTail=true;res.end('tail');},5000);
+    res.once('close',()=>{clearTimeout(fallback);finishObservation();});
+  });
+  const {assignment,run} = lowLevelFixture(t,undefined,'http://127.0.0.1:'+port+'/v1');
+  assignment.resources.max_output_bytes = 1024;
+  const {artifactDirectory,evidence} = await run();
+  assert.equal(requests,1);
+  await closed;
+  assert.equal(sentTail,false,'release the provider connection rather than waiting for EOF');
+  assert.equal(evidence.disposition,'rejected');
+  assert.match(evidence.violations.join('\n'),/output budget exceeded/);
+  assert.equal(existsSync(path.join(artifactDirectory,'proposal.json')),false);
+});
