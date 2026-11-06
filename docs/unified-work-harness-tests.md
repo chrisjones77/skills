@@ -21,3 +21,15 @@ The macOS suite also reports line, branch and function coverage of the seven top
 **Other gates.** Run `node scripts/test_convergence.mjs worker` with the pinned OpenCode on PATH (CI checks the archive digest and version). The model is a synthetic loopback server. Run `python3 scripts/test_convergence_mutations.py` to reintroduce twenty-five faults in temporary copies. A mutant only counts as detected if its adverse case fails for the expected reason and its valid control passes. Run `python3 scripts/validate_storyboards.py` and `python3 scripts/test_storyboard_coverage.py`; the storyboard workflow also runs the browser check with Chrome and its pinned driver.
 
 **Review decision.** Attach same-revision reports, platform results, installed-worker and mutation results to the PR. On provider-facing changes also exercise the opt-in live local-model tests with synthetic data. A newly found defect reopens its family and calls for a new scenario where coverage was missing. A pass on retry needs an explanation. Track faults first found after a green gate and the number of review/repair rounds. Green automation does not accept a method, authorize work, approve a candidate or merge a change.
+
+## Accepted release
+
+Christopher Jones accepted `e326577` for merge. [PR #24](https://github.com/chrisjones77/skills/pull/24) landed on `main` at [`f8195f6`](https://github.com/chrisjones77/skills/commit/f8195f6d7606edce9ccebaa334a10b8a5132c3d2). The package files at those two commits are identical. The [owner review handoff](../unified-work-harness/review.md) records the questions used for that decision.
+
+From a copy of the released package, run `node package.mjs inventory`. Its 46 listed files produce this `sourceSha256`:
+
+```text
+569bdf01ee3f36c20946e485d8c45a7a05d0e27e94ac776701153379cf860c86
+```
+
+At acceptance, all 543 deterministic tests passed, including 489 named convergence cases. The suite detected 25 seeded faults with passing controls. The seven runtime modules reached 88.50% branch coverage on hosted macOS with Node 22.23.4. The planned coverage passes ended with this release. Reopen the affected test family when a specific defect or reproduction is discovered. [Harness CI](https://github.com/chrisjones77/skills/actions/runs/42239175835) · [Coverage job](https://github.com/chrisjones77/skills/actions/runs/42239175835/job/127964617210) · [Storyboard CI](https://github.com/chrisjones77/skills/actions/runs/42239175812)
