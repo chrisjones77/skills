@@ -10,6 +10,15 @@ ROOT = Path(__file__).resolve().parents[1]
 PKG = 'unified-work-harness'
 # target and control are actual TAP names, not input substrings used as evidence
 cases = [
+    ('unbounded-lease-read', 'bundle.mjs', 'readPrivateFileBytes(path.join(directory,"owner.json"),4096)',
+     'readFileSync(path.join(directory,"owner.json"))', 'roundtrip', 'provider lease storage: receipt FIFO',
+     'provider lease storage: ordinary release', 'lease operation must finish within its deadline: receipt FIFO'),
+    ('oversized-discovery', 'bundle.mjs', 'const discoveryByteLimit = 1024 * 1024;', 'const discoveryByteLimit = 2 * 1024 * 1024;',
+     'integrated', 'provider discovery: compressed list one byte over', 'provider discovery: model list at limit',
+     'discovery admitted: compressed list one byte over'),
+    ('stale-v5-discovery', 'bundle.mjs', 'needsTools, checkFreshness);', 'needsTools, packageBound ? checkFreshness : undefined);',
+     'integrated', 'provider discovery: v5 expires after model list', 'provider discovery: model list at limit',
+     'discovery continued after hold: v5 expires after model list'),
     ('erased-clarification', 'bundle.mjs', "if (packet.checkpoints.some(cp => cp?.concern_id !== undefined || String(cp?.kind).startsWith('clarification-')))",
      'if (false)', 'coordination', 'clarification replay: deleted collection', 'clarification replay: same-tick resolution and explicit resume',
      'inconsistent clarification accepted: deleted collection'),

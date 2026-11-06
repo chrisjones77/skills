@@ -798,3 +798,59 @@ for (const label of ['missing timestamp','impossible timestamp','extra claim fie
     assert.throws(f.start,/already exists/);
   });
 }
+
+const leaseCases = ['ordinary release','dead owner','live owner','missing owner','malformed owner','invalid pid','invalid token',
+  'receipt FIFO','receipt symlink','receipt hard link','oversized receipt','unsafe receipt mode','unsafe directory mode',
+  'symbolic directory','unexpected contents','busy recovery guard','frozen wall clock','release FIFO','release with unexpected contents'];
+for (const label of leaseCases) {
+  test('provider lease storage: '+label,t=>{
+    const root=realpathSync(mkdtempSync(path.join(tmpdir(),'lease-storage-')));
+    t.after(()=>rmSync(root,{recursive:true,force:true}));
+    const endpoint='http://127.0.0.1:31771/v1';
+    const dir=path.join(root,'unified-harness-agent-provider-'+sha256(endpoint).slice(0,20)+'.lock');
+    const owner=path.join(dir,'owner.json'), extra=path.join(dir,'retain.txt');
+    const releaseCase=label.startsWith('release ') || label==='ordinary release';
+    if (!releaseCase) {
+      if (label==='symbolic directory') {
+        const other=path.join(root,'other'); mkdirSync(other,{mode:0o700}); symlinkSync(other,dir);
+      } else mkdirSync(dir,{mode:0o700});
+      const exited=spawnSync(process.execPath,['-e',''],{timeout:1500});
+      assert.equal(exited.status,0);
+      const record={pid:['live owner','frozen wall clock'].includes(label)?process.pid:exited.pid,token:'prior'};
+      if (label==='invalid pid') record.pid=-1;
+      if (label==='invalid token') record.token='';
+      const bytes=label==='malformed owner'?'[]broken':JSON.stringify(record)+(label==='oversized receipt'?' '.repeat(65536):'');
+      if (label==='receipt FIFO') execFileSync('mkfifo',[owner]);
+      else if (label==='receipt symlink' || label==='receipt hard link') {
+        const external=path.join(root,'external.json'); writeFileSync(external,bytes,{mode:0o600});
+        if (label==='receipt symlink') symlinkSync(external,owner); else linkSync(external,owner);
+      } else if (label!=='missing owner') writeFileSync(owner,bytes,{mode:0o600});
+      if (label==='unsafe directory mode') chmodSync(dir,0o755);
+      if (label==='unsafe receipt mode') chmodSync(owner,0o644);
+      if (label==='unexpected contents') writeFileSync(extra,'keep');
+      if (label==='busy recovery guard') mkdirSync(dir+'.recovery',{mode:0o700});
+    }
+    // A blocked synchronous read or deadline based on a frozen wall clock
+    // would also block an in-process test timer. Supervise it independently.
+    const program=`
+      import {acquireProviderLease} from ${JSON.stringify(new URL('./bundle.mjs',import.meta.url).href)};
+      import fs from 'node:fs';
+      import {execFileSync} from 'node:child_process';
+      const [root,endpoint,label,owner,extra]=process.argv.slice(1);
+      if(label==='frozen wall clock') Date.now=()=>1000;
+      try {
+        const lease=await acquireProviderLease(endpoint,50,{pollMs:5,getTempParent:()=>root});
+        if(label==='release FIFO'){fs.unlinkSync(owner);execFileSync('mkfifo',[owner]);}
+        if(label==='release with unexpected contents')fs.writeFileSync(extra,'keep');
+        lease.release();lease.release();
+        console.log('acquired');
+      } catch(e){if(!/lease wait exceeded/.test(e.message))throw e;console.log('held');}`;
+    const probe=spawnSync(process.execPath,['--input-type=module','-e',program,root,endpoint,label,owner,extra],
+      {encoding:'utf8',timeout:2000,killSignal:'SIGKILL'});
+    assert.equal(probe.status,0,'lease operation must finish within its deadline: '+label+' '+(probe.error??probe.stderr));
+    assert.equal(probe.stdout.trim(),releaseCase || label==='dead owner'?'acquired':'held','unsafe lease reclaimed: '+label);
+    if (['ordinary release','dead owner'].includes(label)) assert.equal(existsSync(dir),false);
+    else assert.ok(existsSync(dir),'preserve ambiguous lease: '+label);
+    if (label.includes('unexpected contents')) assert.equal(readFileSync(extra,'utf8'),'keep');
+  });
+}

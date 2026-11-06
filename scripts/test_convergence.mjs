@@ -29,6 +29,22 @@ if(mode==='suite'){
   family('transport.direct','integrated',[],'IPv6 loopback with a path prefix completes the accepted v6 contract',
     ...codes.map(n=>'direct completion refuses redirect '+n),'relay admits only the scoped completion and closes after the worker exits',
     'ambiguous endpoints and non-loopback IPv6 fail before offer, provider contact or claim');
+  family('provider.discovery.bytes','integrated',[],'provider discovery: model list at limit',
+    ...['model list one byte over','compressed list one byte over','tag list at limit','tag list one byte over','version one byte over',
+      'invalid required UTF-8','malformed required JSON','missing model','required HTTP failure','required connection lost',
+      'optional HTTP failure','optional connection lost','malformed optional JSON','unavailable tags','model tag alternative key',
+      'model tag absent','tools explicitly denied','invalid tool declaration','v5 expires after model list',
+      'oversized stream closes before EOF'].map(s=>'provider discovery: '+s));
+  family('provider.admission','integrated',[],'provider assignment admission: local provider',
+    ...['unknown provider','unsafe model ID','cloud model declared local','local model declared cloud','cloud provider without consent',
+      'MLX outside local processing','unnamespaced MLX model','llamacpp outside local processing','Codex without explicit adapter',
+      'secret input','sensitive personal input','unknown data class','ambiguous external consent','missing read grants','too many read grants',
+      'write grant escapes reads','executable check not allowed','invalid defect write grants','invalid check entry','invalid check list',
+      'too much worker time','excess output limit','string token limit','worker cannot pause'].map(s=>'provider assignment admission: '+s));
+  family('provider.lease.storage','roundtrip',[],'provider lease storage: ordinary release',
+    ...['dead owner','live owner','missing owner','malformed owner','invalid pid','invalid token','receipt FIFO','receipt symlink',
+      'receipt hard link','oversized receipt','unsafe receipt mode','unsafe directory mode','symbolic directory','unexpected contents',
+      'busy recovery guard','frozen wall clock','release FIFO','release with unexpected contents'].map(s=>'provider lease storage: '+s));
   family('worker.output','integrated',[],'v6 worker output: at the step limit',
     ...['excess steps','excess stdout','malformed stdout','prohibited tool'].map(s=>'v6 worker output: '+s));
   family('worker.proposals','integrated',[],'direct proposal: authorized proposal',

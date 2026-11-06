@@ -24,7 +24,9 @@ import {
   readSync,
   realpathSync,
   rmSync,
+  opendirSync,
   rmdirSync,
+  unlinkSync,
   statSync,
   symlinkSync,
   writeFileSync,
@@ -852,13 +854,29 @@ function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-// Only a reclaimer removes another owner's directory. Serialize reclaimers
-// outside the replaceable lease, then check that the observed owner still holds it.
+// Missing/incomplete metadata is possible while an owner is starting. Only
+// recover a private directory containing exactly the receipt this protocol owns.
+function readLeaseOwner(directory) {
+  try {
+    const st = lstatSync(directory);
+    if (!st.isDirectory() || st.uid !== process.getuid() || (st.mode & 0o777) !== 0o700) return null;
+    const entries = opendirSync(directory);
+    try {
+      if (entries.readSync()?.name !== "owner.json" || entries.readSync() !== null) return null;
+    } finally { entries.closeSync(); }
+    return JSON.parse(readPrivateFileBytes(path.join(directory,"owner.json"),4096).toString("utf8"));
+  } catch { return null; }
+}
+
+function removeLease(directory) {
+  unlinkSync(path.join(directory,"owner.json"));
+  // Preserve any unexpected entry added since the inspection.
+  rmdirSync(directory);
+}
+
+// Serialize reclaimers outside the replaceable lease and recheck its owner.
 function reclaimDeadProviderLease(lockDirectory) {
-  const ownerPath = path.join(lockDirectory, "owner.json");
-  let owner;
-  try { owner = JSON.parse(readFileSync(ownerPath, "utf8")); }
-  catch { return false; } // A new owner may still be writing its receipt.
+  const owner = readLeaseOwner(lockDirectory);
   if (!Number.isSafeInteger(owner?.pid) || owner.pid <= 0 || typeof owner.token !== "string" || !owner.token) return false;
   try { process.kill(owner.pid, 0); return false; }
   catch (error) { if (error.code !== "ESRCH") return false; }
@@ -867,11 +885,9 @@ function reclaimDeadProviderLease(lockDirectory) {
   try { mkdirSync(guard, {mode:0o700}); }
   catch (error) { if (error.code === "EEXIST") return false; throw error; }
   try {
-    let current;
-    try { current = JSON.parse(readFileSync(ownerPath, "utf8")); }
-    catch { return false; }
+    const current = readLeaseOwner(lockDirectory);
     if (current?.token !== owner.token || current.pid !== owner.pid) return false;
-    rmSync(lockDirectory, {recursive:true});
+    removeLease(lockDirectory);
     return true;
   } finally {
     rmdirSync(guard);
@@ -886,24 +902,24 @@ export async function acquireProviderLease(endpoint, timeoutMs, { pollMs = 25, g
   const lockDirectory = path.join(getTempParent(), `unified-harness-agent-provider-${sha256(listener).slice(0, 20)}.lock`);
   const ownerPath = path.join(lockDirectory, "owner.json");
   const token = randomUUID();
-  const started = Date.now();
+  const started = performance.now();
   const deadline = started + timeoutMs;
 
   while (true) {
     getTempParent();
     try {
       mkdirSync(lockDirectory, { mode: 0o700 });
-      writeFileSync(ownerPath, `${JSON.stringify({ pid: process.pid, token, acquired_at: new Date().toISOString() })}\n`, { mode: 0o600 });
+      writeFileSync(ownerPath, `${JSON.stringify({ pid: process.pid, token, acquired_at: new Date().toISOString() })}\n`, { mode: 0o600, flag:"wx" });
       let released = false;
       return {
-        waitedMs: Date.now() - started,
+        waitedMs: Math.floor(performance.now() - started),
         release() {
           if (released) return;
           released = true;
           try {
             getTempParent();
-            const owner = JSON.parse(readFileSync(ownerPath, "utf8"));
-            if (owner.token === token) rmSync(lockDirectory, { recursive: true, force: true });
+            const owner = readLeaseOwner(lockDirectory);
+            if (owner?.token === token && owner.pid === process.pid) removeLease(lockDirectory);
           } catch {
             // A missing or replaced lease is already released from this owner.
           }
@@ -912,8 +928,8 @@ export async function acquireProviderLease(endpoint, timeoutMs, { pollMs = 25, g
     } catch (error) {
       if (error?.code !== "EEXIST") throw error;
       if (reclaimDeadProviderLease(lockDirectory)) continue;
-      if (Date.now() >= deadline) throw new Error(`provider lease wait exceeded ${timeoutMs} ms`);
-      await delay(Math.min(pollMs, Math.max(1, deadline - Date.now())));
+      if (performance.now() >= deadline) throw new Error(`provider lease wait exceeded ${timeoutMs} ms`);
+      await delay(Math.min(pollMs, Math.max(1, deadline - performance.now())));
     }
   }
 }
@@ -1196,7 +1212,7 @@ export function validateAssignment(value) {
     }
     if (value.authority.mode === "defect_reproduction") {
       if (value.authority.allow_test_changes !== true) errors.push("defect_reproduction assignments require test-change authority");
-      for (const allowedPath of value.authority.allowed_paths ?? []) {
+      for (const allowedPath of Array.isArray(value.authority.allowed_paths) ? value.authority.allowed_paths : []) {
         try {
           if (!isTestPath(normalizeAllowedPath(allowedPath))) {
             errors.push("defect_reproduction allowed paths must identify test files or test directories");
@@ -1282,10 +1298,10 @@ export function validateAssignment(value) {
     if (typeof value.acceptance.require_changes !== "boolean") errors.push("acceptance.require_changes must be boolean");
     if (value.authority?.mode === "defect_reproduction") {
       if (value.acceptance.require_changes !== true) errors.push("defect_reproduction assignments must require changes");
-      if (value.acceptance.checks?.some((check) => check.expected_result !== "nonzero")) {
+      if (Array.isArray(value.acceptance.checks) && value.acceptance.checks.some(check => check?.expected_result !== "nonzero")) {
         errors.push("defect_reproduction acceptance checks must expect nonzero results");
       }
-    } else if (value.acceptance.checks?.some((check) => check.expected_result !== "zero")) {
+    } else if (Array.isArray(value.acceptance.checks) && value.acceptance.checks.some(check => check?.expected_result !== "zero")) {
       errors.push("only defect_reproduction assignments may expect nonzero acceptance results");
     }
     if (value.authority?.mode === "structured_proposal" && value.acceptance.require_changes !== true) {
@@ -1808,12 +1824,15 @@ export function assertLoopbackEndpoint(endpoint) {
 }
 
 export function rejectExplicitlyUnsupportedTools(tag) {
-  if (Array.isArray(tag?.capabilities) && !tag.capabilities.includes("tools")) {
+  if (tag?.capabilities !== undefined && (!Array.isArray(tag.capabilities) || !tag.capabilities.includes("tools"))) {
     throw new Error("local model explicitly does not advertise tool calling; choose a local chat model with tool support");
   }
 }
 
-async function discoveryResponse(url, optional = false) {
+// Count decoded bytes including streamed and compressed metadata. Optional
+// metadata may be unavailable, but an oversized response stops discovery.
+const discoveryByteLimit = 1024 * 1024;
+async function discoveryJson(url, provider, optional = false) {
   let response;
   try {
     response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(5_000) });
@@ -1826,14 +1845,22 @@ async function discoveryResponse(url, optional = false) {
     await response.body?.cancel();
     throw new Error("Provider discovery redirect is not authorized.");
   }
-  return response;
+  if (!response.ok) {
+    await response.body?.cancel();
+    if (optional) return null;
+    throw Error(`${provider} model endpoint returned HTTP ${response.status}`);
+  }
+  let result;
+  try { result = await readBoundedJsonResponse(response, discoveryByteLimit); }
+  catch (error) { if (optional) return null; throw error; }
+  if (result.size > discoveryByteLimit) throw Error("Provider discovery response exceeds byte limit.");
+  if (result.violation && !optional) throw Error(result.violation);
+  return result.payload ?? null;
 }
 
 async function checkModelEndpoint(endpoint, modelId, provider, requiresTools = false, beforeRequest = () => {}) {
   beforeRequest();
-  const response = await discoveryResponse(`${endpoint}/models`);
-  if (!response.ok) throw new Error(`${provider} model endpoint returned HTTP ${response.status}`);
-  const payload = await response.json();
+  const payload = await discoveryJson(`${endpoint}/models`, provider);
   const advertisedModel = Array.isArray(payload?.data) ? payload.data.find((item) => item?.id === modelId) : undefined;
   if (!advertisedModel) throw new Error(`${provider} endpoint does not advertise ${modelId}`);
   if (provider !== "ollama") return { server_version: null, model_digest: null };
@@ -1843,8 +1870,7 @@ async function checkModelEndpoint(endpoint, modelId, provider, requiresTools = f
   const tagsURL = new URL("api/tags", root);
   const optionalJson = async url => {
     beforeRequest();
-    const response = await discoveryResponse(url, true);
-    return response?.ok ? response.json().catch(() => null) : null;
+    return discoveryJson(url, provider, true);
   };
   const [versionPayload, tagsPayload] = await Promise.all([optionalJson(versionURL), optionalJson(tagsURL)]);
   const modelTag = Array.isArray(tagsPayload?.models)
@@ -2528,7 +2554,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
 }
 
 // Returning from the async iterator cancels the remaining response body.
-async function readDirectCompletion(response, maximumBytes) {
+async function readBoundedJsonResponse(response, maximumBytes) {
   let size = 0;
   const chunks = [];
   if (response.body) {
@@ -2598,7 +2624,7 @@ async function runDirectJson({ assignment, worktree, artifactDirectory, endpoint
     body: JSON.stringify(requestBody),
     signal: AbortSignal.timeout(assignment.resources.timeout_seconds * 1_000),
   });
-  const reply = await readDirectCompletion(response, assignment.resources.max_output_bytes);
+  const reply = await readBoundedJsonResponse(response, assignment.resources.max_output_bytes);
   const violations = [];
   if (!response.ok) violations.push(`${adapter} endpoint returned HTTP ${response.status}`);
   if (reply.violation) violations.push(reply.violation);
@@ -3248,8 +3274,8 @@ async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outp
       const current = verifyPackagePolicy(bindingInputs, packagePolicy);
       if (JSON.stringify(current) !== JSON.stringify(scope.package_binding)) throw new Error("Package binding changed");
     };
-    endpointCheck = (url, model, provider, needsTools) => checkModelEndpoint(url, model, provider, needsTools, checkFreshness);
   }
+  endpointCheck ??= (url, model, provider, needsTools) => checkModelEndpoint(url, model, provider, needsTools, checkFreshness);
   const integrated = packageBound || ["unified-harness-readonly-v2", "unified-harness-readonly-v3", "unified-harness-readonly-v4", "unified-harness-readonly-v5"].includes(scope?.kind);
   if (integrated) {
     if (!packageBound && offered.scope !== buildBoundScope(bindingInputs, endpoint, resultPolicy, invocationPolicy, executionWindow)) throw new Error("integrated scope or endpoint differs from accepted binding");

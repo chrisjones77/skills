@@ -1,3 +1,4 @@
+import {gzipSync} from 'node:zlib';
 import { redirectStatuses, observeDestination, reworkFixture, erasedHoldFixture } from './test-support.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -6,7 +7,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, realpathSync, rmSync, readFileSy
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { runHarness, buildOpenCodeConfig, buildCodexCommand, validatePathAccess, contractRoundtrip, buildBoundScope, inspectInvocation, hypervisor, sha256, inspectBundledSource } from './bundle.mjs';
+import { runHarness, validateAssignment, buildOpenCodeConfig, buildCodexCommand, validatePathAccess, contractRoundtrip, buildBoundScope, inspectInvocation, hypervisor, sha256, inspectBundledSource } from './bundle.mjs';
 import { buildPackageScope } from './integrated.mjs';
 import { packageInventory } from './package.mjs';
 import { reviewIntake } from './intake.mjs';
@@ -1471,3 +1472,138 @@ for (const [name,makeHold,expectedError] of [
     assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
   });
 }
+
+const discoveryLimit=1024*1024;
+const discoveryCases=[
+  ['model list at limit','models'],['model list one byte over','models',/discovery.*byte/i],
+  ['compressed list one byte over','models',/discovery.*byte/i],['tag list at limit','tags'],
+  ['tag list one byte over','tags',/discovery.*byte/i],['version one byte over','version',/discovery.*byte/i],
+  ['invalid required UTF-8','models',/UTF-8/i],['malformed required JSON','models',/JSON/i],
+  ['missing model','models',/does not advertise/i],['required HTTP failure','models',/HTTP 503/i],
+  ['required connection lost','models',/fetch|socket/i],['optional HTTP failure','version'],
+  ['optional connection lost','version'],['malformed optional JSON','version'],['unavailable tags','tags'],
+  ['model tag alternative key','tags'],['model tag absent','tags'],['tools explicitly denied','tags',/tool/i],
+  ['invalid tool declaration','tags',/tool/i],['v5 expires after model list','models',/expired/i],
+];
+for (const [label,target,expectedError] of discoveryCases) {
+  test('provider discovery: '+label,async t=>{
+    const routes=[];
+    let expire;
+    const port=await listen(t,'127.0.0.1',(req,res)=>{
+      routes.push(req.url);
+      const route=req.url.split('/').at(-1);
+      const tag={name:'synthetic:local',digest:'synthetic-digest',capabilities:['tools']};
+      if (route===target) {
+        if(label.includes('connection lost')) {req.socket.destroy();return;}
+        if(label.includes('HTTP failure') || label==='unavailable tags'){res.writeHead(503).end('unavailable');return;}
+        if(label.includes('malformed')){res.end('{broken');return;}
+        if(label==='invalid required UTF-8'){
+          res.end(Buffer.concat([Buffer.from('{"data":[{"id":"synthetic:local"}],"junk":"'),Buffer.from([255]),Buffer.from('"}')]));return;
+        }
+        if(label==='model tag alternative key'){tag.model=tag.name;delete tag.name;}
+        if(label==='model tag absent')tag.name='other';
+        if(label==='tools explicitly denied')tag.capabilities=['completion'];
+        if(label==='invalid tool declaration')tag.capabilities='completion';
+        if(label.startsWith('v5 expires'))expire();
+      }
+      let payload=JSON.stringify(route==='models'?{data:label==='missing model'?[]:[{id:'synthetic:local'}]}
+        :route==='version'?{version:'local-test'}:{models:[tag]});
+      if(route===target && /at limit|one byte over/.test(label)){
+        payload=payload.padEnd(discoveryLimit+(label.includes('one byte over')?1:0),' ');
+        if(label.startsWith('compressed')){res.setHeader('Content-Encoding','gzip');res.end(gzipSync(payload));return;}
+        // Omit Content-Length, cross the boundary in the final chunk.
+        res.write(payload.slice(0,-1));res.end(payload.slice(-1));return;
+      }
+      res.end(payload);
+    });
+    const {temp,inputs,accept}=fixture(t,'http://127.0.0.1:'+port+'/v1');
+    let scope;
+    if(label.startsWith('v5 expires')){
+      delete inputs.packagePolicy;
+      scope=buildBoundScope(inputs.bindingInputs,inputs.endpoint,inputs.resultPolicy,inputs.invocationPolicy,inputs.executionWindow);
+      expire=()=>t.mock.method(Date,'now',()=>Date.parse(inputs.executionWindow.expires_at));
+    }else scope=buildPackageScope(inputs);
+    const packet=accept(scope), digest=hypervisor.currentAssignment(packet).digest;
+    const marker=path.join(temp,'launched'), bin=path.join(temp,'bin');mkdirSync(bin);
+    writeFileSync(path.join(bin,'opencode'),`#!/usr/bin/env node
+const fs=require('node:fs'), token=fs.readFileSync('source.txt','utf8');
+fs.writeFileSync(${JSON.stringify(marker)},'ran');
+for(const e of [{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:token}}},{type:'text',part:{text:token}}])console.log(JSON.stringify(e));`,{mode:0o700});
+    const previous=process.env.PATH;
+    process.env.PATH=bin+path.delimiter+previous;
+    t.after(()=>{process.env.PATH=previous;});
+    const run=contractRoundtrip({...inputs,packet});
+    if(expectedError){
+      await assert.rejects(run,e=>expectedError.test([e.message,e.cause?.message].join(' ')),'discovery admitted: '+label);
+      assert.equal(existsSync(marker),false);
+      if(target==='models')assert.deepEqual(routes,['/v1/models'],'discovery continued after hold: '+label);
+      assert.equal(inspectInvocation(inputs.invocationPolicy,digest).state,'failed');
+      assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
+    }else{
+      const receipt=await run;
+      assert.equal(existsSync(marker),true);
+      assert.deepEqual(routes.sort(),['/api/tags','/api/version','/v1/models']);
+      assert.equal(receipt.executor_evidence.model.server_version,target==='version'?null:'local-test');
+      assert.equal(receipt.executor_evidence.model.model_digest,['unavailable tags','model tag absent'].includes(label)?null:'synthetic-digest');
+      assert.equal(inspectInvocation(inputs.invocationPolicy,digest).state,'completed');
+    }
+  });
+}
+
+for (const [label,change,message] of [
+  ['local provider',()=>{}],
+  ['unknown provider',a=>{a.assignee.provider='remote';},/assignee.provider/],
+  ['unsafe model ID',a=>{a.assignee.model_id='../bad model';},/safe model identifier/],
+  ['cloud model declared local',a=>{a.assignee.model_id='example:cloud';},/cloud-tagged/],
+  ['local model declared cloud',a=>{a.assignee.processing='external_cloud';},/cloud-tagged/],
+  ['cloud provider without consent',a=>{a.assignee.model_id='example:cloud';a.assignee.processing='external_cloud';},/external_processing_allowed=true/],
+  ['MLX outside local processing',a=>{Object.assign(a.assignee,{provider:'mlx',model_id:'team/model',processing:'external_cloud'});},/mlx assignments must declare local/],
+  ['unnamespaced MLX model',a=>{Object.assign(a.assignee,{provider:'mlx',model_id:'model'});},/must be namespaced/],
+  ['llamacpp outside local processing',a=>{Object.assign(a.assignee,{provider:'llamacpp',processing:'external_cloud'});},/llamacpp assignments must declare local/],
+  ['Codex without explicit adapter',a=>{a.assignee.provider='codex';},/explicit codex worker adapter/],
+  ['secret input',a=>{a.data.contains_secrets=true;},/contains_secrets must be false/],
+  ['sensitive personal input',a=>{a.data.contains_sensitive_personal_data=true;},/contains_sensitive_personal_data must be false/],
+  ['unknown data class',a=>{a.data.classification='restricted';},/classification must be/],
+  ['ambiguous external consent',a=>{a.data.external_processing_allowed='false';},/must be boolean/],
+  ['missing read grants',a=>{delete a.authority.allowed_read_paths;},/allowed_read_paths is required/],
+  ['too many read grants',a=>{a.authority.allowed_read_paths=Array(31).fill('source.txt');},/between 1 and 30/],
+  ['write grant escapes reads',a=>{a.authority.allowed_paths=['another.txt'];},/inside an allowed read path/],
+  ['executable check not allowed',a=>{a.acceptance.checks[0].command='sh';},/command is not permitted/],
+  ['invalid defect write grants',a=>{Object.assign(a.authority,{mode:'defect_reproduction',allowed_paths:{},allow_test_changes:true});},/allowed_paths must be an array/],
+  ['invalid check entry',a=>{a.acceptance.checks=[null];},/checks\[0\] must be an object/],
+  ['invalid check list',a=>{a.acceptance.checks={};},/between 1 and 12 checks/],
+  ['too much worker time',a=>{a.resources.timeout_seconds=999999;},/resources.timeout_seconds/],
+  ['excess output limit',a=>{a.resources.max_output_bytes=10485761;},/max_output_bytes/],
+  ['string token limit',a=>{a.resources.max_prompt_tokens='4096';},/max_prompt_tokens/],
+  ['worker cannot pause',a=>{a.supervision.may_pause=false;},/may_pause must be true/],
+]) {
+  test('provider assignment admission: '+label,t=>{
+    const {inputs}=fixture(t,'http://127.0.0.1:11434/v1');
+    const assignment=JSON.parse(inputs.bindingInputs.assignmentJson);
+    change(assignment);
+    inputs.bindingInputs.assignmentJson=JSON.stringify(assignment);
+    if(message){
+      assert.throws(()=>validateAssignment(assignment),e=>e.name==='AssignmentValidationError' && message.test(e.message),
+        'missing assignment refusal: '+label);
+      assert.throws(()=>buildPackageScope(inputs));
+      assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
+      assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
+    }else assert.equal(JSON.parse(buildPackageScope(inputs)).kind,'unified-harness-readonly-v6');
+  });
+}
+
+test('provider discovery: oversized stream closes before EOF',async t=>{
+  let finish;
+  const closed=new Promise(resolve=>{finish=resolve;});
+  const port=await listen(t,'127.0.0.1',(req,res)=>{
+    let ended=false;
+    const watchdog=setTimeout(()=>{ended=true;res.end();},3500);
+    res.on('close',()=>{clearTimeout(watchdog);finish(!ended);});
+    res.write(Buffer.alloc(discoveryLimit+1,32));
+  });
+  const {inputs,accept}=fixture(t,'http://127.0.0.1:'+port+'/v1');
+  const packet=accept(buildPackageScope(inputs));
+  await assert.rejects(contractRoundtrip({...inputs,packet}),/discovery.*byte/i);
+  assert.ok(await closed,'cancel oversized metadata before the server ends its response');
+  assert.equal(inspectInvocation(inputs.invocationPolicy,hypervisor.currentAssignment(packet).digest).state,'failed');
+});
