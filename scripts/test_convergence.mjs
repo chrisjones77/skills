@@ -78,12 +78,13 @@ if(mode==='suite'){
     ...['v5','v6'].map(v=>v+' matches the packet workspace and resume before charging'),
     ...['v5','v6'].flatMap(v=>['verifies the source before creating queue storage','refuses a relocated queue before reservation'].map(s=>v+' '+s)),
     ...['v5','v6'].map(v=>v+' queue requires a new resume after reviewer rework'),
+    ...['v5','v6'].map(v=>v+' queue rejects erased clarification before reservation'),
     'v5 self-review cannot enter a queue or advance an older queue',
     'provider refuses a queue copied into another selected workspace',
     'attended replies require the original queue location after restart',
     'explicit goal, accepted identity, ceiling, expiration and cancellation govern admission');
   family('storage.identity','integrated',[],'reviewed and accepted v6 produces a package-bound candidate receipt',
-    'direct v6 rework rejects the prior resume before discovery or claim',
+    'direct v6 rework rejects the prior resume before discovery or claim','direct v6 rejects erased clarification before discovery or claim',
     'v6 refuses a terminal receipt when its in-flight claim changes',
     'strict format checks the post-read answer with and without result capture',
     'direct v6 rejects FIFO and oversized assignments before effects and preserves the accepted attempt',
@@ -114,6 +115,18 @@ if(mode==='suite'){
     ...['pause','resolved clarification'].map(s=>'resume after hold: '+s),
     ...['no resume','wrong writer','wrong workspace','resume after submission','checkpoint bound to another event',
       'rework consumes a distinct resume','superseded workspace substitution'].map(s=>'submitted checkpoint history: '+s));
+  family('history.clarification','coordination',[],'clarification replay: same-tick resolution and explicit resume',
+    ...['deleted collection','empty collection','deleted request','deleted route','duplicate final assessment','checkpoint wrong concern',
+      'missing binding digest','missing binding count','resume inside hold','unknown clarification event','missing records with renamed checkpoint',
+      'checkpoint wrong state','checkpoint wrong assignment','checkpoint wrong event count','assessment before answer','checkpoint mismatched time',
+      'reroute after answer','substituted opening revision','wrong assessor','stale reassessment digest','clear before final answer','broken route chain',
+      'missing hold cannot release the writer','unbound legacy checkpoints remain readable','reject backdated answer before persisting',
+      'concern spans a reviewed workspace revision'].map(s=>'clarification replay: '+s),
+    ...['second pending request','reused concern ID','wrong recipient opens','wrong human answers','answer before reassessment','stale digest reassessed',
+      'recipient reroutes','premature reroute','unknown concern'].map(s=>'clarification admission: '+s));
+  family('history.handoff','coordination',[],'handoff lineage: same work',
+    ...['different task','different accountable owner','same recipient','different workspace','different purpose','recipient withdrew',
+      'successor predates withdrawal','predecessor pending review','revised successor can hand off again'].map(s=>'handoff lineage: '+s));
   family('time.lease','roundtrip',[],'equivalent endpoint URLs share a provider lease until release','concurrent stale lease recovery preserves the replacement owner');
   family('recovery.queue','queue',['sequential_queue'],'running work excludes a concurrent caller and review gates advancement after restart',
     'stop blocks both decisions on a pending provider receipt',
@@ -123,7 +136,7 @@ if(mode==='suite'){
     ...['openai_chat','ollama_chat'].map(a=>a+' observes response limits, integrity and private evidence'),
     ...['openai_chat','ollama_chat'].map(a=>a+' admits only its canonical route and bounded token budget'),
     ...['openai_chat','ollama_chat'].map(a=>a+' checks serialized request size before claiming'),
-    'candidate rework requires fresh resume before ledger claim',
+    'candidate rework requires fresh resume before ledger claim','candidate rejects erased clarification before ledger claim',
     'defect reproduction safely returns a failing accepted data fixture','cancellation during a provider request blocks persistence and replay');
   family('package.methods','package-profile',['engineering_safety','fair_process','ai_lifecycle','professional_practice','coverage_review','issue_triage','advisory_workflow'],
     'manifest-only installation runs the documented offline walkthrough','all inventory entries resolve to inspected package bytes without conferring authority','changed guidance invalidates the accepted package pin');

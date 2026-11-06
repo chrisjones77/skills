@@ -1,4 +1,4 @@
-import { redirectStatuses, observeDestination, reworkFixture } from './test-support.mjs';
+import { redirectStatuses, observeDestination, reworkFixture, erasedHoldFixture } from './test-support.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -1447,22 +1447,27 @@ test('v6 refuses a terminal receipt when its in-flight claim changes', async t=>
   assert.deepEqual(routes,first);
 });
 
-test('direct v6 rework rejects the prior resume before discovery or claim',async t=>{
-  const requests=[];
-  const port=await listen(t,'127.0.0.1',(req,res)=>{
-    requests.push(req.url);
-    res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[{name:'synthetic:local'}],version:'test'}));
+for (const [name,makeHold,expectedError] of [
+  ['direct v6 rework rejects the prior resume before discovery or claim',reworkFixture,/resume checkpoint/i],
+  ['direct v6 rejects erased clarification before discovery or claim',erasedHoldFixture,/clarification/i],
+]) {
+  test(name,async t=>{
+    const requests=[];
+    const port=await listen(t,'127.0.0.1',(req,res)=>{
+      requests.push(req.url);
+      res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[{name:'synthetic:local'}],version:'test'}));
+    });
+    const {inputs,accept,temp}=fixture(t,'http://127.0.0.1:'+port+'/v1');
+    const bin=path.join(temp,'bin');
+    mkdirSync(bin);
+    writeFileSync(path.join(bin,'opencode'),'#!/usr/bin/env node\nprocess.exit(1);',{mode:0o700});
+    const previous=process.env.PATH;
+    process.env.PATH=bin+path.delimiter+previous;
+    t.after(()=>{process.env.PATH=previous;});
+    const {stale}=makeHold(hypervisor,accept(buildPackageScope(inputs)));
+    await assert.rejects(contractRoundtrip({...inputs,packet:stale}),expectedError);
+    assert.deepEqual(requests,[]);
+    assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
+    assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
   });
-  const {inputs,accept,temp}=fixture(t,'http://127.0.0.1:'+port+'/v1');
-  const bin=path.join(temp,'bin');
-  mkdirSync(bin);
-  writeFileSync(path.join(bin,'opencode'),'#!/usr/bin/env node\nprocess.exit(1);',{mode:0o700});
-  const previous=process.env.PATH;
-  process.env.PATH=bin+path.delimiter+previous;
-  t.after(()=>{process.env.PATH=previous;});
-  const {stale}=reworkFixture(hypervisor,accept(buildPackageScope(inputs)));
-  await assert.rejects(contractRoundtrip({...inputs,packet:stale}),/resume checkpoint/i);
-  assert.deepEqual(requests,[]);
-  assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
-  assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
-});
+}

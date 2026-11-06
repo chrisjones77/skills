@@ -10,6 +10,11 @@ ROOT = Path(__file__).resolve().parents[1]
 PKG = 'unified-work-harness'
 # target and control are actual TAP names, not input substrings used as evidence
 cases = [
+    ('erased-clarification', 'bundle.mjs', "if (packet.checkpoints.some(cp => cp?.concern_id !== undefined || String(cp?.kind).startsWith('clarification-')))",
+     'if (false)', 'coordination', 'clarification replay: deleted collection', 'clarification replay: same-tick resolution and explicit resume',
+     'inconsistent clarification accepted: deleted collection'),
+    ('unrelated-handoff', 'coordination.mjs', 'first.work_id !== prior.work_id || ', '',
+     'coordination', 'handoff lineage: different task', 'handoff lineage: same work', 'invalid handoff accepted: different task'),
     ('regressing-work-history', 'bundle.mjs', 'time < previousTime || time < created ||',
      'time < created ||', 'coordination', 'work event history: rework before submission',
      'work event history: reviewed revision retains its earlier workspace', 'invalid history admitted: rework before submission'),

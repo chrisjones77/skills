@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {offerCoordination,inspectCoordination,respond,handoff,reoffer} from "./coordination.mjs";
-import {contractRoundtrip,hypervisor} from "./bundle.mjs";
+import {contractRoundtrip,hypervisor,sha256} from "./bundle.mjs";
 
 const intake = {outcome:"Review a pump report",exclusions:["editing"],assignee:{kind:"human",id:"worker"},accountableHuman:"owner",authority:{allowed:["review"],prohibited:["publish"]},dataClass:"public",resources:{effortMinutes:20,deadline:"none",dependencies:[],reviewerAvailability:"available"},acceptance:{checks:["Inspect evidence"],reviewer:"reviewer"},escalation:{stopConditions:["unclear scope"],contact:"owner",mayPause:true},concerns:[]};
 const workspace = {root:"/synthetic",identity:"/synthetic#main",revision:"a".repeat(40),status_digest:"b".repeat(64)};
@@ -286,4 +286,159 @@ test('submitted checkpoint history: superseded workspace substitution',t=>{
     ...reviewed(intake),workspace:{...workspace,identity:'/other#review',root:'/other'}});
   revised.packet.checkpoints.find(cp=>cp.kind==='resumed').workspace='/other#review';
   assert.throws(()=>inspectCoordination(revised),/resume checkpoint/i);
+});
+
+function clarificationHistory(t, spaced = true) {
+  t.mock.timers.enable({apis:['Date'],now:Date.UTC(2026,0,1)});
+  const tick=()=>{if (spaced) t.mock.timers.tick(10);};
+  const accepted=step(draft('human'),'accept','worker');
+  const open=step(accepted,'clarify','worker',{concernId:'units',question:'Which units?',human:'lead'}); tick();
+  const answer=(r,by)=>step(r,'answer',by,{concernId:'units',answer:'Use kPa.'});
+  const assess=(r,decision)=>step(r,'reassess','worker',{concernId:'units',decision,
+    responseDigest:r.packet.clarifications[0].responses.at(-1).digest});
+  const answered=answer(open,'owner'); tick();
+  const ambiguous=assess(answered,'ambiguous'); tick();
+  const routed=step(ambiguous,'reroute','owner',{concernId:'units',human:'alternate'}); tick();
+  const human=answer(routed,'alternate'); tick();
+  const resolved=assess(human,'clear');
+  return {open,answered,ambiguous,routed,human,resolved};
+}
+
+for (const [label,change] of [
+  ['deleted collection',p=>{delete p.clarifications;}],
+  ['empty collection',p=>{p.clarifications=[];}],
+  ['deleted request',p=>{p.checkpoints=p.checkpoints.filter(cp=>cp.kind!=='clarification-requested');}],
+  ['deleted route',p=>{p.checkpoints=p.checkpoints.filter(cp=>cp.kind!=='clarification-rerouted');}],
+  ['duplicate final assessment',p=>{p.checkpoints.push({...p.checkpoints.at(-1)});}],
+  ['checkpoint wrong concern',p=>{p.checkpoints.at(-1).concern_id='other';}],
+  ['checkpoint wrong state',p=>{p.checkpoints.at(-1).status='awaiting_human';}],
+  ['checkpoint wrong assignment',p=>{p.checkpoints.at(-1).assignment_digest='0'.repeat(64);}],
+  ['checkpoint wrong event count',p=>{p.checkpoints.at(-1).work_event_count=1000;}],
+  ['missing binding digest',p=>{delete p.checkpoints.at(-1).assignment_digest;}],
+  ['missing binding count',p=>{delete p.checkpoints.at(-1).work_event_count;}],
+  ['resume inside hold',p=>{p.checkpoints.splice(2,0,{kind:'resumed',at:p.clarifications[0].opened_at});}],
+  ['unknown clarification event',p=>{p.checkpoints.at(-1).kind='clarification-resumed';}],
+  ['missing records with renamed checkpoint',p=>{delete p.clarifications; p.checkpoints=p.checkpoints.slice(-1);p.checkpoints[0].kind='note';}],
+  ['assessment before answer',p=>{const c=p.clarifications[0];c.assessments.at(-1).at=p.checkpoints.at(-1).at=c.opened_at;}],
+  ['checkpoint mismatched time',p=>{p.checkpoints.at(-1).at=p.clarifications[0].opened_at;}],
+  ['reroute after answer',p=>{const cps=p.checkpoints,i=cps.findIndex(cp=>cp.kind==='clarification-rerouted');[cps[i],cps[i+1]]=[cps[i+1],cps[i]];}],
+  ['substituted opening revision',p=>{p.clarifications[0].base_revision='c'.repeat(40);}],
+  ['wrong assessor',p=>{p.clarifications[0].assessments.at(-1).by='owner';}],
+  ['stale reassessment digest',p=>{p.clarifications[0].assessments.at(-1).response_digest='a'.repeat(64);}],
+  ['clear before final answer',p=>{p.clarifications[0].assessments[0].decision='clear';}],
+  ['broken route chain',p=>{p.clarifications[0].routes[0].to='unknown';}],
+]) {
+  test('clarification replay: '+label,t=>{
+    const {resolved}=clarificationHistory(t);
+    const invalid=structuredClone(resolved); change(invalid.packet);
+    assert.throws(()=>inspectCoordination(invalid),/clarification|reassessment/i,'inconsistent clarification accepted: '+label);
+    assert.equal(inspectCoordination(resolved).review,'pending');
+  });
+}
+
+test('clarification replay: missing hold cannot release the writer',t=>{
+  const {open}=clarificationHistory(t);
+  const pin=inspectCoordination(open).assignmentDigest;
+  delete open.packet.clarifications;
+  assert.throws(()=>respond(open,'resume',{by:'worker',assignmentDigest:pin,note:'continue'}),/clarification/i);
+});
+test('clarification replay: same-tick resolution and explicit resume',t=>{
+  const {resolved}=clarificationHistory(t,false);
+  assert.equal(resolved.packet.handoff.current_writer,null);
+  assert.equal(step(resolved,'resume','worker').packet.handoff.current_writer,'worker');
+});
+test('clarification replay: unbound legacy checkpoints remain readable',t=>{
+  const {resolved}=clarificationHistory(t);
+  for (const cp of resolved.packet.checkpoints.filter(cp=>cp.concern_id)) {
+    delete cp.work_event_count; delete cp.assignment_digest;
+  }
+  assert.equal(step(resolved,'resume','worker').packet.handoff.current_writer,'worker');
+});
+test('clarification replay: reject backdated answer before persisting',t=>{
+  const {open}=clarificationHistory(t);
+  assert.throws(()=>step(open,'answer','owner',{concernId:'units',answer:'kPa',at:new Date(Date.parse(open.packet.clarifications[0].opened_at)-1).toISOString()}),/chronolog/i);
+});
+
+test('clarification replay: concern spans a reviewed workspace revision',t=>{
+  const {open}=clarificationHistory(t);
+  const changed=reoffer(open,{assignmentDigest:inspectCoordination(open).assignmentDigest,by:'owner',note:'new scope',
+    ...reviewed(intake),workspace:{...workspace,revision:'b'.repeat(40)}});
+  const answer=step(changed,'answer','owner',{concernId:'units',answer:'Use kPa.'});
+  const resolved=step(answer,'reassess','worker',{concernId:'units',decision:'clear',
+    responseDigest:answer.packet.clarifications[0].responses[0].digest});
+  assert.equal(step(resolved,'accept','worker').packet.work_contract.disposition,'accepted');
+  changed.packet.clarifications[0].base_revision=changed.packet.workspace.revision;
+  assert.throws(()=>inspectCoordination(changed),/opening workspace revision/i);
+});
+
+for (const [label,record,action,actor,options,error] of [
+  ['second pending request','open','clarify','worker',{concernId:'new',question:'Reason?',human:'lead'},/already pending/i],
+  ['reused concern ID','resolved','clarify','worker',{concernId:'units',question:'Reason?',human:'lead'},/already used/i],
+  ['wrong recipient opens','resolved','clarify','stranger',{concernId:'new',question:'Reason?',human:'lead'},/recipient/i],
+  ['wrong human answers','routed','answer','lead',{concernId:'units',answer:'Use psi'},/currently named/i],
+  ['answer before reassessment','answered','answer','owner',{concernId:'units',answer:'Use psi'},/reassessment/i],
+  ['stale digest reassessed','answered','reassess','worker',{concernId:'units',decision:'clear',responseDigest:'0'.repeat(64)},/exact latest/i],
+  ['recipient reroutes','ambiguous','reroute','worker',{concernId:'units',human:'alternate'},/assigner/i],
+  ['premature reroute','open','reroute','owner',{concernId:'units',human:'alternate'},/pending human/i],
+  ['unknown concern','answered','reassess','worker',{concernId:'other',decision:'clear',responseDigest:'0'.repeat(64)},/matching pending/i],
+]) {
+  test('clarification admission: '+label,t=>{
+    const before=clarificationHistory(t)[record], original=structuredClone(before);
+    assert.throws(()=>step(before,action,actor,options),error);
+    assert.deepEqual(before,original);
+  });
+}
+
+// Build individually valid offers through the public API. The predecessor hash
+// is authentic in every case, including when the claimed successor differs.
+function linkedOffer(predecessor,{id='review-1',purpose='0xB',destination=workspace,recipient='successor',
+    owner='owner',at}={}) {
+  const next=offerCoordination({...reviewed({...intake,assignee:{kind:'human',id:recipient},accountableHuman:owner}),
+    workspace:destination,id,purpose});
+  const prior={intake:predecessor.intake,review:predecessor.review,revisions:predecessor.revisions,packet:predecessor.packet};
+  const first=hypervisor.currentAssignment(next.packet);
+  const scope=JSON.stringify({...JSON.parse(first.scope),predecessor_sha256:sha256(JSON.stringify(prior))});
+  const seed=hypervisor.createPacket({id,objective:first.outcome,owner:recipient,mode:'Review',workspace:destination,
+    authorization:first.authority.allowed,grantedBy:owner});
+  seed.authorization.prohibited=first.authority.prohibited;
+  next.packet=hypervisor.offerAssignment(seed,{scope,engineeringPurpose:purpose,assigner:owner,reviewer:first.reviewer,
+    acceptanceEvidence:first.acceptance_evidence,at});
+  next.predecessors=[prior];
+  return next;
+}
+
+for(const label of ['same work','different task','different accountable owner','same recipient','different workspace',
+  'different purpose','recipient withdrew','successor predates withdrawal','predecessor pending review']) {
+  test('handoff lineage: '+label,t=>{
+    t.mock.timers.enable({apis:['Date'],now:Date.UTC(2026,0,1)});
+    let prior=draft('human');
+    if(label==='predecessor pending review'){
+      prior=step(step(prior,'accept','worker'),'resume','worker');
+      prior=step(prior,'submit','worker',{evidence:'report'});
+    }
+    t.mock.timers.tick(10);
+    const stopped=step(prior,'withdrawn',label==='recipient withdrew'?'worker':'owner',{checkpoint:'Wait for successor'});
+    const opts={'different task':{id:'other'},'different accountable owner':{owner:'other'},'same recipient':{recipient:'worker'},
+      'different workspace':{destination:{...workspace,revision:'c'.repeat(40)}},'different purpose':{purpose:'0x7'},
+      'successor predates withdrawal':{at:new Date(Date.now()-5).toISOString()}}[label];
+    if (label==='successor predates withdrawal') t.mock.timers.setTime(Date.now()-5);
+    const next=linkedOffer(stopped,opts);
+    hypervisor.validatePacket(next.packet);
+    if(label==='same work') assert.equal(step(next,'accept','successor').packet.work_contract.disposition,'accepted');
+    else assert.throws(()=>inspectCoordination(next),/handoff/i,'invalid handoff accepted: '+label);
+  });
+}
+
+test('handoff lineage: revised successor can hand off again',t=>{
+  t.mock.timers.enable({apis:['Date'],now:Date.UTC(2026,0,1)});
+  const give=(r,recipient)=>handoff(r,{assignmentDigest:inspectCoordination(r).assignmentDigest,by:'owner',
+    note:'transfer review',...reviewed({...intake,assignee:{kind:'human',id:recipient}})});
+  const first=give(draft('human'),'successor');
+  const moved={...workspace,revision:'d'.repeat(40)};
+  const revised=reoffer(first,{assignmentDigest:inspectCoordination(first).assignmentDigest,by:'owner',note:'new snapshot',
+    ...reviewed(first.intake),workspace:moved});
+  const next=give(revised,'final');
+  assert.equal(next.predecessors.length,2);
+  assert.deepEqual(next.packet.workspace,moved);
+  assert.equal(step(next,'accept','final').packet.work_contract.acceptance.by,'final');
 });

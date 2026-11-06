@@ -27,3 +27,20 @@ export function reworkFixture(h,active) {
   stale.handoff.current_writer=offer.recipient;
   return {paused,stale};
 }
+
+// Restore a writer with a correctly bound resume while erasing only the open concern.
+export function erasedHoldFixture(h,active) {
+  const offer=h.currentAssignment(active);
+  const at=active.checkpoints.at(-1).at;
+  const opts={concernId:'scope',at};
+  const open=h.requestClarification(active,{...opts,question:'Which scope?',assigner:offer.assigner,human:'lead'});
+  const stale=structuredClone(open);
+  delete stale.clarifications;
+  stale.status='active';
+  stale.handoff.current_writer=offer.recipient;
+  stale.checkpoints.push({...active.checkpoints.at(-1),at,checkpoint_index:stale.checkpoints.length});
+  const answered=h.answerClarification(open,{...opts,by:offer.assigner,answer:'Use the reviewed scope.'});
+  const paused=h.reassessClarification(answered,{...opts,by:offer.recipient,decision:'clear',note:'Scope confirmed',
+    responseDigest:answered.clarifications[0].responses[0].digest});
+  return {paused,stale};
+}

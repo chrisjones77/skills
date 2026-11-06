@@ -83,6 +83,7 @@ function validateWorkContract(packet, priorWorkspaces) {
       if (['recipient','assigner','reviewer','dispatch_kind'].some(field => a[field] !== prior[field]) || !same(a.authority, prior.authority)) throw Error('Revision cannot change declared authority, roles or dispatch kind.');
     }
   }
+  validateClarifications(packet,priorWorkspaces);
   const a = currentAssignment(packet);
   if (a.outcome !== packet.objective || a.dispatch_kind !== packet.mode || !same(a.authority,packet.authorization)) throw Error('Assignment changed outside a recorded revision.');
   if (packet.owner !== a.recipient || (packet.handoff.current_writer !== null && packet.handoff.current_writer !== a.recipient)) throw Error('Owner and writer must match the assignment recipient.');
@@ -287,8 +288,71 @@ function clarificationNext(packet) {
 
 // Optional extension to existing v1 task packets. Role labels are declarations,
 // not authentication. This validates continuity, not the truth of an answer.
-function validateClarifications(packet) {
-  if (packet.clarifications === undefined) return;
+function* clarificationTransitions(concern) {
+  const {id, opened_at, assignment_digest, responses, assessments, routes = []} = concern;
+  const transition = (kind, at, status, pin) => ({id, kind:'clarification-' + kind, at, status, pin});
+  yield transition('requested', opened_at, 'awaiting_assigner', assignment_digest);
+  let route = 0, status = 'awaiting_assigner';
+  for (const [index, response] of responses.entries()) {
+    const target = response.route_index ?? 0;
+    if (index === 0 && response.route_index !== undefined) throw Error('Assigner response cannot use a human route.');
+    if (index > 0 && (status !== 'awaiting_human' || !Number.isInteger(target) || target < route || target > routes.length))
+      throw Error('Invalid clarification response route or transition.');
+    while (route < target) yield transition('rerouted', routes[route++].at, 'awaiting_human');
+    yield transition('answered', response.at, 'awaiting_worker', response.assignment_digest);
+    status = 'awaiting_worker';
+    const assessment = assessments[index];
+    if (assessment) {
+      status = assessment.decision === 'clear' ? 'resolved' : 'awaiting_human';
+      yield transition('reassessed', assessment.at, status, response.assignment_digest);
+    }
+  }
+  if (route < routes.length && status !== 'awaiting_human') throw Error('Clarification reroute requires a pending human answer.');
+  while (route < routes.length) yield transition('rerouted', routes[route++].at, status);
+}
+
+function validateClarificationCheckpoints(packet) {
+  function* transitions() {
+    for (const concern of packet.clarifications ?? []) yield* clarificationTransitions(concern);
+  }
+  const history = transitions();
+  let held = false, lastTime = -Infinity, lastCount = 0;
+  for (const cp of packet.checkpoints) {
+    if (!String(cp?.kind).startsWith('clarification-') && cp?.concern_id === undefined) {
+      if (held && cp?.kind === 'resumed') throw Error('Resume during unresolved clarification.');
+      const moment = Date.parse(cp?.at);
+      if (Number.isFinite(moment)) lastTime = Math.max(lastTime, moment);
+      if (Number.isInteger(cp?.work_event_count)) lastCount = Math.max(cp.work_event_count, lastCount);
+      continue;
+    }
+    const expected = history.next().value;
+    if (!expected || expected.id !== cp.concern_id || expected.kind !== cp.kind ||
+        expected.at !== cp.at || expected.status !== cp.status) throw Error('Clarification checkpoint disagrees with its recorded transition.');
+    if (held && cp.kind === 'clarification-requested') throw Error('Overlapping clarification requests.');
+    const moment = Date.parse(cp.at);
+    if (moment < lastTime) throw Error('Clarification checkpoint chronology regressed.');
+    lastTime = moment;
+    if (Object.hasOwn(cp,'work_event_count') || Object.hasOwn(cp,'assignment_digest')) {
+      const events = packet.work_contract?.events;
+      const count = cp.work_event_count;
+      const preceding = Number.isInteger(count) && count > 0 && events?.[count-1];
+      if (!preceding || count < lastCount || cp.assignment_digest !== preceding.assignment_digest ||
+          (expected.pin !== undefined && cp.assignment_digest !== expected.pin) ||
+          moment < Date.parse(preceding.at) || moment > Date.parse(events[count]?.at))
+        throw Error('Clarification checkpoint conflicts with its work event or assignment.');
+      lastCount = count;
+    }
+    held = cp.status !== 'resolved';
+  }
+  if (!history.next().done) throw Error('Missing clarification checkpoint.');
+}
+
+function validateClarifications(packet, priorWorkspaces) {
+  if (packet.clarifications === undefined) {
+    if (packet.checkpoints.some(cp => cp?.concern_id !== undefined || String(cp?.kind).startsWith('clarification-')))
+      throw Error('Missing clarification records for existing checkpoints.');
+    return;
+  }
   if (!Array.isArray(packet.clarifications) || packet.clarifications.length > 100) throw new Error('Invalid clarification collection.');
   const seen = new Set();
   let unresolved = 0;
@@ -302,6 +366,8 @@ function validateClarifications(packet) {
     if (c.work_id !== undefined && (c.work_id !== packet.task_id || !packet.work_contract?.assignments.some(a => a.digest === c.assignment_digest))) throw new Error('Clarification assignment identity mismatch.');
     if (packet.work_contract) {
       const opening = packet.work_contract.assignments.find(a => a.digest === c.assignment_digest);
+      const workspace = opening === currentAssignment(packet) ? packet.workspace : priorWorkspaces?.[opening?.revision-1];
+      if (workspace && c.base_revision !== workspace.revision) throw Error('Clarification opening workspace revision mismatch.');
       const expectedContext = opening && {task_id:packet.task_id, objective:opening.outcome, authorization:opening.authority};
       if (c.work_id !== packet.task_id || !opening || c.worker !== opening.recipient || c.assigner !== opening.assigner || JSON.stringify(c.context) !== JSON.stringify(expectedContext)) throw new Error('Clarification must retain its opening assignment context and roles.');
     }
@@ -330,6 +396,7 @@ function validateClarifications(packet) {
     }
   }
   if (unresolved > 1) throw new Error('Resolve the current clarification before opening another for this task.');
+  validateClarificationCheckpoints(packet);
 }
 
 function event(packet, kind, concern, at) {
@@ -457,7 +524,7 @@ function validatePacket(packet, priorWorkspaces) {
   if (pending && (pending.acknowledgement === 'acknowledged' || pending.mode === 'takeover') && packet.handoff.current_writer !== null) problems.push('no writer is allowed while transfer is unverified');
   if (pending && !['pending', 'acknowledged'].includes(pending.acknowledgement)) problems.push('invalid acknowledgement state');
   if (problems.length) throw new Error(`Invalid task packet: ${problems.join('; ')}`);
-  validateClarifications(packet);
+  if (!packet.work_contract) validateClarifications(packet);
   validateWorkContract(packet,priorWorkspaces);
   return [];
 }

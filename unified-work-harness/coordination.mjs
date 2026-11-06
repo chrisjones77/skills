@@ -49,7 +49,7 @@ export function offerCoordination({intake, review, id, workspace, purpose}) {
 export function inspectCoordination(record) {
   if (record?.schema_version !== "attended-coordination.v1" || !Array.isArray(record.predecessors) || record.predecessors.length > 32)
     throw new Error("Invalid coordination record");
-  let previous = null;
+  let previous = null, predecessor = null;
   const seen = new Set();
   for (const item of [...record.predecessors, record]) {
     if (!Array.isArray(item.revisions)) throw new Error("Invalid coordination revision history");
@@ -79,6 +79,18 @@ export function inspectCoordination(record) {
     if (item !== record && (item.packet.work_contract.disposition !== "withdrawn" ||
         item.packet.handoff.current_writer || item.packet.clarifications?.some(c => c.status !== "resolved")))
       throw new Error("Transferred work must retain its stopped predecessor");
+    if (predecessor) {
+      const prior = h.currentAssignment(predecessor);
+      const withdrawal = predecessor.work_contract.events.at(-1);
+      const first = item.packet.work_contract.assignments[0];
+      const workspace = item.revisions[0]?.workspace ?? item.packet.workspace;
+      if (withdrawal.kind !== 'withdrawn' || withdrawal.by !== prior.assigner ||
+          predecessor.work_contract.review.status !== 'pending' || Date.parse(withdrawal.at) > Date.parse(first.created_at) ||
+          first.work_id !== prior.work_id || first.assigner !== prior.assigner || first.recipient === prior.recipient ||
+          first.engineering_purpose !== prior.engineering_purpose || workspaceDigest(workspace) !== workspaceDigest(predecessor.workspace))
+        throw Error('Handoff successor conflicts with the assigner withdrawal, work identity or workspace.');
+    }
+    predecessor = item.packet;
     seen.add(a.digest);
     previous = sha256(JSON.stringify({intake:item.intake,review:item.review,revisions:item.revisions,packet:item.packet}));
   }
