@@ -156,3 +156,47 @@ for(const change of ['stable descriptor','truncate member','grow member','replac
     execFileSync(process.execPath,['--input-type=module','-e',probe,change],{cwd:dir,timeout:3000});
   });
 }
+
+for(const [label,change,outcome] of [
+  ['selected purpose',r=>{},'resolved_for_review'],
+  ['nested purpose array',r=>{r.primary=['0xB'];},'invalid'],
+  ['boxed purpose string',r=>{r.primary=new String('0xB');},'invalid'],
+  ['inherited capability name',r=>{r.requiredCapabilities=['constructor'];},'unknown capability'],
+  ['extra profile field',r=>{r.execute=true;},'invalid'],
+  ['too many companions',r=>{r.companions=['0x1','0x2','0x3'];},'invalid'],
+  ['duplicate companion',r=>{r.companions=['0x1','0x1'];},'invalid'],
+  ['unknown companion',r=>{r.companions=['0x0'];},'invalid'],
+  ['non-string capability',r=>{r.requiredCapabilities=[3];},'invalid'],
+  ['sparse capability list',r=>{r.requiredCapabilities=Array(1);},'invalid'],
+  ['sparse effect ceiling',r=>{r.effectCeiling=['read',,];},'invalid'],
+  ['sparse requested effects',r=>{r.requestedEffects=Array(1);},'invalid'],
+  ['unknown prohibited effect',r=>{r.prohibitedEffects=['deploy'];},'invalid'],
+  ['unknown requested effect',r=>{r.requestedEffects=['deploy'];},'invalid'],
+  ['unknown effect in ceiling',r=>{r.effectCeiling=['read','deploy'];},'invalid'],
+  ['missing ceiling',r=>{delete r.effectCeiling;},'missing or insufficient effect ceiling'],
+  ['missing source pin',r=>{delete r.sourceSha256;},'missing or changed package pin'],
+  ['requested effect prohibited',r=>{r.requestedEffects=['write'];r.prohibitedEffects=['write'];r.effectCeiling.push('write');},'required effect is prohibited'],
+  ['dependency exceeds ceiling',r=>{r.requiredCapabilities=['goal_pursuit','sequential_queue'];},'missing or insufficient effect ceiling'],
+  ['dependencies within ceiling',r=>{r.requiredCapabilities=['goal_pursuit','sequential_queue'];r.effectCeiling.push('write','dispatch');},'resolved_for_review'],
+]) {
+  test('package profile boundary: '+label,()=>{
+    const request={primary:'0xB',sourceSha256:packageInventory().sourceSha256,effectCeiling:['read']};
+    change(request);
+    if(outcome==='invalid'){
+      assert.throws(()=>resolvePackageProfile(request),/Invalid (purpose|package profile)/,'invalid profile admitted: '+label);
+      return;
+    }
+    const profile=resolvePackageProfile(request);
+    assert.equal(profile.execution_authorized,false);
+    if(outcome==='resolved_for_review'){
+      assert.equal(profile.status,outcome);
+      if(label==='dependencies within ceiling'){
+        assert.deepEqual(profile.effects,['dispatch','read','write']);
+        assert.ok(profile.capabilities.some(c=>c.name==='assignment_intake'));
+      }
+    }else{
+      assert.equal(profile.status,'hold');
+      assert.ok(profile.holds.includes(outcome));
+    }
+  });
+}

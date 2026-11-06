@@ -41,7 +41,7 @@ const purposes = {
 };
 const validEffects = new Set(["read","write","git","network","provider","dispatch"]);
 const allowedFields = new Set(["primary","companions","requiredCapabilities","effectCeiling","requestedEffects","prohibitedEffects","sourceSha256"]);
-const uniqueList = a => Array.isArray(a) && a.length <= 32 && a.every(x=>typeof x === "string") && new Set(a).size === a.length;
+const uniqueList = a => Array.isArray(a) && a.length <= 32 && [...a].every(x=>typeof x === "string") && new Set(a).size === a.length;
 
 const jsonByteLimit = 64 * 1024;
 const memberByteLimit = 2 * 1024 * 1024;
@@ -119,7 +119,7 @@ function uniqueFiles(files) {
 export function resolvePackageProfile(request) {
   if (!request || typeof request !== "object" || Object.keys(request).some(k=>!allowedFields.has(k))) throw new Error("Invalid package profile");
   const {primary, companions=[], requiredCapabilities=[], requestedEffects=[], prohibitedEffects=[], effectCeiling, sourceSha256} = request;
-  if (!Object.hasOwn(purposes,primary) || !uniqueList(companions) || companions.length>2 || companions.includes(primary) ||
+  if (typeof primary !== "string" || !Object.hasOwn(purposes,primary) || !uniqueList(companions) || companions.length>2 || companions.includes(primary) ||
       companions.some(x=>!Object.hasOwn(purposes,x)) || !uniqueList(requiredCapabilities) || !uniqueList(requestedEffects) ||
       !uniqueList(prohibitedEffects) || prohibitedEffects.some(e=>!validEffects.has(e)) || requestedEffects.some(e=>!validEffects.has(e)) || (effectCeiling!==undefined && (!uniqueList(effectCeiling) || effectCeiling.some(e=>!validEffects.has(e)))))
     throw new Error("Invalid purpose, capabilities or effects");

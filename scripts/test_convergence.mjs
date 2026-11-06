@@ -30,6 +30,11 @@ if(mode==='suite'){
       'aggregate one byte over','incorrect case','duplicate member','parent traversal','missing runtime member','missing test member',
       'unexpected test file','profile available','profile held','profile FIFO','profile one byte over','invalid command'].map(s=>'package inspection: '+s),
     ...['stable descriptor','truncate member','grow member','replace entry'].map(s=>'inventory read consistency: '+s));
+  family('package.profile.input','package-profile',[],'package profile boundary: selected purpose',
+    ...['nested purpose array','boxed purpose string','inherited capability name','extra profile field','too many companions','duplicate companion',
+      'unknown companion','non-string capability','sparse capability list','sparse effect ceiling','sparse requested effects','unknown prohibited effect',
+      'unknown requested effect','unknown effect in ceiling','missing ceiling','missing source pin','requested effect prohibited','dependency exceeds ceiling',
+      'dependencies within ceiling'].map(s=>'package profile boundary: '+s));
   family('package.recheck','integrated',[],'v6 package identity: valid package',
     'v6 package identity: before claim','v6 package identity: after discovery');
   family('worker.read.evidence','integrated',[],'v6 read evidence: regular file',

@@ -10,6 +10,9 @@ ROOT = Path(__file__).resolve().parents[1]
 PKG = 'unified-work-harness'
 # target and control are actual TAP names, not input substrings used as evidence
 cases = [
+    ('coerced-package-purpose', 'package.mjs', 'typeof primary !== "string" || ', '',
+     'package-profile', 'package profile boundary: nested purpose array', 'package profile boundary: selected purpose',
+     'invalid profile admitted: nested purpose array'),
     ('linked-package-member', 'package.mjs', ' || (packageFile && before.nlink !== 1n)', '',
      'integrated', 'v6 package identity: before claim', 'v6 package identity: valid package', 'linked package member remained eligible'),
     ('unscoped-literal-file', 'bundle.mjs', 'violations.push("ambiguous path separator in changed file");',
