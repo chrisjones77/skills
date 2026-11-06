@@ -49,6 +49,13 @@ if(mode==='suite'){
     'edit worker refuses a new destination below a symlink before launch');
   family('worker.codex','integrated',[],'synthetic Codex worker: valid proposal',
     ...['malformed event','second turn','execution error','cloud processing denied'].map(s=>'synthetic Codex worker: '+s));
+  family('worker.codex.transcript','integrated',[],'Codex proposal transcript: ordered turn',
+    ...['last completed turn','nonzero exit','terminated by signal','timeout','missing completion','failed turn','missing start',
+      'message after completion','duplicate completion','overlapping turns','stale proposal',
+      ...['command_execution','file_change','mcp_tool_call','web_search','unrecognized-private-canary'].map(k=>'disallowed '+k),
+      'unknown event','usage metadata','exact output budget','excess stdout','excess stderr','invalid event bytes','prompt exceeds budget'
+    ].map(label=>'Codex proposal transcript: '+label),
+    'Codex proposal launches outside the checkout with explicit read-only permissions');
   family('identity.scope','roundtrip',['purpose_selection','embedded_source_binding','qvch_source_resolution','readonly_roundtrip'],
     'source-pinned profiles resolve only fixed dependencies and account for executor side effects',
     'CLI source receipt rejects an earlier pin after bundle bytes change','profile inspection preserves routing, unresolved capabilities and the effect ceiling without granting authority');

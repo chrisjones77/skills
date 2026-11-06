@@ -10,6 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 PKG = 'unified-work-harness'
 # target and control are actual TAP names, not input substrings used as evidence
 cases = [
+    ('incomplete-codex-turn', 'bundle.mjs',
+     'if (result.code === 0 && (!steps || turnOpen)) violations.push("Codex CLI returned an incomplete turn");',
+     '// trust proposal text without a terminal turn event', 'integrated', 'Codex proposal transcript: missing completion',
+     'Codex proposal transcript: ordered turn', 'unexpected proposal disposition: missing completion'),
     ('unbounded-direct-response', 'bundle.mjs',
      'if (size > maximumBytes) return {size, hash:null, violation:', 'if (false) return {size, hash:null, violation:',
      'integrated', 'direct response stream: one byte over', 'direct response stream: exact bytes',

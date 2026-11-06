@@ -6,7 +6,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, realpathSync, rmSync, readFileSy
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { runHarness, buildOpenCodeConfig, validatePathAccess, contractRoundtrip, buildBoundScope, inspectInvocation, hypervisor, sha256, inspectBundledSource } from './bundle.mjs';
+import { runHarness, buildOpenCodeConfig, buildCodexCommand, validatePathAccess, contractRoundtrip, buildBoundScope, inspectInvocation, hypervisor, sha256, inspectBundledSource } from './bundle.mjs';
 import { buildPackageScope } from './integrated.mjs';
 import { packageInventory } from './package.mjs';
 import { reviewIntake } from './intake.mjs';
@@ -1146,4 +1146,113 @@ test('direct reply overflow closes the loopback response before EOF', async t=>{
   assert.equal(evidence.disposition,'rejected');
   assert.match(evidence.violations.join('\n'),/output budget exceeded/);
   assert.equal(existsSync(path.join(artifactDirectory,'proposal.json')),false);
+});
+
+const nativeStart = {type:'turn.started'};
+const nativeMessage = {type:'item.completed',item:{type:'agent_message',text:JSON.stringify(proposal)}};
+const nativeFinish = {type:'turn.completed',usage:{input_tokens:6,output_tokens:23}};
+const nativeTool = type => ({type:'item.started',item:{type}});
+for (const [label,events,violation] of [
+  ['ordered turn',[{type:'thread.started',thread_id:'synthetic'},nativeStart,
+    {type:'item.updated',item:{type:'reasoning',text:'private-canary'}},nativeMessage,nativeFinish],null],
+  ['last completed turn',[nativeStart,{...nativeMessage,item:{...nativeMessage.item,text:'obsolete answer'}},nativeFinish,
+    nativeStart,nativeMessage,nativeFinish],null],
+  ['nonzero exit',[nativeStart,nativeMessage,nativeFinish],/exit code/],
+  ['terminated by signal',[nativeStart,nativeMessage,nativeFinish],/terminated by signal/],
+  ['timeout',[nativeStart,nativeMessage,nativeFinish],/wall-clock timeout/],
+  ['missing completion',[nativeStart,nativeMessage],/incomplete turn/],
+  ['failed turn',[nativeStart,nativeMessage,{type:'turn.failed',error:{message:'private-canary'}}],/failed turn/],
+  ['missing start',[nativeMessage,nativeFinish],/outside an active turn/],
+  ['message after completion',[nativeStart,nativeFinish,nativeMessage],/outside an active turn/],
+  ['duplicate completion',[nativeStart,nativeMessage,nativeFinish,nativeFinish],/outside an active turn/],
+  ['overlapping turns',[nativeStart,nativeStart,nativeMessage,nativeFinish],/already active/],
+  ['stale proposal',[nativeStart,nativeMessage,nativeFinish,nativeStart,nativeFinish],/response was empty/],
+  ...['command_execution','file_change','mcp_tool_call','web_search','unrecognized-private-canary'].map(type=>[
+    'disallowed '+type,[nativeStart,nativeTool(type),nativeMessage,nativeFinish],/item outside proposal scope/]),
+  ['unknown event',[nativeStart,{type:'unrecognized-private-canary'},nativeMessage,nativeFinish],/unknown event/],
+  ['usage metadata',[nativeStart,nativeMessage,{type:'turn.completed',usage:{output_tokens:23,input_tokens:-1,secret:'private-canary'}}],null],
+  ['exact output budget',[nativeStart,nativeMessage,nativeFinish],null],
+  ['excess stdout',[nativeStart,nativeMessage,nativeFinish],/output budget/],
+  ['excess stderr',[nativeStart,nativeMessage,nativeFinish],/output budget/],
+  ['invalid event bytes',[nativeStart,nativeMessage,nativeFinish],/UTF-8/],
+  ['prompt exceeds budget',[nativeStart,nativeMessage,nativeFinish],/estimated prompt tokens/],
+]) {
+  test('Codex proposal transcript: '+label, async t=>{
+    const {assignment,temp,run} = lowLevelFixture(t);
+    assignment.assignee = {...assignment.assignee,provider:'codex',processing:'external_cloud',model_id:'gpt-5.6-sol'};
+    assignment.worker.adapter='codex';
+    assignment.data.external_processing_allowed=true;
+    assignment.resources.max_steps=2;
+    if (label==='timeout') assignment.resources.timeout_seconds=10;
+    assignment.resources.max_output_bytes=1024;
+    if (label==='prompt exceeds budget') assignment.resources.max_prompt_tokens=256;
+    let output = Buffer.from(events.map(event=>JSON.stringify(event)).join('\n')+'\n');
+    if (label==='exact output budget' || label==='excess stdout') {
+      const target = label==='excess stdout' ? 1025 : 1024;
+      output=Buffer.concat([Buffer.alloc(target-output.length,0x20),output]);
+    }
+    if (label==='invalid event bytes') {
+      const reasoning=Buffer.concat([Buffer.from('{"type":"item.updated","item":{"type":"reasoning","text":"'),Buffer.from([0xff]),Buffer.from('"}}\n')]);
+      const split=output.indexOf(10)+1;
+      output=Buffer.concat([output.subarray(0,split),reasoning,output.subarray(split)]);
+    }
+    const marker=path.join(temp,'invoked');
+    const stub=path.join(temp,'synthetic-codex');
+    writeFileSync(stub,"#!/usr/bin/env node\nrequire('node:fs').writeFileSync("+JSON.stringify(marker)+",'started');\n"+
+      "process.stdout.write(Buffer.from("+JSON.stringify(output.toString('base64'))+",'base64'));\n"+
+      (label==='excess stderr'?"process.stderr.write('x'.repeat(1025));":"")+
+      (label==='nonzero exit'?"process.exitCode=7;":"")+
+      (label==='terminated by signal'?"process.kill(process.pid,'SIGTERM');":"")+
+      (label==='timeout'?"setInterval(()=>{},1000);":""),{mode:0o700});
+    const previous=process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN;
+    process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN=stub;
+    t.after(()=>{
+      if (previous===undefined) delete process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN;
+      else process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN=previous;
+    });
+    const {artifactDirectory,evidence}=await run();
+    assert.equal(existsSync(marker),label!=='prompt exceeds budget');
+    assert.equal(evidence.disposition,violation?'rejected':'proposal_candidate','unexpected proposal disposition: '+label);
+    assert.equal(existsSync(path.join(artifactDirectory,'proposal.json')),!violation);
+    if (violation) assert.match(evidence.violations.join('\n'),violation);
+    if (label==='usage metadata') assert.deepEqual(evidence.agent.usage,{output_tokens:23});
+    for (const name of ['events.ndjson','evidence.json']) {
+      assert.ok(!readFileSync(path.join(artifactDirectory,name),'utf8').includes('private-canary'),name);
+    }
+  });
+}
+
+test('Codex proposal launches outside the checkout with explicit read-only permissions', async t=>{
+  const {assignment,temp,cwd,run}=lowLevelFixture(t,root=>writeFileSync(path.join(root,'AGENTS.md'),'unoffered-prompt-canary'));
+  assignment.assignee={...assignment.assignee,provider:'codex',processing:'external_cloud',model_id:'gpt-5.6-sol'};
+  assignment.data.external_processing_allowed=true;
+  assignment.worker.adapter='codex';
+  const stub=path.join(temp,'probe-codex'), observed=path.join(temp,'observation');
+  const output=[nativeStart,nativeMessage,nativeFinish].map(e=>JSON.stringify(e)).join('\n');
+  writeFileSync(stub,"#!/usr/bin/env node\nconst fs=require('node:fs');\n"+
+    "fs.writeFileSync("+JSON.stringify(observed)+",JSON.stringify({args:process.argv.slice(2),cwd:process.cwd(),files:fs.readdirSync('.')}));\n"+
+    "console.log("+JSON.stringify(output)+");",{mode:0o700});
+  const previous=process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN;
+  process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN=stub;
+  t.after(()=>{
+    if (previous===undefined) delete process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN;
+    else process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN=previous;
+  });
+  const {evidence}=await run();
+  assert.equal(evidence.disposition,'proposal_candidate');
+  const obs=JSON.parse(readFileSync(observed));
+  assert.notEqual(obs.cwd,cwd);
+  assert.deepEqual(obs.files,[],'launch directory contains no repository files');
+  assert.ok(!obs.args.includes('--approve-for-me'));
+  assert.ok(obs.args.includes('approval_policy="never"'));
+  assert.ok(obs.args.includes('--skip-git-repo-check'));
+  assert.equal(obs.args[obs.args.indexOf('--sandbox')+1],'read-only');
+  assert.ok(obs.args.at(-1).includes('cobalt-otter-47') && !obs.args.at(-1).includes('unoffered-prompt-canary'));
+  for (const name of ['shell_tool','unified_exec','multi_agent','apps','plugins','hooks']) {
+    assert.ok(obs.args.some((arg,i)=>arg==='--disable' && obs.args[i+1]===name));
+  }
+  // Preserve the existing edit-worker launch policy.
+  const editArgs=buildCodexCommand({...assignment,authority:{...assignment.authority,mode:'candidate_edit'}},temp,'edit');
+  assert.equal(editArgs[editArgs.indexOf('--sandbox')+1],'workspace-write');
+  assert.ok(editArgs.includes('--approve-for-me'));
 });

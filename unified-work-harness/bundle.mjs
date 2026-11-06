@@ -6,6 +6,7 @@ import { createServer, request as httpRequest } from "node:http";
 import { AsyncLocalStorage } from "node:async_hooks";
 import * as cryptoModule from "node:crypto";
 const {createHash, randomUUID} = cryptoModule;
+const execFileAsync = promisify(execFile);
 import {
   accessSync,
   existsSync,
@@ -1750,7 +1751,7 @@ export function buildCodexCommand(assignment, artifactDirectory, prompt = buildA
     "exec",
     "--model", assignment.assignee.model_id,
     "--sandbox", sandbox,
-    "--approve-for-me",
+    ...(sandbox === "read-only" ? ["-c", 'approval_policy="never"'] : ["--approve-for-me"]),
     "--ephemeral",
     "--ignore-user-config",
     "-c", 'web_search="disabled"',
@@ -1760,22 +1761,72 @@ export function buildCodexCommand(assignment, artifactDirectory, prompt = buildA
   if (assignment.authority.mode === "structured_proposal") {
     const schemaPath = path.join(artifactDirectory, "codex-output-schema.json");
     writeFileSync(schemaPath, `${JSON.stringify(buildProposalJsonSchema(assignment), null, 2)}\n`, { mode: 0o600 });
-    args.push("--output-schema", schemaPath);
+    args.push("--skip-git-repo-check", "--output-schema", schemaPath, "-c", "skills.include_instructions=false");
+    for (const feature of ["shell_tool","unified_exec","multi_agent","apps","plugins","hooks","memories","view_image","image_generation"]) {
+      args.push("--disable", feature);
+    }
   }
   args.push(prompt);
   return args;
 }
 
+const codexEventTypes = new Set(["thread.started","turn.started","turn.completed","turn.failed",
+  "item.started","item.updated","item.completed","error"]);
+const codexToolItems = new Set(["command_execution","file_change","mcp_tool_call","web_search"]);
+const codexProposalItems = new Set(["agent_message","reasoning","todo_list"]);
+
 function summarizeCodexEvent(event) {
-  const summary = { type: event?.type ?? "unknown" };
-  if (event?.item?.type) summary.item_type = event.item.type;
-  if (event?.type === "item.completed" && event?.item?.type === "agent_message") {
-    summary.text_bytes = Buffer.byteLength(String(event.item.text ?? ""));
-    summary.text_hash = sha256(String(event.item.text ?? ""));
+  const type = codexEventTypes.has(event?.type) ? event.type : "unknown";
+  const summary = {type};
+  if (type.startsWith("item.")) {
+    const kind = event.item?.type;
+    summary.item_type = codexToolItems.has(kind) || codexProposalItems.has(kind) || kind === "error" ? kind : "unknown";
+    if (type === "item.completed" && kind === "agent_message" && typeof event.item.text === "string") {
+      summary.text_bytes = Buffer.byteLength(event.item.text);
+      summary.text_hash = sha256(event.item.text);
+    }
+  } else if (type === "turn.completed") {
+    summary.usage = {};
+    for (const key of ["input_tokens","cached_input_tokens","cache_write_input_tokens","output_tokens","reasoning_output_tokens"]) {
+      const n = event.usage?.[key];
+      if (Number.isSafeInteger(n) && n >= 0) summary.usage[key] = n;
+    }
+  } else if (type === "error" || type === "turn.failed") {
+    summary.message_hash = sha256(String(event.message ?? event.error?.message ?? "unknown"));
   }
-  if (event?.type === "turn.completed") summary.usage = event.usage ?? null;
-  if (event?.type === "error") summary.message_hash = sha256(String(event.message ?? event.error ?? ""));
   return summary;
+}
+
+// Inspect the complete byte stream. Parsing a tail could drop an earlier
+// violation or splice UTF-8 bytes across chunk boundaries.
+async function captureCodex(executable, args, assignment, worktree) {
+  const violations = [];
+  const options = {cwd:worktree, env:{...process.env, NO_COLOR:"1"}, encoding:"buffer",
+    timeout:assignment.resources.timeout_seconds * 1_000, killSignal:"SIGKILL", maxBuffer:assignment.resources.max_output_bytes};
+  let code = 0, signal = null, timedOut = false, stdout, stderr;
+  const started = performance.now();
+  try {
+    ({stdout,stderr} = await execFileAsync(executable, args, options));
+  } catch (error) {
+    code = Number.isInteger(error.code) ? error.code : null;
+    signal = error.signal ?? null;
+    stdout = error.stdout;
+    stderr = error.stderr;
+    if (error.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") violations.push("Codex CLI output budget exceeded");
+    else if (error.killed && signal === "SIGKILL") timedOut = true;
+    else if (code === null && !signal) throw error;
+    else violations.push(code === null ? "Codex CLI terminated by signal" : `Codex CLI returned exit code ${code}`);
+  }
+  if (timedOut || performance.now()-started >= options.timeout) {
+    timedOut = true;
+    violations.push(`wall-clock timeout exceeded: ${assignment.resources.timeout_seconds} seconds`);
+  }
+  let text = "";
+  if (!violations.length || (!timedOut && code !== null && code !== 0)) {
+    try { text = new TextDecoder("utf-8",{fatal:true}).decode(stdout); }
+    catch { violations.push("Codex CLI output is not valid UTF-8"); }
+  }
+  return {stdout:text, stderr:stderr ?? "", code, signal, timedOut, violations};
 }
 
 async function runCodex({ assignment, worktree, artifactDirectory }) {
@@ -1819,33 +1870,61 @@ async function runCodex({ assignment, worktree, artifactDirectory }) {
       proposal_text: "",
     };
   }
-  const result = await runCommand(executable, buildCodexCommand(assignment, artifactDirectory, prompt), {
-    cwd: worktree,
-    timeoutMs: assignment.resources.timeout_seconds * 1_000,
-    maxOutputBytes: assignment.resources.max_output_bytes,
-    env: { ...process.env, NO_COLOR: "1" },
-  });
+  // The prompt already contains the reviewed context. Keep automatic project
+  // discovery away from the disposable checkout and its repository instructions.
+  const workerDirectory = context ? mkdtempSync(path.join(path.dirname(worktree),"codex-proposal-")) : worktree;
+  const result = await captureCodex(executable, buildCodexCommand(assignment, artifactDirectory, prompt), assignment, workerDirectory);
   const events = [];
-  const violations = [];
+  const violations = [...result.violations];
   let proposalText = "";
   let usage = null;
   let steps = 0;
   let toolCalls = 0;
-  for (const line of result.stdout.split("\n").filter(Boolean)) {
-    try {
-      const event = JSON.parse(line);
-      events.push(summarizeCodexEvent(event));
-      if (event.type === "turn.started") steps += 1;
-      if (["command_execution", "file_change", "mcp_tool_call", "web_search"].includes(event?.item?.type)) toolCalls += 1;
-      if (event.type === "item.completed" && event?.item?.type === "agent_message") proposalText = String(event.item.text ?? "");
-      if (event.type === "turn.completed") usage = event.usage ?? null;
-      if (event.type === "error") violations.push("Codex CLI reported an execution error");
-    } catch {
-      violations.push("Codex CLI emitted malformed JSON event output");
+  let turnOpen = false;
+  for (const line of result.stdout.split("\n").filter(line=>line.trim())) {
+    let event;
+    try { event = JSON.parse(line); }
+    catch { violations.push("Codex CLI emitted malformed JSON event output"); continue; }
+    const summary = summarizeCodexEvent(event);
+    events.push(summary);
+    switch (summary.type) {
+      case "thread.started":
+        if (steps || events.length !== 1) violations.push("Unexpected thread start in Codex CLI output");
+        break;
+      case "turn.started":
+        if (turnOpen) violations.push("Codex CLI turn already active");
+        turnOpen = true;
+        proposalText = "";
+        steps++;
+        break;
+      case "turn.completed":
+        if (!turnOpen) violations.push("Codex CLI completion outside an active turn");
+        turnOpen = false;
+        usage = summary.usage;
+        break;
+      case "turn.failed":
+        violations.push("Codex CLI reported a failed turn");
+        turnOpen = false;
+        break;
+      case "item.started":
+      case "item.updated":
+      case "item.completed":
+        if (!turnOpen) violations.push("Codex CLI item outside an active turn");
+        if (codexToolItems.has(summary.item_type)) toolCalls++;
+        if (context && !codexProposalItems.has(summary.item_type)) violations.push("Codex CLI reported an item outside proposal scope");
+        if (summary.type === "item.completed" && summary.item_type === "agent_message") {
+          proposalText = typeof event.item.text === "string" ? event.item.text : "";
+        }
+        break;
+      case "error":
+        violations.push("Codex CLI reported an execution error");
+        break;
+      default:
+        violations.push("Codex CLI emitted an unknown event");
     }
   }
+  if (result.code === 0 && (!steps || turnOpen)) violations.push("Codex CLI returned an incomplete turn");
   if (steps > assignment.resources.max_steps) violations.push(`step budget exceeded: ${steps}/${assignment.resources.max_steps}`);
-  if (result.timedOut) violations.push(`wall-clock timeout exceeded: ${assignment.resources.timeout_seconds} seconds`);
   writeFileSync(path.join(artifactDirectory, "events.ndjson"), `${events.map((event) => JSON.stringify(event)).join("\n")}\n`);
   return {
     code: result.code,
@@ -1857,7 +1936,7 @@ async function runCodex({ assignment, worktree, artifactDirectory }) {
     read_calls: context?.receipt.file_count ?? null,
     context: context?.receipt ?? null,
     preflight,
-    finish_reason: result.timedOut ? "timeout" : result.code === 0 ? "stop" : "error",
+    finish_reason: result.timedOut ? "timeout" : result.code === 0 && !violations.length ? "stop" : "error",
     usage,
     timed_out: result.timedOut,
     stderr_hash: sha256(result.stderr),
@@ -2049,9 +2128,8 @@ async function prepareReadOnlyCheckout(projectRoot, worktree, baseRef) {
 
 // Changed names and patches are decision inputs: reject on timeout, invalid
 // encoding or overflow rather than using a truncated command transcript.
-const execGitFile = promisify(execFile);
 async function candidateGitOutput(cwd, args, maxBuffer = 10_485_760) {
-  const {stdout} = await execGitFile("git", args, {cwd, timeout:30_000, maxBuffer, encoding:"buffer"});
+  const {stdout} = await execFileAsync("git", args, {cwd, timeout:30_000, maxBuffer, encoding:"buffer"});
   return new TextDecoder("utf-8",{fatal:true,ignoreBOM:true}).decode(stdout);
 }
 
