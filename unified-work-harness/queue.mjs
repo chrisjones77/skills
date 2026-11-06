@@ -260,17 +260,18 @@ export function reconcileInterrupted(directory, {packet, owner, evidenceHash, su
 export function reviewCandidate(directory, {assignmentDigest, reviewer, receiptHash, evidenceHash, accept, packet}) {
   if (!bounded(reviewer) || ![assignmentDigest,receiptHash,evidenceHash].every(v => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v)) || typeof accept !== 'boolean') throw Error('Review requires exact hashes, reviewer and decision.');
   withDatabase(directory, db => {
-    if (db.prepare('SELECT stopped FROM policy').get().stopped) throw Error('Queue stopped.');
     const job = db.prepare("SELECT reviewer FROM jobs WHERE digest=? AND state='pending_review' AND receipt=?").get(assignmentDigest,receiptHash);
+    if (!job) throw Error('Review does not match the pending candidate.');
+    if (db.prepare('SELECT stopped FROM policy').get().stopped) throw Error('Queue stopped.');
     const reviewerHash = digest(reviewer);
-    if (job?.reviewer === reviewerHash) {
+    if (job.reviewer === reviewerHash) {
       // Earlier reservations stored only the reviewer hash. Recover the two
       // role IDs from the original accepted offer before recording a decision.
       if (!packet) throw Error('Legacy provider review requires its original accepted packet.');
       const {offer} = inspectContract(packet);
       if (offer.digest !== assignmentDigest || offer.reviewer !== reviewer) throw Error('Review packet differs from the pending candidate.');
       requireSeparateReviewer(offer);
-    } else if (job?.reviewer !== 'separate:'+reviewerHash) {
+    } else if (job.reviewer !== 'separate:'+reviewerHash) {
       throw Error('Review does not match the pending candidate.');
     }
     db.prepare('UPDATE jobs SET state=?,evidence=? WHERE digest=?')
