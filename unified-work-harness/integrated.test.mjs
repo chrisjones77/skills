@@ -896,6 +896,7 @@ for (const [label,program,violation] of [
   ['staged rename from outside scope',"cp.execFileSync('git',['mv','source.txt','new.txt']);",/out-of-scope path changed: source.txt/],
   ['commit moved',"fs.writeFileSync('source.txt','replacement'); cp.execFileSync('git',['commit','-qam','unexpected']);",/changed the checkout commit/],
   ['unoffered file',"fs.writeFileSync('other.txt','unoffered');",/out-of-scope path changed: other.txt/],
+  ['BOM-prefixed unoffered file',"fs.writeFileSync('\uFEFFsource.txt','unoffered');",/out-of-scope path changed: \uFEFFsource.txt/],
   ['unauthorized test',"fs.writeFileSync('sample.test.mjs','unoffered');",/test change was not authorized/],
   ['no changes','',/required a candidate change/],
 ]) {

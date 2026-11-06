@@ -2052,7 +2052,7 @@ async function prepareReadOnlyCheckout(projectRoot, worktree, baseRef) {
 const execGitFile = promisify(execFile);
 async function candidateGitOutput(cwd, args, maxBuffer = 10_485_760) {
   const {stdout} = await execGitFile("git", args, {cwd, timeout:30_000, maxBuffer, encoding:"buffer"});
-  return new TextDecoder("utf-8",{fatal:true}).decode(stdout);
+  return new TextDecoder("utf-8",{fatal:true,ignoreBOM:true}).decode(stdout);
 }
 
 async function collectChangedFiles(worktree, baseline) {
