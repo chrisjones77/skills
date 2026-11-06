@@ -100,6 +100,25 @@ human-acceptance limitations remain unchanged. Git retains the previous manifest
 | engineering-work-safety | `5b79188121dce989d9603fd7004c77c8315ff3a9` | `7647350a84f484fa0ad32c460b7eeb256b83a898` |
 | forward-deployed-ai-engineer | `7d1b05464142c7fe02e00c1dffcfb94a9ac1b9fd` | `a0f80cf6c2678afa340da93f0b72c09965cff474` |
 
+## Unified harness admission and music-video source reconciliation — 2026-11-04
+
+Added the unified harness concept board and retained its initial image and the
+revised candidate with linked hashes and prompts. Assistant inspection found six
+panels, a temporary-clone step and pending human review. The pictured UI, archive
+names, progress and hashes are fictional; the image does not establish operating
+system isolation, authority, model locality or a review decision. Human visual
+acceptance and browser rendering checks remain pending.
+
+Rebound the music-video source from `1b75bbe1b01b3d0f38298107c7e2bb9990c18a43`
+to `a881187680439bc1655d8ea8a9290bc074a12965` after comparing the source changes
+with the retained six-panel image and transcript. The new optional one-shot
+review method and additional deliverable guidance are not depicted; the gallery
+now states that limitation. The image was not regenerated or newly human accepted.
+
+The subsequent live-smoke-test instructions, scoped-read restriction, and
+source-read/response gates do not change the six-step visual workflow; its source
+binding was updated without regenerating the image or implying a new human review.
+
 
 ## AI Operational Governance integration — 2026-11-05
 

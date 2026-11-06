@@ -5,7 +5,7 @@
   "created": "2026-10-22",
   "generator": "OpenAI built-in image_gen",
   "asset_status": "AI-generated concept illustrations",
-  "scope": "Current twelve-skill gallery, including Farmer Jones Victory Garden; prior snapshots and artwork retained. Current entrypoint changes require reconciliation; referenced-document drift remains manual.",
+  "scope": "Current fourteen-skill gallery. Each board records its source entrypoint and selected asset. Prior snapshots and artwork are retained.",
   "boards": [
     {
       "slug": "harnessed-dispatch",
@@ -262,7 +262,7 @@
         "05 Render and inspect — distinguish structural checks from watching, listening and final-frame review.",
         "06 Deliver editable kit — retain movie, captions, artwork, manifest and rebuild instructions."
       ],
-      "limitation": "Preserve the recording · Timing needs evidence · Publication needs authorization. Sample durations, file sizes and frame counts in the image are fictional and must not be used as calculations.",
+      "limitation": "Preserve the recording · Timing needs evidence · Publication needs authorization. Sample durations, file sizes and frame counts are fictional. The newer optional one-shot review method is not depicted; consult the current skill.",
       "prompt": "Create a polished six-panel landscape storyboard titled \"Build Music Video\" subtitle \"Skill workflow · Illustrative storyboard\". Exactly three columns and two rows, numbered01-06 left to right. Charcoal-black desktop interfaces, cream editorial typography, violet connectors, restrained amber highlights, fine pencil annotations and arrows, generous gutters. Concrete illustrative screens and desk interactions, not just text cards. Legible short headings: \"01 Anchor the recording\" show audio waveform and source identity record; \"02 Map the story\" show sections, lyric payoff and continuity shot cards; \"03 Create scene art\" show landscape scene images and framing guides; \"04 Align the performance\" show editable caption timeline with estimated timing clearly labeled; \"05 Render and inspect\" show assembled film strip and final-frame review, distinguish structural checks from watching/listening; \"06 Deliver editable kit\" show movie, captions, artwork, manifest and rebuild instructions. Preserve supplied soundtrack, lyric draft distinct from performed transcript, visual continuity, correct output geometry. Do not imply an estimated timeline has been listened to or human accepted. Footer \"Preserve the recording · Timing needs evidence · Publication needs authorization.\" Small credit \"chrisjones77/skills · Concept illustration\". No actual track names, personal material, WRBG lore, logos, seals, certification badges or automatic acceptance claims. Visually rich coherent UI-mockup series.",
       "review": {
         "method": "AI visual inspection against source and brief",
@@ -293,6 +293,30 @@
         "status": "reviewed-with-limits",
         "human_acceptance": "pending",
         "notes": "Assistant inspected six ordered panels, evidence labels, measured/estimated separation and HOLD for an unvalidated preservation change. No private family/property/recipe details or canning schedule intended or authorized. Generated UI examples are fictional; human acceptance and actual browser checks remain pending."
+      }
+    },
+    {
+      "slug": "unified-work-harness",
+      "title": "Unified Work Harness",
+      "source_path": "unified-work-harness/SKILL.md",
+      "source_blob_sha": "b97df0f665053c28d14384b265c7063baace093c",
+      "asset": "assets/unified-work-harness.png",
+      "asset_sha256": "87db9e7f5fdda57ac95b2aeca8e1cdde4dcb2e623924aef238140169931cc2ec",
+      "transcript": [
+        "01 Orient and route — establish purpose, authority, people and bounded work.",
+        "02 Bind assignment — review exact executor assignment and bind its hash to contract scope.",
+        "03 Explicit acceptance — recipient accepts the exact contract revision and explicitly resumes.",
+        "04 Verify workspace — check clean workspace, branch and commit against the packet.",
+        "05 Execute in a temporary clone — run the approved local read-only agent within its declared scope.",
+        "06 Preserve evidence — return hash-only evidence and leave substantive human review pending."
+      ],
+      "limitation": "Concept illustration only: the pictured UI, progress, files and hashes are fictional; it does not depict an implemented interface or prove OS isolation, authorization, model locality or human review.",
+      "prompt": "Create a landscape six-panel storyboard for a software documentation gallery, 3 columns by 2 rows, charcoal desktop UI, cream type, violet accents and amber details. Title Unified Work Harness. Six numbered panels: 01 Orient and route; 02 Bind assignment; 03 Explicit acceptance; 04 Verify clean workspace; 05 Isolated read-only execution; 06 Evidence and human review pending. Show bounded input and file hashes, not actual personal data. No logos, false certifications, automatic approval, or claim of security. Visual examples are fictional; readable short headings, spacious composition.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "Assistant inspected six panels and a revision replacing a false read-only mount and invented limits. The UI, progress, archive names and hashes are illustrative; external sandboxing, actual authorization and human review are not established. Human review and browser display checks remain pending."
       }
     },
     {

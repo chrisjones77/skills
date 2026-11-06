@@ -6,6 +6,9 @@ on:
       - "docs/skill-storyboards/**"
       - "specs/001-skill-storyboards/**"
       - "scripts/validate_storyboards.py"
+      - "scripts/test_storyboard_coverage.py"
+      - "scripts/test_storyboard_browser.cjs"
+      - "image-card-coverage-harness/scripts/harness.py"
       - ".github/workflows/skill-storyboards.yml"
       - "**/SKILL.md"
       - "**/skill.md"
@@ -16,6 +19,9 @@ on:
       - "docs/skill-storyboards/**"
       - "specs/001-skill-storyboards/**"
       - "scripts/validate_storyboards.py"
+      - "scripts/test_storyboard_coverage.py"
+      - "scripts/test_storyboard_browser.cjs"
+      - "image-card-coverage-harness/scripts/harness.py"
       - ".github/workflows/skill-storyboards.yml"
       - "**/SKILL.md"
       - "**/skill.md"
@@ -29,7 +35,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: {ref: "${{ github.event.pull_request.head.sha || github.sha }}"}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - run: python scripts/validate_storyboards.py
+      - run: python scripts/test_storyboard_coverage.py
+      - uses: actions/setup-node@v4
+        with: {node-version: "22"}
+      - run: npm install --prefix "$RUNNER_TEMP/gallery-driver" --ignore-scripts playwright-core@1.62.1
+      - run: NODE_PATH="$RUNNER_TEMP/gallery-driver/node_modules" node scripts/test_storyboard_browser.cjs

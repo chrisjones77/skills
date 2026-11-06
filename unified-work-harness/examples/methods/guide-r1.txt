@@ -1,0 +1,3 @@
+Stock display — reading guide, revision 1
+Empty means the recorded count is zero. Unobserved means no count is available.
+Check disputed counts with the stock coordinator. The coordinator owns corrections.

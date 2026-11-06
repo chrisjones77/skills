@@ -2,9 +2,9 @@
   "schema_version": 1,
   "record_date": "2026-11-05",
   "provenance": "Initial prompt strings and edit prompt strings transcribed from this authoring session; hashes recomputed from retained candidate files.",
-  "scope": "Current twelve-skill gallery, including Farmer Jones Victory Garden; prior snapshots and artwork retained. Current entrypoint changes require reconciliation; referenced-document drift remains manual.",
-  "generation_count": 13,
-  "revision_count": 6,
+  "scope": "Current fourteen-skill gallery. Each board records its source entrypoint and selected asset. Prior snapshots and artwork are retained.",
+  "generation_count": 14,
+  "revision_count": 7,
   "reproducibility": "Prompts and byte lineage are retained; generator outputs are not guaranteed deterministic. Intermediate image bytes are not included in this repository.",
   "human_acceptance": "pending",
   "boards": [
@@ -210,6 +210,27 @@
       ],
       "selected_asset": "assets/farmer-jones-victory-garden.png",
       "selected_asset_sha256": "e1236cf567e67e4a11662f6e311f1052130e5c4a5f1de5289c66aeac7a0cc55f"
+    },
+    {
+      "slug": "unified-work-harness",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "52f3c2e2ba081c632648e2fd1827f4497b094fbf41dd500d3b20ea4bdc14e704",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen",
+          "retained_asset": "revisions/20261104/unified-work-harness-initial.png"
+        },
+        {
+          "stage": "revision-1",
+          "parent_sha256": "52f3c2e2ba081c632648e2fd1827f4497b094fbf41dd500d3b20ea4bdc14e704",
+          "asset_sha256": "87db9e7f5fdda57ac95b2aeca8e1cdde4dcb2e623924aef238140169931cc2ec",
+          "edit_prompt": "Edit only the existing storyboard. Remove every invented numeric file or size limit and sample counts from panels 01, 02 and 03; use 'bounded scope' instead. In panel 05 replace 'mount input (read-only)' and any read-only input folder with 'temporary Git clone' and 'scoped worker tools'; do not depict an enforced OS mount or sandbox. In panel 06 replace invented result.zip and run.log artifacts with 'hash-only receipt' and 'human review pending'. Preserve six-panel layout, title, colors, other headings and overall composition.",
+          "generator": "OpenAI built-in image_gen"
+        }
+      ],
+      "selected_asset": "assets/unified-work-harness.png",
+      "selected_asset_sha256": "87db9e7f5fdda57ac95b2aeca8e1cdde4dcb2e623924aef238140169931cc2ec"
     },
     {
       "slug": "ai-operational-governance",

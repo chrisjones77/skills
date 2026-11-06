@@ -1,6 +1,6 @@
 # Skill workflow storyboards
 
-Thirteen six-panel concept illustrations cover the current thirteen-skill inventory at source revision `d51472a0570a5b87cb366b09665f778f66d75d50`. Refreshed 2026-11-05; later source changes require reconciliation. The original ten-board manifest, prompts, lineage and prior coverage-board image remain in [revision history](revisions/20261022/README.md).
+Fourteen six-panel concept illustrations cover the current skill inventory. The manifest records the source and image for each board. The original ten-board manifest, prompts, lineage and prior coverage-board image remain in [revision history](revisions/20261022/README.md).
 
 These are AI-generated illustrations, not implemented products. All sample UI data, including file sizes, timing and frame counts, are fictional and are not technical calculations or evidence. Canonical skill sources and their references take precedence. Human acceptance remains pending.
 
@@ -20,6 +20,28 @@ These are AI-generated illustrations, not implemented products. All sample UI da
 - [Build Music Video](#build-music-video)
 
 - [Farmer Jones Victory Garden](#farmer-jones-victory-garden)
+- [Unified Work Harness](#unified-work-harness)
+
+<a id="unified-work-harness"></a>
+
+## Unified Work Harness
+
+[Canonical skill](../../unified-work-harness/SKILL.md) · [Full PNG](assets/unified-work-harness.png)
+
+![Unified Work Harness: six-panel concept illustration](assets/unified-work-harness.png)
+
+1. Orient and route — establish purpose, authority, people and bounded work.
+2. Bind assignment — review exact executor assignment and bind its hash to contract scope.
+3. Explicit acceptance — recipient accepts the exact contract revision and explicitly resumes.
+4. Verify workspace — check clean workspace, branch and commit against the packet.
+5. Execute in a temporary clone — run the approved local read-only agent within its declared scope.
+6. Preserve evidence — return hash-only evidence and leave substantive human review pending.
+
+This board depicts the initial read-only workflow. Panel 4 requires a clean Git checkout, which can contain files. Panel 5 uses a temporary clone; process isolation requires separate controls. For newer package workflows, follow the canonical skill.
+
+Concept illustration only: the pictured UI, progress, files and hashes are fictional; it does not depict an implemented interface or prove OS isolation, authorization, model locality or human review.
+
+Human acceptance: pending.
 
 <a id="harnessed-dispatch"></a>
 
@@ -226,7 +248,7 @@ Human acceptance: pending.
 5. Render and inspect — distinguish structural checks from watching, listening and final-frame review.
 6. Deliver editable kit — retain movie, captions, artwork, manifest and rebuild instructions.
 
-Preserve the recording · Timing needs evidence · Publication needs authorization. Sample durations, file sizes and frame counts in the image are fictional and must not be used as calculations.
+Preserve the recording · Timing needs evidence · Publication needs authorization. Sample durations, file sizes and frame counts in the image are fictional and must not be used as calculations. The newer optional one-shot review method is not depicted; consult the current skill.
 
 Human acceptance: pending.
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Unified Work Harness"
+  short_description: "Coordinate and review bounded engineering work."
+  default_prompt: "Use the unified work harness to select a purpose, review the intake and use the supported workflow."
