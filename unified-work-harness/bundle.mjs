@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { spawn, execFileSync } from "node:child_process";
+import { spawn, execFile, execFileSync } from "node:child_process";
+import { promisify } from "node:util";
 import { createServer, request as httpRequest } from "node:http";
 import { AsyncLocalStorage } from "node:async_hooks";
 import * as cryptoModule from "node:crypto";
@@ -887,6 +888,15 @@ export function isProtectedPath(filename) {
     || PROTECTED_PATHS.some((prefix) => pathMatchesPrefix(normalized, prefix));
 }
 
+function hasSymlinkComponent(root, normalized) {
+  let current = root;
+  for (const component of normalized.split("/")) {
+    current = path.join(current, component);
+    if (lstatSync(current, {throwIfNoEntry:false})?.isSymbolicLink()) return true;
+  }
+  return false;
+}
+
 export function validatePathAccess(assignment, filename, operation = "read", worktree = null) {
   if (!["read", "edit"].includes(operation)) throw new Error("operation must be read or edit");
   const normalized = normalizeAllowedPath(filename);
@@ -903,14 +913,8 @@ export function validatePathAccess(assignment, filename, operation = "read", wor
   if (operation === "edit" && !assignment.authority.allow_test_changes && isTestPath(normalized)) {
     return { allowed: false, reason: `unauthorized test path: ${normalized}` };
   }
-  if (worktree) {
-    let current = worktree;
-    for (const component of normalized.split("/")) {
-      current = path.join(current, component);
-      if (existsSync(current) && lstatSync(current).isSymbolicLink()) {
-        return { allowed: false, reason: `symbolic link path: ${normalized}` };
-      }
-    }
+  if (worktree && hasSymlinkComponent(worktree, normalized)) {
+    return { allowed: false, reason: `symbolic link path: ${normalized}` };
   }
   return { allowed: true };
 }
@@ -1405,9 +1409,9 @@ function enumerateContextFiles(worktree, declaredPath) {
     throw new Error(`context path is protected: ${normalized}`);
   }
   const absolute = path.join(worktree, normalized);
+  if (hasSymlinkComponent(worktree, normalized)) throw new Error(`declared context path crosses a symbolic link: ${normalized}`);
   if (!existsSync(absolute)) throw new Error(`declared context path does not exist: ${normalized}`);
   const stat = lstatSync(absolute);
-  if (stat.isSymbolicLink()) throw new Error(`declared context path is a symbolic link: ${normalized}`);
   if (stat.isFile()) return [normalized];
   if (!stat.isDirectory()) throw new Error(`declared context path is not a regular file or directory: ${normalized}`);
   const files = [];
@@ -2043,33 +2047,30 @@ async function prepareReadOnlyCheckout(projectRoot, worktree, baseRef) {
   await git(worktree, ["checkout", "--quiet", "--detach", revision]);
 }
 
-async function collectChangedFiles(worktree, baseline) {
-  const [tracked, untracked] = await Promise.all([
-    runCommand("git", ["diff", baseline, "--name-only", "-z", "--"], { cwd: worktree, timeoutMs: 10_000 }),
-    runCommand("git", ["ls-files", "--others", "-z"], { cwd: worktree, timeoutMs: 10_000 }),
-  ]);
-  if (tracked.code !== 0 || untracked.code !== 0) throw new Error("Failed to inspect candidate changes");
-  return [...new Set([...parseNullDelimited(tracked.stdout), ...parseNullDelimited(untracked.stdout)])].sort();
+// Changed names and patches are decision inputs: reject on timeout, invalid
+// encoding or overflow rather than using a truncated command transcript.
+const execGitFile = promisify(execFile);
+async function candidateGitOutput(cwd, args, maxBuffer = 10_485_760) {
+  const {stdout} = await execGitFile("git", args, {cwd, timeout:30_000, maxBuffer, encoding:"buffer"});
+  return new TextDecoder("utf-8",{fatal:true}).decode(stdout);
 }
 
-async function createCandidatePatch(worktree, filenames) {
-  const untracked = await runCommand("git", ["ls-files", "--others", "--exclude-standard", "-z"], {
-    cwd: worktree,
-    timeoutMs: 10_000,
-  });
-  const untrackedFiles = parseNullDelimited(untracked.stdout);
-  if (untrackedFiles.length) {
-    const intentToAdd = await runCommand("git", ["add", "-N", "--", ...untrackedFiles], { cwd: worktree, timeoutMs: 10_000 });
-    if (intentToAdd.code !== 0) throw new Error("Failed to prepare untracked files for the candidate patch");
-  }
+async function collectChangedFiles(worktree, baseline) {
+  const [tracked, untracked] = await Promise.all([
+    candidateGitOutput(worktree, ["diff", "--no-renames", baseline, "--name-only", "-z", "--"]),
+    candidateGitOutput(worktree, ["ls-files", "--others", "-z"]),
+  ]);
+  return [...new Set([...parseNullDelimited(tracked), ...parseNullDelimited(untracked)])].sort();
+}
+
+async function createCandidatePatch(worktree, filenames, baseCommit) {
   if (!filenames.length) return "";
-  const diff = await runCommand("git", ["diff", "--binary", "--no-ext-diff", "--"], {
-    cwd: worktree,
-    timeoutMs: 30_000,
-    maxOutputBytes: 20_971_520,
-  });
-  if (diff.code !== 0) throw new Error("Failed to create candidate patch");
-  return diff.stdout;
+  const untracked = parseNullDelimited(await candidateGitOutput(worktree, ["ls-files", "--others", "-z"]));
+  if (untracked.length) {
+    await candidateGitOutput(worktree, ["--literal-pathspecs", "add", "-f", "-N", "--", ...untracked]);
+  }
+  return candidateGitOutput(worktree, ["diff", "--binary", "--no-ext-diff", "--no-textconv", "--no-color",
+    "--no-renames", baseCommit, "--"], 20_971_520);
 }
 
 // queue.mjs is forked as a POSIX group leader. Its supervisor must be able to
@@ -2423,6 +2424,9 @@ async function runDirectJson({ assignment, worktree, artifactDirectory, endpoint
 export function buildAiderCommand(assignment, worktree, artifactDirectory, endpoint) {
   endpoint = parseLoopbackEndpoint(endpoint).href;
   const editable = assignment.authority.allowed_paths.map(normalizeAllowedPath);
+  for (const filename of editable) {
+    if (hasSymlinkComponent(worktree, filename)) throw new Error(`editable path crosses a symbolic link: ${filename}`);
+  }
   const readable = [...new Set(assignment.authority.allowed_read_paths.flatMap((declaredPath) => {
     const normalized = normalizeAllowedPath(declaredPath);
     return editable.includes(normalized) && !existsSync(path.join(worktree, normalized)) ? [] : enumerateContextFiles(worktree, normalized);
@@ -2601,10 +2605,11 @@ export async function runHarness({
     const { proposal_text: proposalText, private_response: privateResponse, ...agentEvidence } = agentResult;
     const changedFiles = readOnly
       ? changedCheckoutPaths(beforeCheckout, snapshotCheckout(worktree))
-      : await collectChangedFiles(worktree, "HEAD");
+      : await collectChangedFiles(worktree, baseCommit);
     const policyViolations = readOnly && changedFiles.length
       ? ["read-only checkout or Git metadata changed"]
       : evaluateChangedFiles(assignment, changedFiles);
+    if (!readOnly && await readHeadCommit(worktree) !== baseCommit) policyViolations.push("worker changed the checkout commit");
     if (assignment.authority.mode === "read_only" && agentResult.read_calls < 1) {
       policyViolations.push("read-only work produced no completed source read");
     }
@@ -2622,10 +2627,10 @@ export async function runHarness({
       }
     }
     const allViolations = [...new Set([...agentResult.violations, ...policyViolations, ...proposalViolations])];
+    const patch = readOnly || policyViolations.length ? "" : await createCandidatePatch(worktree, changedFiles, baseCommit);
     const acceptanceResults = assignment.authority.mode !== "structured_proposal" && agentResult.code === 0 && allViolations.length === 0
       ? await runAcceptanceChecks(assignment, worktree)
       : [];
-    const patch = assignment.authority.mode === "read_only" ? "" : await createCandidatePatch(worktree, changedFiles);
     if (patch) writeFileSync(path.join(artifactDirectory, "candidate.patch"), patch, { mode: 0o600 });
     if (proposal) writeFileSync(path.join(artifactDirectory, "proposal.json"), `${JSON.stringify(proposal, null, 2)}\n`, { mode: 0o600 });
     const acceptancePassed = assignment.authority.mode === "structured_proposal"

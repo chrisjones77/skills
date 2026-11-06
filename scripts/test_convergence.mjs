@@ -29,6 +29,16 @@ if(mode==='suite'){
   family('transport.direct','integrated',[],'IPv6 loopback with a path prefix completes the accepted v6 contract',
     ...codes.map(n=>'direct completion refuses redirect '+n),'relay admits only the scoped completion and closes after the worker exits',
     'ambiguous endpoints and non-loopback IPv6 fail before offer, provider contact or claim');
+  family('worker.output','integrated',[],'v6 worker output: at the step limit',
+    ...['excess steps','excess stdout','malformed stdout','prohibited tool'].map(s=>'v6 worker output: '+s));
+  family('worker.proposals','integrated',[],'direct proposal: authorized proposal',
+    ...['outside grant','protected path','traversal','unauthorized test','truncated completion','oversized response','prompt budget'].map(s=>'direct proposal: '+s),
+    'direct context rejects a grant below a symlink before sending source');
+  family('worker.edits','integrated',[],'edit worker: staged authorized edit',
+    ...['new ignored file','staged rename from outside scope','commit moved','unoffered file','unauthorized test','no changes'].map(s=>'edit worker: '+s),
+    'edit worker refuses a new destination below a symlink before launch');
+  family('worker.codex','integrated',[],'synthetic Codex worker: valid proposal',
+    ...['malformed event','second turn','execution error','cloud processing denied'].map(s=>'synthetic Codex worker: '+s));
   family('identity.scope','roundtrip',['purpose_selection','embedded_source_binding','qvch_source_resolution','readonly_roundtrip'],
     'source-pinned profiles resolve only fixed dependencies and account for executor side effects',
     'CLI source receipt rejects an earlier pin after bundle bytes change','profile inspection preserves routing, unresolved capabilities and the effect ceiling without granting authority');

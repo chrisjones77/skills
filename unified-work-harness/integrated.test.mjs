@@ -770,3 +770,231 @@ test('strict format checks the post-read answer with and without result capture'
     }
   }
 });
+
+// Complete the authorized read first: each extra event must invalidate an
+// otherwise deliverable result, including when the child exits successfully.
+for (const [label, trailer] of [
+  ['excess steps', JSON.stringify({type:'step_start'})],
+  ['excess stdout', JSON.stringify({type:'text',part:{text:'x'.repeat(1024)}})],
+  ['malformed stdout', '{malformed}'],
+  ['prohibited tool', JSON.stringify({type:'tool_use',part:{tool:'bash'}})],
+  ['at the step limit', ''],
+]) {
+  test('v6 worker output: '+label, async t => {
+    const port = await listen(t,'127.0.0.1',(req,res)=>res.end(JSON.stringify({
+      data:[{id:'synthetic:local'}],version:'test',models:[{name:'synthetic:local'}],
+    })));
+    const {inputs,accept,temp} = fixture(t,'http://127.0.0.1:'+port+'/v1');
+    const assignment = JSON.parse(inputs.bindingInputs.assignmentJson);
+    assignment.resources.max_steps = 1;
+    assignment.resources.max_output_bytes = 1024;
+    inputs.bindingInputs.assignmentJson = JSON.stringify(assignment);
+    writeFileSync(inputs.assignmentPath,inputs.bindingInputs.assignmentJson);
+    const packet = accept(buildPackageScope(inputs));
+    const events = [{type:'step_start'},{type:'tool_use',part:{tool:'read',state:{status:'completed',
+      input:{filePath:'source.txt'},output:'cobalt-otter-47'}}},{type:'text',part:{text:'cobalt-otter-47'}}];
+    const bin = path.join(temp,'bin');
+    mkdirSync(bin);
+    const stdout = events.map(event=>JSON.stringify(event)).concat(trailer).join('\n')+'\n';
+    writeFileSync(path.join(bin,'opencode'),'#!/usr/bin/env node\nprocess.stdout.write('+JSON.stringify(stdout)+');',{mode:0o700});
+    const previous = process.env.PATH;
+    process.env.PATH = bin+path.delimiter+previous;
+    t.after(()=>{process.env.PATH=previous;});
+    const run = contractRoundtrip({...inputs,packet});
+    const digest = hypervisor.currentAssignment(packet).digest;
+    if (trailer) {
+      await assert.rejects(run,/policy violation/);
+      assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
+      assert.equal(inspectInvocation(inputs.invocationPolicy,digest).state,'failed');
+    } else {
+      const receipt = await run;
+      const result = JSON.parse(readFileSync(path.join(inputs.resultPolicy.directory,receipt.private_result.name)));
+      assert.equal(result.response,'cobalt-otter-47');
+      assert.equal(inspectInvocation(inputs.invocationPolicy,digest).state,'completed');
+    }
+  });
+}
+
+function lowLevelFixture(t, prepareCheckout) {
+  const {inputs,temp} = fixture(t,'http://127.0.0.1:11434/v1','source.txt',30,prepareCheckout);
+  const assignment = JSON.parse(inputs.bindingInputs.assignmentJson);
+  assignment.authority.mode = 'structured_proposal';
+  assignment.authority.allowed_paths = ['source.txt'];
+  assignment.acceptance.require_changes = true;
+  assignment.worker = {adapter:'direct_json',context_strategy:'source_files',max_context_bytes:8192};
+  const cwd = path.join(temp,'repo');
+  function run(completionRequest) {
+    writeFileSync(inputs.assignmentPath,JSON.stringify(assignment));
+    return runHarness({assignmentPath:inputs.assignmentPath,cwd,endpoint:inputs.endpoint,
+      outputRoot:inputs.resultPolicy.directory,endpointCheck:async()=>({}),completionRequest});
+  }
+  return {assignment,cwd,temp,run};
+}
+
+const proposal = {summary:'Correct the synthetic source.',uncertainties:[],
+  changes:[{path:'source.txt',operation:'create_or_replace',rationale:'Expected token',content:'replacement'}]};
+
+for (const [label, options] of [
+  ['authorized proposal', {}],
+  ['outside grant', {path:'other.txt', violation:/outside the allowed proposal scope/}],
+  ['protected path', {path:'.git/config', violation:/path is protected/}],
+  ['traversal', {path:'../other.txt', violation:/without traversal/}],
+  ['unauthorized test', {path:'sample.test.mjs', violation:/unauthorized test path/}],
+  ['truncated completion', {finish:'length', violation:/exhausted its token budget/}],
+  ['oversized response', {padding:1500, violation:/output budget exceeded/}],
+  ['prompt budget', {promptLimit:256, violation:/estimated prompt tokens exceed/}],
+]) {
+  test('direct proposal: '+label, async t => {
+    const {assignment,cwd,run} = lowLevelFixture(t);
+    assignment.resources.max_output_bytes = 1024;
+    if (options.promptLimit) assignment.resources.max_prompt_tokens = options.promptLimit;
+    if (label === 'unauthorized test') assignment.authority.allowed_paths.push(options.path);
+    let calls = 0;
+    const {evidence,artifactDirectory} = await run(async (url,init)=>{
+      calls++;
+      assert.equal(init.redirect,'error');
+      assert.ok(JSON.parse(init.body).messages.some(m=>m.content.includes('cobalt-otter-47')));
+      const content = structuredClone(proposal);
+      if (options.path) content.changes[0].path = options.path;
+      return Response.json({choices:[{finish_reason:options.finish ?? 'stop',message:{content:JSON.stringify(content)}}],
+        padding:'x'.repeat(options.padding ?? 0)});
+    });
+    const file = path.join(artifactDirectory,'proposal.json');
+    assert.equal(calls,options.promptLimit ? 0 : 1);
+    if (options.violation) {
+      assert.equal(evidence.disposition,'rejected');
+      assert.match(evidence.violations.join('\n'),options.violation);
+      assert.equal(existsSync(file),false);
+    } else {
+      assert.equal(evidence.disposition,'proposal_candidate');
+      assert.deepEqual(JSON.parse(readFileSync(file)).changes,proposal.changes);
+      assert.equal(evidence.proposal_hash,sha256(JSON.stringify(JSON.parse(readFileSync(file)))));
+    }
+    assert.equal(readFileSync(path.join(cwd,'source.txt'),'utf8'),'cobalt-otter-47');
+  });
+}
+
+test('direct context rejects a grant below a symlink before sending source', async t => {
+  const {assignment,run} = lowLevelFixture(t,(root,temp)=>{
+    const outside = path.join(temp,'outside');
+    mkdirSync(outside);
+    writeFileSync(path.join(outside,'token.txt'),'unoffered-source-canary');
+    symlinkSync(outside,path.join(root,'linked'));
+  });
+  assignment.authority.allowed_read_paths = ['linked/token.txt'];
+  const requests = [];
+  await assert.rejects(run(async (url,init)=>{
+    requests.push(init.body);
+    return Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify(proposal)}}]});
+  }),error=>/symbolic link/.test(error.cause?.message));
+  assert.deepEqual(requests,[]);
+});
+
+for (const [label,program,violation] of [
+  ['staged authorized edit',"fs.writeFileSync('source.txt','replacement\\n'); cp.execFileSync('git',['add','source.txt']);",null],
+  ['new ignored file',"fs.writeFileSync('new.txt','replacement\\n');",null],
+  ['staged rename from outside scope',"cp.execFileSync('git',['mv','source.txt','new.txt']);",/out-of-scope path changed: source.txt/],
+  ['commit moved',"fs.writeFileSync('source.txt','replacement'); cp.execFileSync('git',['commit','-qam','unexpected']);",/changed the checkout commit/],
+  ['unoffered file',"fs.writeFileSync('other.txt','unoffered');",/out-of-scope path changed: other.txt/],
+  ['unauthorized test',"fs.writeFileSync('sample.test.mjs','unoffered');",/test change was not authorized/],
+  ['no changes','',/required a candidate change/],
+]) {
+  test('edit worker: '+label, async t => {
+    const {assignment,run,temp,cwd} = lowLevelFixture(t,root=>writeFileSync(path.join(root,'.gitignore'),'new.txt\n'));
+    const target = ['new ignored file','staged rename from outside scope'].includes(label) ? 'new.txt' : 'source.txt';
+    assignment.authority.allowed_paths = [target];
+    assignment.authority.allowed_read_paths = [...new Set(['source.txt',target])];
+    assignment.authority.mode = 'candidate_edit';
+    assignment.worker.adapter = 'aider';
+    const bin = path.join(temp,'aider');
+    writeFileSync(bin,"#!/usr/bin/env node\nconst fs=require('node:fs'), cp=require('node:child_process');\n"+program,{mode:0o700});
+    const previous = process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN;
+    process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN = bin;
+    t.after(()=>{
+      if (previous === undefined) delete process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN;
+      else process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN = previous;
+    });
+    const {artifactDirectory,evidence} = await run();
+    if (violation) {
+      assert.equal(evidence.disposition,'rejected');
+      assert.match(evidence.violations.join('\n'),violation);
+      assert.deepEqual(evidence.acceptance,[]);
+      assert.equal(existsSync(path.join(artifactDirectory,'candidate.patch')),false);
+    } else {
+      assert.equal(evidence.disposition,'candidate');
+      const patch = readFileSync(path.join(artifactDirectory,'candidate.patch'),'utf8');
+      assert.equal(sha256(patch),evidence.candidate_patch_hash);
+      // Apply only to an isolated index, proving the delivered patch reconstructs the edit.
+      const env = {...process.env,GIT_INDEX_FILE:path.join(temp,'review-index')};
+      execFileSync('git',['read-tree','HEAD'],{cwd,env});
+      execFileSync('git',['apply','--cached','-'],{cwd,env,input:patch});
+      assert.equal(execFileSync('git',['show',':'+target],{cwd,env,encoding:'utf8'}),'replacement\n');
+    }
+    assert.equal(readFileSync(path.join(cwd,'source.txt'),'utf8'),'cobalt-otter-47');
+  });
+}
+
+test('edit worker refuses a new destination below a symlink before launch', async t => {
+  const {assignment,temp,run} = lowLevelFixture(t,(root,temp)=>{
+    mkdirSync(path.join(temp,'outside'));
+    symlinkSync(path.join(temp,'outside'),path.join(root,'linked'));
+  });
+  assignment.worker.adapter = 'aider';
+  assignment.authority = {mode:'candidate_edit',allowed_read_paths:['linked/new.txt'],
+    allowed_paths:['linked/new.txt'],allow_test_changes:false};
+  const marker = path.join(temp,'started');
+  const binary = path.join(temp,'fake-aider');
+  writeFileSync(binary,"#!/usr/bin/env node\nrequire('node:fs').writeFileSync("+JSON.stringify(marker)+",'started');",{mode:0o700});
+  const previous = process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN;
+  process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN = binary;
+  try {
+    await assert.rejects(run(),error=>/symbolic link/.test(error.cause?.message));
+    assert.equal(existsSync(marker),false);
+    assert.deepEqual(readdirSync(path.join(temp,'outside')),[]);
+  } finally {
+    if (previous === undefined) delete process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN;
+    else process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN = previous;
+  }
+});
+
+for (const [label,trailer,violation] of [
+  ['valid proposal','',null],
+  ['malformed event','broken JSON',/malformed JSON event/],
+  ['second turn',JSON.stringify({type:'turn.started'}),/step budget exceeded/],
+  ['execution error',JSON.stringify({type:'error',message:'synthetic-error-canary'}),/execution error/],
+  ['cloud processing denied','',null],
+]) {
+  test('synthetic Codex worker: '+label, async t => {
+    const {assignment,temp,run} = lowLevelFixture(t);
+    assignment.worker.adapter = 'codex';
+    assignment.assignee = {...assignment.assignee,provider:'codex',processing:'external_cloud',model_id:'gpt-5.6-sol'};
+    assignment.data.external_processing_allowed = label !== 'cloud processing denied';
+    assignment.resources.max_steps = 1;
+    const bin = path.join(temp,'fake-codex'), argsFile = path.join(temp,'worker-args');
+    const output = [{type:'turn.started'},{type:'item.completed',item:{type:'agent_message',text:JSON.stringify(proposal)}},
+      {type:'turn.completed',usage:{output_tokens:23}}].map(e=>JSON.stringify(e)).concat(trailer).join('\n');
+    writeFileSync(bin,"#!/usr/bin/env node\nrequire('node:fs').writeFileSync("+JSON.stringify(argsFile)+
+      ",JSON.stringify(process.argv.slice(2)));console.log("+JSON.stringify(output)+");",{mode:0o700});
+    const previous = process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN;
+    process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN = bin;
+    t.after(()=>{
+      if (previous === undefined) delete process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN;
+      else process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN = previous;
+    });
+    if (!assignment.data.external_processing_allowed) {
+      await assert.rejects(run(),/external_processing_allowed=true/);
+      assert.equal(existsSync(argsFile),false);
+      return;
+    }
+    const {artifactDirectory,evidence} = await run();
+    const args = JSON.parse(readFileSync(argsFile));
+    assert.equal(args[args.indexOf('--sandbox')+1],'read-only');
+    assert.ok(args.includes('--ignore-user-config'));
+    assert.equal(evidence.agent.read_calls,1);
+    assert.equal(evidence.disposition,violation?'rejected':'proposal_candidate');
+    assert.equal(existsSync(path.join(artifactDirectory,'proposal.json')),!violation);
+    if (violation) assert.match(evidence.violations.join('\n'),violation);
+    const log = readFileSync(path.join(artifactDirectory,'events.ndjson'),'utf8');
+    assert.ok(!log.includes('synthetic-error-canary') && !log.includes(proposal.summary));
+  });
+}

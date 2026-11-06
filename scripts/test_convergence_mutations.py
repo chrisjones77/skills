@@ -10,6 +10,13 @@ ROOT = Path(__file__).resolve().parents[1]
 PKG = 'unified-work-harness'
 # target and control are actual TAP names, not input substrings used as evidence
 cases = [
+    ('symlinked-context-parent', 'bundle.mjs',
+     'if (hasSymlinkComponent(worktree, normalized)) throw new Error(`declared context path crosses a symbolic link: ${normalized}`);',
+     '// omit the ancestor check', 'integrated', 'direct context rejects a grant below a symlink before sending source',
+     'direct proposal: authorized proposal', 'Missing expected rejection'),
+    ('unstaged-only-patch', 'bundle.mjs', '"--no-renames", baseCommit, "--"], 20_971_520)',
+     '"--no-renames", "--"], 20_971_520)', 'integrated', 'edit worker: staged authorized edit',
+     'edit worker: new ignored file', 'candidate.patch'),
     ('worker-redirect', 'bundle.mjs',
      'await runGuardedOpenCode({ assignment, worktree, artifactDirectory, endpoint, getTempParent, capturePrivateResult }, beforeProvider, beforeCompletion)',
      'await runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, getTempParent, capturePrivateResult })',
