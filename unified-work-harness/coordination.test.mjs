@@ -442,3 +442,40 @@ test('handoff lineage: revised successor can hand off again',t=>{
   assert.deepEqual(next.packet.workspace,moved);
   assert.equal(step(next,'accept','final').packet.work_contract.acceptance.by,'final');
 });
+
+test('clarification replay: legacy packet retains its original context',()=>{
+  const packet=hypervisor.createPacket({id:'legacy',objective:'Inspect units',owner:'worker',mode:'Review',workspace,
+    authorization:['review'],grantedBy:'owner'});
+  const opts={concernId:'units',at:packet.updated_at};
+  const open=hypervisor.requestClarification(packet,{...opts,assigner:'owner',human:'lead',question:'Which units?'});
+  const answered=hypervisor.answerClarification(open,{...opts,by:'owner',answer:'Use kPa.'});
+  const resolved=hypervisor.reassessClarification(answered,{...opts,by:'worker',decision:'clear',note:'Units confirmed.',
+    responseDigest:answered.clarifications[0].responses[0].digest});
+  assert.deepEqual(hypervisor.validatePacket(resolved),[]);
+  assert.equal(resolved.handoff.current_writer,null);
+  const changed=structuredClone(resolved);
+  changed.objective='Inspect an unrelated task';
+  assert.throws(()=>hypervisor.validatePacket(changed),/clarification context/i);
+});
+
+for (const [label,change,error] of [
+  ['changed opening roles',p=>{p.clarifications[0].worker='stranger';},/opening assignment/i],
+  ['unknown opening assignment',p=>{p.clarifications[0].assignment_digest='0'.repeat(64);},/assignment identity/i],
+  ['pending concern has writer',p=>{p.status='active';p.handoff.current_writer='worker';},/unresolved clarification/i],
+  ['malformed route',p=>{p.clarifications[0].routes=[{}];},/routing history/i],
+  ['unattributed route',p=>{p.clarifications[0].routes=[{from:'first',to:'lead',by:'worker',note:'escalate',at:p.updated_at}];},/declared assigner/i],
+  ['unanswered concern marked clear',p=>{p.clarifications[0].status='resolved';},/clarification status/i],
+  ['overlapping concern requests',p=>{
+    const other=structuredClone(p.clarifications[0]);
+    other.id='other';
+    p.clarifications.push(other);
+    p.checkpoints.push({...p.checkpoints.at(-1),concern_id:'other'});
+  },/resolve the current clarification/i],
+]) {
+  test('clarification inspection: '+label,t=>{
+    const {open}=clarificationHistory(t);
+    const packet=structuredClone(open.packet);
+    change(packet);
+    assert.throws(()=>hypervisor.validatePacket(packet),error);
+  });
+}

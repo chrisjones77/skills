@@ -38,7 +38,8 @@ export function erasedHoldFixture(h,active) {
   delete stale.clarifications;
   stale.status='active';
   stale.handoff.current_writer=offer.recipient;
-  stale.checkpoints.push({...active.checkpoints.at(-1),at,checkpoint_index:stale.checkpoints.length});
+  stale.checkpoints.push({kind:'resumed',owner:offer.recipient,workspace:active.workspace.identity,note:'resume',reconciled:false,
+    at,assignment_digest:offer.digest,work_event_count:active.work_contract.events.length,checkpoint_index:stale.checkpoints.length});
   const answered=h.answerClarification(open,{...opts,by:offer.assigner,answer:'Use the reviewed scope.'});
   const paused=h.reassessClarification(answered,{...opts,by:offer.recipient,decision:'clear',note:'Scope confirmed',
     responseDigest:answered.clarifications[0].responses[0].digest});

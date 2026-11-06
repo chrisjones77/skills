@@ -121,7 +121,9 @@ if(mode==='suite'){
       'checkpoint wrong state','checkpoint wrong assignment','checkpoint wrong event count','assessment before answer','checkpoint mismatched time',
       'reroute after answer','substituted opening revision','wrong assessor','stale reassessment digest','clear before final answer','broken route chain',
       'missing hold cannot release the writer','unbound legacy checkpoints remain readable','reject backdated answer before persisting',
-      'concern spans a reviewed workspace revision'].map(s=>'clarification replay: '+s),
+      'concern spans a reviewed workspace revision','legacy packet retains its original context'].map(s=>'clarification replay: '+s),
+    ...['changed opening roles','unknown opening assignment','pending concern has writer','malformed route','unattributed route',
+      'unanswered concern marked clear','overlapping concern requests'].map(s=>'clarification inspection: '+s),
     ...['second pending request','reused concern ID','wrong recipient opens','wrong human answers','answer before reassessment','stale digest reassessed',
       'recipient reroutes','premature reroute','unknown concern'].map(s=>'clarification admission: '+s));
   family('history.handoff','coordination',[],'handoff lineage: same work',
