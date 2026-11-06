@@ -1,7 +1,7 @@
 // The public package registry. The older profile command continues to describe
 // the single embedded bundle so existing accepted work keeps its semantics.
 import { createHash } from "node:crypto";
-import { readFileSync, readdirSync, realpathSync } from "node:fs";
+import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, readdirSync, realpathSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,17 +43,67 @@ const validEffects = new Set(["read","write","git","network","provider","dispatc
 const allowedFields = new Set(["primary","companions","requiredCapabilities","effectCeiling","requestedEffects","prohibitedEffects","sourceSha256"]);
 const uniqueList = a => Array.isArray(a) && a.length <= 32 && a.every(x=>typeof x === "string") && new Set(a).size === a.length;
 
+const jsonByteLimit = 64 * 1024;
+const memberByteLimit = 2 * 1024 * 1024;
+const packageByteLimit = 16 * 1024 * 1024;
+
+// Inspect the opened descriptor; a synchronous open must never wait on a FIFO.
+// Package files have one physical name. An explicitly selected CLI input may
+// be linked and lives independently of the package inventory.
+function readBytes(target, limit, packageFile = false) {
+  const flags = constants.O_RDONLY | constants.O_NONBLOCK | constants.O_NOCTTY;
+  const fd = openSync(target, flags | (packageFile ? constants.O_NOFOLLOW : 0));
+  try {
+    const before = fstatSync(fd,{bigint:true});
+    if (!before.isFile() || before.size > BigInt(limit) || (packageFile && before.nlink !== 1n))
+      throw Error("Expected a bounded regular file");
+    function checkEntry() {
+      const entry = lstatSync(target,{bigint:true});
+      if (entry.dev !== before.dev || entry.ino !== before.ino || realpathSync(target) !== target)
+        throw Error("Package entry changed during inspection");
+    }
+    if (packageFile) checkEntry();
+    const bytes = Buffer.alloc(Number(before.size) + 1);
+    let used = 0;
+    while (used < bytes.length) {
+      const n = readSync(fd,bytes,used,bytes.length-used,used);
+      if (!n) break;
+      used += n;
+    }
+    const after = fstatSync(fd,{bigint:true});
+    if (BigInt(used) !== before.size || after.size !== before.size || after.ctimeNs !== before.ctimeNs) throw Error("File changed during inspection");
+    if (packageFile) checkEntry();
+    return bytes.subarray(0,used);
+  } finally { closeSync(fd); }
+}
+
+function parseJson(bytes) {
+  return JSON.parse(new TextDecoder("utf-8",{fatal:true,ignoreBOM:true}).decode(bytes));
+}
+
 // Resolve only the package manifest shipped beside this module. Paths can
 // never name a remote module or escape the package, even via a symlink.
 export function packageInventory() {
-  const files = JSON.parse(readFileSync(path.join(root,"package-files.json"),"utf8"));
+  const directories = new Map();
+  function readMember(name, limit) {
+    let target = root;
+    for (const part of name.split("/")) {
+      if (!directories.has(target)) directories.set(target,new Set(readdirSync(target)));
+      if (!directories.get(target).has(part)) throw Error("Package entry spelling differs from manifest");
+      target = path.join(target,part);
+      if (lstatSync(target).isSymbolicLink()) throw Error("Invalid source path");
+    }
+    return readBytes(target,limit,true);
+  }
+  const files = parseJson(readMember("package-files.json",jsonByteLimit));
   if (!uniqueFiles(files) || !["integrated.mjs","intake.mjs","coordination.mjs","methods.md","LICENSE","native-roles/uwh_reviewer.toml","native-roles/uwh-reviewer.md"].every(file => files.includes(file)) || !Object.values(catalog).every(([,file]) => files.includes(file)) ||
       readdirSync(root).some(file => file.endsWith(".test.mjs") && !files.includes(file)))
     throw new Error("Invalid package file manifest");
+  let remaining = packageByteLimit;
   const identities = files.map(file => {
-    const target = path.resolve(root,file);
-    if (!target.startsWith(root+path.sep) || realpathSync(target) !== target) throw new Error("Invalid source path");
-    return [file,sha(readFileSync(target))];
+    const bytes = readMember(file,Math.min(remaining,memberByteLimit));
+    remaining -= bytes.length;
+    return [file,sha(bytes)];
   });
   return {schema_version:"unified.package-inventory.v1",sourceSha256:sha(JSON.stringify(identities)),files:Object.fromEntries(identities),
     capabilities:Object.entries(catalog).map(([name,[origin,entry,dependencies,effects]])=>({name,origin,entry,dependencies:[...dependencies],effects:[...effects]})),
@@ -100,7 +150,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const [op,file,...extra] = process.argv.slice(2);
     let result;
     if (op==="inventory" && !file && !extra.length) result=packageInventory();
-    else if (op==="profile" && file && !extra.length) result=resolvePackageProfile(JSON.parse(readFileSync(file,"utf8")));
+    else if (op==="profile" && file && !extra.length) result=resolvePackageProfile(parseJson(readBytes(file,jsonByteLimit)));
     else throw new Error("Usage: node package.mjs inventory | profile REQUEST.json");
     console.log(JSON.stringify(result));
     if(result.status==="hold") process.exitCode=2;

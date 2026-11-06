@@ -24,6 +24,20 @@ if (mode === 'worker') {
     ...['project configuration','project configuration directory','instructions','linked instructions','nested instructions','offered nested instructions','Unicode instruction alias','Unicode protected file alias','tracked Unicode protected alias','offered Unicode directory','colliding recursive Git directories'].map(s=>'OpenCode isolates '+s));
 }
 if(mode==='suite'){
+  family('package.bytes','package-profile',[],'package inspection: regular install',
+    ...['manifest FIFO','manifest symlink','manifest hard link','manifest at limit','manifest one byte over',
+      'member FIFO','member symlink','member hard link','ancestor link','member at limit','member one byte over','aggregate at limit',
+      'aggregate one byte over','incorrect case','duplicate member','parent traversal','missing runtime member','missing test member',
+      'unexpected test file','profile available','profile held','profile FIFO','profile one byte over','invalid command'].map(s=>'package inspection: '+s),
+    ...['stable descriptor','truncate member','grow member','replace entry'].map(s=>'inventory read consistency: '+s));
+  family('package.recheck','integrated',[],'v6 package identity: valid package',
+    'v6 package identity: before claim','v6 package identity: after discovery');
+  family('worker.read.evidence','integrated',[],'v6 read evidence: regular file',
+    ...['absolute file','directory then file','directory alone','missing child','backslash alias','absolute parent traversal',
+      'outside absolute path','transient file','case alias','missing path','object answer','numeric answer','empty answer'].map(s=>'v6 read evidence: '+s));
+  family('worker.path.evidence','integrated',[],'candidate path evidence: ordinary edit',
+    ...['literal backslash','staged literal backslash','mixed-case test directory','mixed-case test suffix','test-like ordinary file'].map(s=>'candidate path evidence: '+s),
+    ...['literal backslash path','mixed-case test path','duplicate destination','equivalent destination'].map(s=>'direct proposal: '+s));
   family('transport.discovery','roundtrip',[],'accepted Hypervisor contract reaches the bundled agent executor and returns evidence',
     ...['/v1/models','/api/version','/api/tags'].flatMap(route=>codes.map(n=>'discovery rejects '+n+' at '+route+' without contacting destination')));
   family('transport.direct','integrated',[],'IPv6 loopback with a path prefix completes the accepted v6 contract',

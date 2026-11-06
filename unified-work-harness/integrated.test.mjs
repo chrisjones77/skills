@@ -1,9 +1,10 @@
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import {gzipSync} from 'node:zlib';
 import { redirectStatuses, observeDestination, reworkFixture, erasedHoldFixture } from './test-support.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, realpathSync, rmSync, readFileSync, readdirSync, renameSync, symlinkSync, existsSync } from 'node:fs';
+import { cpSync, linkSync, mkdtempSync, mkdirSync, writeFileSync, realpathSync, rmSync, readFileSync, readdirSync, renameSync, symlinkSync, existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -841,6 +842,10 @@ for (const [label, options] of [
   ['protected path', {path:'.git/config', violation:/path is protected/}],
   ['traversal', {path:'../other.txt', violation:/without traversal/}],
   ['unauthorized test', {path:'sample.test.mjs', violation:/unauthorized test path/}],
+  ['literal backslash path', {path:'docs\\file.txt',grant:'docs/file.txt',violation:/ambiguous path separator/}],
+  ['mixed-case test path', {path:'docs/TeStS/unit.txt',grant:'docs',violation:/unauthorized test path/}],
+  ['duplicate destination', {duplicate:'source.txt',violation:/duplicate proposal path/}],
+  ['equivalent destination', {duplicate:'./source.txt',violation:/duplicate proposal path/}],
   ['truncated completion', {finish:'length', violation:/exhausted its token budget/}],
   ['oversized response', {padding:1500, violation:/output budget exceeded/}],
   ['prompt budget', {promptLimit:256, violation:/estimated prompt tokens exceed/}],
@@ -849,6 +854,7 @@ for (const [label, options] of [
     const {assignment,cwd,run} = lowLevelFixture(t);
     assignment.resources.max_output_bytes = 1024;
     if (options.promptLimit) assignment.resources.max_prompt_tokens = options.promptLimit;
+    if (options.grant) assignment.authority.allowed_paths.push(options.grant);
     if (label === 'unauthorized test') assignment.authority.allowed_paths.push(options.path);
     let calls = 0;
     const {evidence,artifactDirectory} = await run(async (url,init)=>{
@@ -857,6 +863,7 @@ for (const [label, options] of [
       assert.ok(JSON.parse(init.body).messages.some(m=>m.content.includes('cobalt-otter-47')));
       const content = structuredClone(proposal);
       if (options.path) content.changes[0].path = options.path;
+      if (options.duplicate) content.changes.push({...content.changes[0],path:options.duplicate,content:'conflicting revision'});
       return Response.json({choices:[{finish_reason:options.finish ?? 'stop',message:{role:'assistant',content:JSON.stringify(content)}}],
         padding:'x'.repeat(options.padding ?? 0)});
     });
@@ -1607,3 +1614,100 @@ test('provider discovery: oversized stream closes before EOF',async t=>{
   assert.ok(await closed,'cancel oversized metadata before the server ends its response');
   assert.equal(inspectInvocation(inputs.invocationPolicy,hypervisor.currentAssignment(packet).digest).state,'failed');
 });
+
+for(const label of ['ordinary edit','literal backslash','staged literal backslash','mixed-case test directory','mixed-case test suffix','test-like ordinary file']) {
+  test('candidate path evidence: '+label,async t=>{
+    const names={'ordinary edit':'docs/source.txt','literal backslash':'docs\\outside.txt','staged literal backslash':'docs\\outside.txt',
+      'mixed-case test directory':'docs/TeStS/source.txt','mixed-case test suffix':'docs/source.SpEc.mjs','test-like ordinary file':'docs/contest.txt'};
+    const name=names[label];
+    const program="fs.writeFileSync("+JSON.stringify(name)+",'candidate text');"
+      +(label.startsWith('staged')?"require('node:child_process').execFileSync('git',['add','--',"+JSON.stringify(name)+"]);":"");
+    const {run}=syntheticEditor(t,{target:'docs',program,prepare(root){
+      mkdirSync(path.join(root,'docs','TeStS'),{recursive:true});
+      for(const f of ['source.txt','TeStS/source.txt','source.SpEc.mjs','contest.txt'])writeFileSync(path.join(root,'docs',f),'initial');
+    }});
+    const {evidence,artifactDirectory}=await run();
+    const allowed=['ordinary edit','test-like ordinary file'].includes(label);
+    assert.equal(evidence.disposition,allowed?'candidate':'rejected','unapproved patch delivered: '+label);
+    assert.equal(existsSync(path.join(artifactDirectory,'candidate.patch')),allowed);
+    if(!allowed)assert.deepEqual(evidence.acceptance,[]);
+  });
+}
+
+for(const label of ['regular file','absolute file','directory then file','directory alone','missing child','backslash alias',
+  'absolute parent traversal','outside absolute path','transient file','case alias','missing path','object answer','numeric answer','empty answer']) {
+  test('v6 read evidence: '+label,async t=>{
+    const port=await listen(t,'127.0.0.1',(req,res)=>res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[]})));
+    const {inputs,temp,accept}=fixture(t,'http://127.0.0.1:'+port+'/v1','source.txt',30,root=>{
+      mkdirSync(path.join(root,'docs'));writeFileSync(path.join(root,'docs','file.txt'),'authorized');
+      writeFileSync(path.join(root,'docs\\file.txt'),'unoffered');
+    });
+    const a=JSON.parse(inputs.bindingInputs.assignmentJson);
+    a.authority.allowed_read_paths=['docs'];
+    inputs.bindingInputs.assignmentJson=JSON.stringify(a);writeFileSync(inputs.assignmentPath,inputs.bindingInputs.assignmentJson);
+    const bin=path.join(temp,'bin');mkdirSync(bin);
+    const program=label=>{
+      const cwd=process.cwd();
+      if(label==='transient file')require('node:fs').writeFileSync('docs/transient','untracked');
+      const paths={'regular file':['docs/file.txt'],'absolute file':[cwd+'/docs/file.txt'],'directory then file':['docs','docs/file.txt'],
+        'directory alone':['docs'],'missing child':['docs/missing'],'backslash alias':['docs\\file.txt'],
+        'absolute parent traversal':[cwd+'/other/../docs/file.txt'],'transient file':['docs/transient'],'case alias':['docs/FILE.txt'],'outside absolute path':[cwd+'/../outside'],'missing path':[null]};
+      for(const filePath of paths[label]??['docs/file.txt'])console.log(JSON.stringify({type:'tool_use',part:{tool:'read',state:{
+        status:'completed',input:{filePath},output:'synthetic read'}}}));
+      if(label==='transient file'){
+        // Leave it present for the supervisor to inspect the event.
+        setTimeout(()=>require('node:fs').unlinkSync('docs/transient'),500);
+      }
+      const answer={'object answer':{invented:true},'numeric answer':42,'empty answer':''};
+      console.log(JSON.stringify({type:'text',part:{text:answer[label]??'authorized'}}));
+    };
+    writeFileSync(path.join(bin,'opencode'),'#!/usr/bin/env node\n('+program+')('+JSON.stringify(label)+');',{mode:0o700});
+    const previous=process.env.PATH;process.env.PATH=bin+path.delimiter+previous;t.after(()=>{process.env.PATH=previous;});
+    const packet=accept(buildPackageScope(inputs)), digest=hypervisor.currentAssignment(packet).digest;
+    const run=contractRoundtrip({...inputs,packet});
+    if(['regular file','absolute file','directory then file'].includes(label)){
+      const receipt=await run;
+      assert.equal(receipt.executor_evidence.agent.read_calls,1,'only the regular file counts as source evidence');
+    }else{
+      await assert.rejects(run,/no completed source read|no response after source read|policy violation|outside the pinned Git tree/i,'unverified read accepted: '+label);
+      assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
+      assert.equal(inspectInvocation(inputs.invocationPolicy,digest).state,'failed');
+    }
+  });
+}
+
+for(const stage of ['before claim','after discovery','valid package']){
+  test('v6 package identity: '+stage,async t=>{
+    let substitute;
+    const requests=[];
+    const port=await listen(t,'127.0.0.1',(req,res)=>{
+      requests.push(req.url);
+      if(stage==='after discovery' && req.url==='/v1/models')substitute();
+      res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[]}));
+    });
+    const {inputs,temp,accept}=fixture(t,'http://127.0.0.1:'+port+'/v1');
+    const copy=path.join(temp,'installation');
+    cpSync(fileURLToPath(new URL('.',import.meta.url)),copy,{recursive:true});
+    const {contractRoundtrip:run}=await import(pathToFileURL(path.join(copy,'bundle.mjs')));
+    const {buildPackageScope:scope}=await import(pathToFileURL(path.join(copy,'integrated.mjs')));
+    const packet=accept(scope(inputs));
+    const member=path.join(copy,'methods.md');
+    substitute=()=>linkSync(member,path.join(temp,'external-copy'));
+    if(stage==='before claim')substitute();
+    const bin=path.join(temp,'bin');mkdirSync(bin);
+    writeFileSync(path.join(bin,'opencode'),`#!/usr/bin/env node
+const token=require('node:fs').readFileSync('source.txt','utf8');
+for(const e of [{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:token}}},{type:'text',part:{text:token}}])console.log(JSON.stringify(e));`,{mode:0o700});
+    const previous=process.env.PATH;process.env.PATH=bin+path.delimiter+previous;t.after(()=>{process.env.PATH=previous;});
+    const result=run({...inputs,packet});
+    if(stage==='valid package'){
+      const receipt=await result;assert.equal(receipt.review_status,'pending');assert.equal(requests.length,3);
+    }else{
+      await assert.rejects(result,/bounded regular file/,'linked package member remained eligible: '+stage);
+      assert.deepEqual(requests,stage==='before claim'?[]:['/v1/models']);
+      assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
+      if(stage==='before claim')assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
+      else assert.equal(inspectInvocation(inputs.invocationPolicy,hypervisor.currentAssignment(packet).digest).state,'failed');
+    }
+  });
+}

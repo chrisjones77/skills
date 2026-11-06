@@ -10,6 +10,14 @@ ROOT = Path(__file__).resolve().parents[1]
 PKG = 'unified-work-harness'
 # target and control are actual TAP names, not input substrings used as evidence
 cases = [
+    ('linked-package-member', 'package.mjs', ' || (packageFile && before.nlink !== 1n)', '',
+     'integrated', 'v6 package identity: before claim', 'v6 package identity: valid package', 'linked package member remained eligible'),
+    ('unscoped-literal-file', 'bundle.mjs', 'violations.push("ambiguous path separator in changed file");',
+     '// silently skip the unoffered name', 'integrated', 'candidate path evidence: staged literal backslash',
+     'candidate path evidence: ordinary edit', 'unapproved patch delivered'),
+    ('fabricated-file-read', 'bundle.mjs', 'if (readBoundary && !readBoundary.regularFiles.has(normalizeAllowedPath(relativePath)))',
+     'if (false)', 'integrated', 'v6 read evidence: transient file', 'v6 read evidence: regular file', 'unverified read accepted'),
+
     ('unbounded-lease-read', 'bundle.mjs', 'readPrivateFileBytes(path.join(directory,"owner.json"),4096)',
      'readFileSync(path.join(directory,"owner.json"))', 'roundtrip', 'provider lease storage: receipt FIFO',
      'provider lease storage: ordinary release', 'lease operation must finish within its deadline: receipt FIFO'),
@@ -61,8 +69,8 @@ cases = [
      '"--no-renames", "--"], 20_971_520)', 'integrated', 'edit worker: staged authorized edit',
      'edit worker: new ignored file', 'candidate.patch'),
     ('worker-redirect', 'bundle.mjs',
-     'await runGuardedOpenCode({ assignment, worktree, artifactDirectory, endpoint, getTempParent, capturePrivateResult }, beforeProvider, beforeCompletion)',
-     'await runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, getTempParent, capturePrivateResult })',
+     'await runGuardedOpenCode({ assignment, worktree, artifactDirectory, endpoint, getTempParent, capturePrivateResult, readBoundary }, beforeProvider, beforeCompletion)',
+     'await runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, getTempParent, capturePrivateResult, readBoundary })',
      'integrated', 'OpenCode completion after a source read, upstream status 307',
      'OpenCode completion after a source read, upstream status 200', 'the second listener must receive no requests'),
     ('late-reservation-check', 'queue.mjs', "if (offeredScope !== offer.scope) throw Error('Dispatch scope differs from the accepted offer.');",

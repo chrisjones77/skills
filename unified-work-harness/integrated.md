@@ -41,3 +41,5 @@ To replay the redirect regression with the installed OpenCode binary and synthet
 Model discovery accepts at most 1 MiB of decoded data per response, including compressed and chunked responses. The model list must be valid UTF-8 JSON and advertise the requested model. Ollama version and tag metadata can be unavailable. An oversized response or an explicit tool-capability declaration that cannot support the worker stops launch. Both v5 and v6 recheck the start window before requesting metadata following the model list.
 
 Provider lease waits use elapsed time. Automatic recovery requires a dead owner and a private lease directory containing only its bounded regular owner receipt. If the receipt or directory is ambiguous, the lease stays in place for operator inspection.
+
+A completed OpenCode read counts toward the receipt when its event names an in-scope regular file present under that spelling at worker launch. A directory listing may precede the read. The post-read answer must be text. Inspection checks the worker’s report against the checkout; the reviewer still assesses what the answer establishes.

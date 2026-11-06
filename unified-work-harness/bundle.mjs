@@ -1002,6 +1002,12 @@ export function pathMatchesPrefix(filename, prefix) {
   return filename === prefix || filename.startsWith(`${prefix}/`);
 }
 
+// A denial must cover spellings that may address the same entry on a
+// case-insensitive checkout. Keep the positive defect-reproduction grant exact.
+function isDeniedTestPath(filename) {
+  return isTestPath(protectedPathKey(filename));
+}
+
 export function isTestPath(filename) {
   return /(^|\/)(tests?|__tests__)(\/|$)|\.(test|spec)\.[^.]+$|_test\.go$/.test(filename);
 }
@@ -1039,6 +1045,7 @@ function hasSymlinkComponent(root, normalized) {
 
 export function validatePathAccess(assignment, filename, operation = "read", worktree = null) {
   if (!["read", "edit"].includes(operation)) throw new Error("operation must be read or edit");
+  if (typeof filename === "string" && filename.includes("\\")) return {allowed:false, reason:"ambiguous path separator"};
   const normalized = normalizeAllowedPath(filename);
   if (isProtectedPath(normalized)) return { allowed: false, reason: `protected path: ${normalized}` };
   const allowedPaths = operation === "read"
@@ -1050,7 +1057,7 @@ export function validatePathAccess(assignment, filename, operation = "read", wor
   if (operation === "edit" && !["candidate_edit", "defect_reproduction"].includes(assignment.authority.mode)) {
     return { allowed: false, reason: `${assignment.authority.mode} authority does not permit edits` };
   }
-  if (operation === "edit" && !assignment.authority.allow_test_changes && isTestPath(normalized)) {
+  if (operation === "edit" && !assignment.authority.allow_test_changes && isDeniedTestPath(normalized)) {
     return { allowed: false, reason: `unauthorized test path: ${normalized}` };
   }
   if (worktree && hasSymlinkComponent(worktree, normalized)) {
@@ -1471,12 +1478,16 @@ export function validateStructuredProposal(assignment, text) {
     errors.push("proposal.changes must contain between 1 and 10 changes");
   } else {
     const normalizedAllowed = assignment.authority.allowed_paths.map(normalizeAllowedPath);
+    const destinations = new Set();
     for (const [index, change] of proposal.changes.entries()) {
       const location = `proposal.changes[${index}]`;
       if (!checkKeys(errors, change, location, ["path", "operation", "rationale", "content"])) continue;
       let normalized;
       try {
+        if (typeof change.path === "string" && change.path.includes("\\")) throw Error("uses an ambiguous path separator");
         normalized = normalizeAllowedPath(change.path);
+        if (destinations.has(normalized)) errors.push(`${location}.path is a duplicate proposal path`);
+        destinations.add(normalized);
       } catch (error) {
         errors.push(`${location}.path ${error.message}`);
       }
@@ -1486,7 +1497,7 @@ export function validateStructuredProposal(assignment, text) {
       if (normalized && isProtectedPath(normalized)) {
         errors.push(`${location}.path is protected`);
       }
-      if (normalized && !assignment.authority.allow_test_changes && isTestPath(normalized)) {
+      if (normalized && !assignment.authority.allow_test_changes && isDeniedTestPath(normalized)) {
         errors.push(`${location}.path is an unauthorized test path`);
       }
       if (change.operation !== "create_or_replace") errors.push(`${location}.operation must be create_or_replace`);
@@ -1693,6 +1704,12 @@ export function evaluateChangedFiles(assignment, filenames) {
   const violations = [];
   const normalizedAllowed = assignment.authority.allowed_paths.map(normalizeAllowedPath);
   for (const filename of filenames) {
+    // Git emits literal POSIX names. A backslash is part of one entry here,
+    // even when the same spelling in a caller's grant is a path separator.
+    if (filename.includes("\\")) {
+      violations.push("ambiguous path separator in changed file");
+      continue;
+    }
     const normalized = normalizeAllowedPath(filename);
     if (isProtectedPath(normalized)) {
       violations.push(`protected path changed: ${normalized}`);
@@ -1702,7 +1719,7 @@ export function evaluateChangedFiles(assignment, filenames) {
     } else if (!normalizedAllowed.some((prefix) => pathMatchesPrefix(normalized, prefix))) {
       violations.push(`out-of-scope path changed: ${normalized}`);
     }
-    if (!assignment.authority.allow_test_changes && isTestPath(normalized)) {
+    if (!assignment.authority.allow_test_changes && isDeniedTestPath(normalized)) {
       violations.push(`test change was not authorized: ${normalized}`);
     }
     if (assignment.authority.mode === "defect_reproduction" && !isTestPath(normalized)) {
@@ -2194,13 +2211,14 @@ function workerReadBoundary(root, assignment, pinnedPaths) {
   const folded = name => name.normalize("NFKC").toLowerCase().replace(/\p{Default_Ignorable_Code_Point}/gu, "");
   const overlaps = (a, b) => pathMatchesPrefix(a, b) || pathMatchesPrefix(b, a);
   const keys = grants.map(folded);
-  const matched = new Set();
+  const matched = new Set(), regularFiles = new Set();
   function checkEntry(name, isLink, isRegularFile) {
     for (const grant of grants) {
       // The Git index represents a tracked directory by its descendants.
       if (pathMatchesPrefix(name, grant)) {
         if (pinnedPaths && !pinnedPaths.has(name)) throw Error("Read scope contains an entry outside the pinned Git tree");
         matched.add(grant);
+        if (isRegularFile) regularFiles.add(name);
       }
     }
     const key = folded(name);
@@ -2250,7 +2268,7 @@ function workerReadBoundary(root, assignment, pinnedPaths) {
       }
     }
   }
-  return {checkEntry, verifyGrants};
+  return {checkEntry, verifyGrants, regularFiles};
 }
 
 function changedCheckoutPaths(before, after) {
@@ -2379,7 +2397,7 @@ async function runGuardedOpenCode(options, beforeLaunch, beforeCompletion) {
   }
 }
 
-async function runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, getTempParent, capturePrivateResult = false }) {
+async function runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, getTempParent, capturePrivateResult = false, readBoundary }) {
   const prompt = buildAgentPrompt(assignment);
   const isolatedHome = path.join(artifactDirectory, "state", "home");
   mkdirSync(isolatedHome, { recursive: true, mode: 0o700 });
@@ -2469,15 +2487,24 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
         if (tool === "read" && event.part?.state?.status === "completed") {
           const rawPath = event.part?.state?.input?.filePath;
           try {
-            if (typeof rawPath !== "string") throw new Error("missing path");
+            if (typeof rawPath !== "string" || rawPath.split("/").includes("..")) throw new Error("invalid read path");
             const relativePath = path.isAbsolute(rawPath) ? path.relative(worktree, rawPath) : rawPath;
             if (!validatePathAccess(assignment, relativePath, "read", worktree).allowed) throw new Error("outside scope");
-            readCalls += 1;
+            const entry = lstatSync(path.join(worktree,relativePath));
+            if (!entry.isDirectory() && !entry.isFile()) throw new Error("unsupported read entry");
+            if (entry.isFile()) {
+              if (readBoundary && !readBoundary.regularFiles.has(normalizeAllowedPath(relativePath))) throw new Error("unverified source file");
+              readCalls += 1;
+            }
           } catch {
             stop("completed read was missing a valid in-scope path");
           }
         }
         if (!permittedTools.has(tool)) stop("prohibited tool requested");
+      }
+      if (event.type === "text" && typeof event.part?.text !== "string") {
+        stop("OpenCode emitted a non-string text event");
+        return;
       }
       if (event.type === "text" && assignment.authority.mode === "structured_proposal") {
         proposalText += String(event.part?.text ?? "");
@@ -2878,7 +2905,7 @@ export async function runHarness({
         ? await runDirectJson({ assignment, worktree, artifactDirectory, endpoint, request: completionRequest })
         : adapter === "aider"
           ? await runAider({ assignment, worktree, artifactDirectory, endpoint })
-        : await runGuardedOpenCode({ assignment, worktree, artifactDirectory, endpoint, getTempParent, capturePrivateResult }, beforeProvider, beforeCompletion);
+        : await runGuardedOpenCode({ assignment, worktree, artifactDirectory, endpoint, getTempParent, capturePrivateResult, readBoundary }, beforeProvider, beforeCompletion);
     } finally {
       providerLease?.release();
       providerLease = null;
