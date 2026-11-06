@@ -5,7 +5,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {createServer} from "node:http";
 import {execFileSync} from "node:child_process";
-import {mkdtempSync,mkdirSync,readFileSync,realpathSync,readdirSync,rmSync,writeFileSync,utimesSync,existsSync,copyFileSync,symlinkSync} from "node:fs";
+import {mkdtempSync,mkdirSync,readFileSync,realpathSync,readdirSync,rmSync,writeFileSync,utimesSync,existsSync,copyFileSync,symlinkSync,linkSync,renameSync,chmodSync} from "node:fs";
 import {tmpdir} from "node:os";
 import path from "node:path";
 import {pathToFileURL} from "node:url";
@@ -427,3 +427,49 @@ for (const adapter of ['openai_chat','ollama_chat']) {
     assert.deepEqual(source.requests[1].body,source.requests[0].body);
   });
 }
+
+for (const label of ['intact receipt','replacement claim','artifact hard link','artifact symlink','wrong artifact mode','artifact truncated']) {
+  test('candidate recovery: '+label,async t=>{
+    const {request,accept,results}=await fixture(t);
+    const packet=accept();
+    const receipt=await candidateRoundtrip({packet,request});
+    const file=path.join(results,receipt.private_result.name);
+    const review=()=>readCandidateForReview({packet,request,receipt});
+    if (label==='intact receipt') {
+      assert.equal(review().edits[0].text,'new text\n');
+      assert.equal(hypervisor.currentAssignment(packet).digest,receipt.assignment_digest);
+      return;
+    }
+    if (label==='replacement claim') {
+      const dir=request.invocationPolicy.directory;
+      const claimFile=path.join(dir,receipt.assignment_digest+'.claim.json');
+      const terminalFile=path.join(dir,receipt.assignment_digest+'.terminal.json');
+      const claim=JSON.parse(readFileSync(claimFile)), terminal=JSON.parse(readFileSync(terminalFile));
+      claim.claimed_at='2020-01-01T00:00:00.000Z';
+      writeFileSync(claimFile,JSON.stringify(claim));
+      terminal.claim_sha256=sha256(JSON.stringify(claim));
+      writeFileSync(terminalFile,JSON.stringify(terminal));
+      assert.notEqual(terminal.claim_sha256,receipt.claim_sha256);
+      assert.equal(inspectInvocation(request.invocationPolicy,receipt.assignment_digest).state,'completed');
+    } else if (label==='artifact hard link') linkSync(file,path.join(request.workspace.root,'alias.json'));
+    else if (label==='artifact symlink') { renameSync(file,file+'.saved'); symlinkSync(file+'.saved',file); }
+    else if (label==='wrong artifact mode') chmodSync(file,0o644);
+    else writeFileSync(file,'{}');
+    assert.throws(review,undefined,'review must refuse '+label);
+  });
+}
+
+test('candidate recovery: damaged in-flight claim',async t=>{
+  const {request,source,accept,answer}=await fixture(t);
+  const packet=accept(), digest=hypervisor.currentAssignment(packet).digest;
+  const ledger=request.invocationPolicy.directory;
+  source.respond=(req,res)=>{
+    writeFileSync(path.join(ledger,digest+'.claim.json'),'{}');
+    answer(req,res,{edits:[{path:'sample.txt',text:'new text\n'}]});
+  };
+  await assert.rejects(candidateRoundtrip({packet,request}),/reconcile without retrying/);
+  assert.deepEqual(readdirSync(ledger),[digest+'.claim.json']);
+  assert.equal(inspectInvocation(request.invocationPolicy,digest).requires_reconciliation,true);
+  await assert.rejects(candidateRoundtrip({packet,request}),/claim unavailable or already exists/);
+  assert.equal(source.requests.length,1);
+});

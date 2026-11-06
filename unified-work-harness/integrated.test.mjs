@@ -1416,3 +1416,33 @@ test('edit worker passes option-shaped files as literal arguments', async t=>{
   assert.ok(args.some((a,i)=>a==='--file' && args[i+1]==='./--model'));
   assert.ok(args.some((a,i)=>a==='--read' && args[i+1]==='./--config'));
 });
+
+test('v6 refuses a terminal receipt when its in-flight claim changes', async t=>{
+  let claim;
+  const routes=[];
+  const port=await listen(t,'127.0.0.1',(req,res)=>{
+    routes.push(req.url);
+    if(req.url==='/v1/models') writeFileSync(claim,'{}');
+    res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[{name:'synthetic:local'}],version:'test'}));
+  });
+  const {inputs,temp,accept}=fixture(t,'http://127.0.0.1:'+port+'/v1');
+  const packet=accept(buildPackageScope(inputs));
+  const digest=hypervisor.currentAssignment(packet).digest, ledger=inputs.invocationPolicy.directory;
+  claim=path.join(ledger,digest+'.claim.json');
+  const events=[{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'cobalt-otter-47'}}},
+    {type:'text',part:{text:'cobalt-otter-47'}}];
+  const bin=path.join(temp,'bin');
+  mkdirSync(bin);
+  writeFileSync(path.join(bin,'opencode'),'#!/usr/bin/env node\nfor(const e of '+JSON.stringify(events)+')console.log(JSON.stringify(e));',{mode:0o700});
+  const previous=process.env.PATH;
+  process.env.PATH=bin+path.delimiter+previous;
+  t.after(()=>{process.env.PATH=previous;});
+  await assert.rejects(contractRoundtrip({...inputs,packet}),/reconcile without retrying/);
+  assert.deepEqual(readdirSync(ledger),[digest+'.claim.json']);
+  assert.equal(inspectInvocation(inputs.invocationPolicy,digest).requires_reconciliation,true);
+  // A result written before terminal persistence is an orphan, not a receipt.
+  assert.equal(readdirSync(inputs.resultPolicy.directory).length,1);
+  const first=[...routes];
+  await assert.rejects(contractRoundtrip({...inputs,packet}),/claim unavailable or already exists/);
+  assert.deepEqual(routes,first);
+});

@@ -8,7 +8,7 @@ import { readFileSync, writeFileSync, realpathSync, mkdirSync, readdirSync, mkdt
 import path from "node:path";
 import {
   hypervisor, sha256, inspectBundledSource, inspectWorkIntake, inspectExecutionWindow, inspectInvocation,
-  assertProviderPort, pinTempParent, claimInvocation, validateInvocationPolicy, checkResultDirectory, normalizeAllowedPath,
+  assertProviderPort, pinTempParent, claimInvocation, validateInvocationPolicy, checkResultDirectory, readPrivateFileBytes, normalizeAllowedPath,
   isProtectedPath, isOllamaCloudModelId, assertSafeGitSource, contractGitEnvironment, contractGitArgs,
 } from "./bundle.mjs";
 
@@ -358,16 +358,13 @@ export function readCandidateForReview({packet,request,receipt}) {
     "Receipt differs from candidate assignment");
   const {receipt_sha256,...body}=receipt;
   const ledger=inspectInvocation(request.invocationPolicy,assignment.digest);
-  need(hash(body)===receipt_sha256 && ledger.state==="completed" && ledger.evidence_sha256===receipt_sha256,
+  need(hash(body)===receipt_sha256 && ledger.state==="completed" && ledger.evidence_sha256===receipt_sha256 && ledger.claim_sha256===receipt.claim_sha256,
     "Candidate receipt differs from completed attempt");
   checkResultDirectory(request.resultPolicy,request.workspace.root);
   const result=receipt.private_result;
   need(typeof result?.name==="string" && /^candidate-[0-9a-f-]{36}\.json$/.test(result.name),"Invalid candidate artifact name");
   const file=path.join(request.resultPolicy.directory,result.name);
-  const stat=lstatSync(file);
-  need(stat.isFile() && stat.uid===process.getuid() && (stat.mode & 0o777)===0o600
-    && stat.size===result.bytes && stat.size<=request.limits.replyBytes*6+131072,"Private artifact identity or access changed");
-  const bytes=readFileSync(file);
+  const bytes=readPrivateFileBytes(file,request.limits.replyBytes*6+131072,result.bytes);
   need(sha256(bytes)===result.sha256,"Private artifact differs from receipt");
   return JSON.parse(bytes.toString("utf8"));
 }

@@ -390,7 +390,7 @@ can leave uncertainty even if an artifact was already written or work performed.
 No automatic compensation, retry, claim expiry or ledger reset is supplied.
 
 `inspectInvocation(invocationPolicy, assignmentDigest)` reads bounded private
-records without dispatch or mutation. A consistent terminal pair reports
+records without dispatch or mutation. Claim and terminal records must be single-link, owner-only regular files in the compact JSON form written by this ledger. Finalization verifies the original directory and claim bytes. A consistent terminal pair returns the SHA-256 of the claim and reports
 `completed` or `failed`; absent, partial, unreadable or inconsistent records
 report `unclaimed_or_uncertain` with reconciliation required. Every result states
 `execution_authorized: false` and `retry_authorized: false`. Invalid policy or

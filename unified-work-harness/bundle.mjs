@@ -2937,57 +2937,82 @@ function durableExclusiveJson(directory, name, value) {
   try { fsyncSync(dirFd); } finally { closeSync(dirFd); }
 }
 
+function invocationDigest(value) {
+  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+}
+
+function validUtcInstant(value) {
+  return typeof value === "string" && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(value)
+    && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+}
+
+const ledgerByteLimit = 65536;
+const terminalStates = new Set(["completed","failed"]);
+
 // A claim is never deleted or reset, even if writing it fails part way through.
 function claimInvocation(policy, digest, sourceRoot) {
   validateInvocationPolicy(policy);
-  const privatePolicy = {directory:policy.directory,retention:"owner_managed"};
+  if (!invocationDigest(digest)) throw new Error("Invalid invocation identity.");
+  const directory = policy.directory;
+  const privatePolicy = {directory,retention:"owner_managed"};
   const identity = checkResultDirectory(privatePolicy, sourceRoot);
   const claim = {schema_version:"unified-harness.invocation-claim.v1",assignment_digest:digest,state:"claimed",claimed_at:new Date().toISOString()};
+  const claimHash = sha256(JSON.stringify(claim));
+  const terminalName = `${digest}.terminal.json`;
   try {
-    try {
-      lstatSync(path.join(policy.directory,`${digest}.terminal.json`));
-      throw new Error("terminal record exists");
-    } catch (error) { if (error.code !== "ENOENT") throw error; }
-    durableExclusiveJson(policy.directory, `${digest}.claim.json`, claim);
-  }
-  catch { throw new Error("Invocation claim unavailable or already exists; reconcile without retrying."); }
+    if (lstatSync(path.join(directory,terminalName),{throwIfNoEntry:false})) throw new Error("Terminal record exists");
+    durableExclusiveJson(directory, `${digest}.claim.json`, claim);
+  } catch { throw new Error("Invocation claim unavailable or already exists; reconcile without retrying."); }
   return {
-    receipt: {assignment_digest:digest,claim_sha256:sha256(JSON.stringify(claim))},
+    receipt: {assignment_digest:digest,claim_sha256:claimHash},
     finish(state, evidenceHash) {
+      if (!terminalStates.has(state) || !invocationDigest(evidenceHash)) throw new Error("Invalid invocation terminal state or evidence hash.");
       try {
-        if (JSON.stringify(checkResultDirectory(privatePolicy,sourceRoot)) !== JSON.stringify(identity)) throw new Error();
-        durableExclusiveJson(policy.directory, `${digest}.terminal.json`, {schema_version:"unified-harness.invocation-terminal.v1",assignment_digest:digest,claim_sha256:sha256(JSON.stringify(claim)),state,evidence_sha256:evidenceHash});
+        const current = checkResultDirectory(privatePolicy,sourceRoot);
+        if (current.dev !== identity.dev || current.ino !== identity.ino) throw new Error("Ledger directory changed");
+        const bytes = readPrivateFileBytes(path.join(directory,`${digest}.claim.json`),ledgerByteLimit);
+        if (sha256(bytes) !== claimHash) throw new Error("Invocation claim changed");
+        durableExclusiveJson(directory, terminalName, {schema_version:"unified-harness.invocation-terminal.v1",assignment_digest:digest,
+          claim_sha256:claimHash,state,evidence_sha256:evidenceHash});
       } catch { throw new Error("Invocation terminal state unavailable; reconcile without retrying."); }
     },
   };
 }
 
+// Parse only the compact JSON encoding written by durableExclusiveJson. This
+// also detects duplicate fields and preserves the exact bytes bound by the hash.
+function readLedgerRecord(file, fields) {
+  const bytes = readPrivateFileBytes(file,ledgerByteLimit);
+  const record = JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));
+  if (!isObject(record) || Object.keys(record).length !== fields.length || !fields.every(key=>Object.hasOwn(record,key))
+      || !Buffer.from(JSON.stringify(record)).equals(bytes)) throw new Error("Invalid ledger record");
+  return {record,bytes};
+}
+
 export function inspectInvocation(policy, assignmentDigest) {
   validateInvocationPolicy(policy);
-  if (!/^[a-f0-9]{64}$/.test(assignmentDigest)) throw new Error("Invalid invocation identity.");
-  privateDirectoryIdentity(policy.directory);
+  if (!invocationDigest(assignmentDigest)) throw new Error("Invalid invocation identity.");
+  const directory = policy.directory;
+  privateDirectoryIdentity(directory);
   const base = {assignment_digest:assignmentDigest,execution_authorized:false,retry_authorized:false};
-  const read = (suffix) => {
-    const file = path.join(policy.directory, `${assignmentDigest}.${suffix}.json`);
-    const stat = lstatSync(file);
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.uid !== process.getuid() || (stat.mode & 0o777) !== 0o600 || stat.size > 65536) throw new Error();
-    return JSON.parse(readFileSync(file,"utf8"));
-  };
   try {
-    const claim = read("claim");
-    if (claim.schema_version !== "unified-harness.invocation-claim.v1" || claim.assignment_digest !== assignmentDigest || claim.state !== "claimed") throw new Error();
-    const terminal = read("terminal");
-    if (terminal.schema_version !== "unified-harness.invocation-terminal.v1" || terminal.assignment_digest !== assignmentDigest || terminal.claim_sha256 !== sha256(JSON.stringify(claim)) || !["completed","failed"].includes(terminal.state) || !/^[a-f0-9]{64}$/.test(terminal.evidence_sha256)) throw new Error();
-    return {...base,state:terminal.state,evidence_sha256:terminal.evidence_sha256};
+    const prefix = path.join(directory,assignmentDigest);
+    const {record:claim,bytes} = readLedgerRecord(prefix+".claim.json",["schema_version","assignment_digest","state","claimed_at"]);
+    if (claim.schema_version !== "unified-harness.invocation-claim.v1" || claim.assignment_digest !== assignmentDigest
+        || claim.state !== "claimed" || !validUtcInstant(claim.claimed_at)) throw new Error("Invalid claim");
+    const {record:terminal} = readLedgerRecord(prefix+".terminal.json",["schema_version","assignment_digest","claim_sha256","state","evidence_sha256"]);
+    const claimHash = sha256(bytes);
+    if (terminal.schema_version !== "unified-harness.invocation-terminal.v1" || terminal.assignment_digest !== assignmentDigest
+        || terminal.claim_sha256 !== claimHash || !terminalStates.has(terminal.state)
+        || !invocationDigest(terminal.evidence_sha256)) throw new Error("Invalid terminal");
+    return {...base,state:terminal.state,claim_sha256:claimHash,evidence_sha256:terminal.evidence_sha256};
   } catch {
-    // Includes malformed, truncated, missing-terminal and permission errors.
     return {...base,state:"unclaimed_or_uncertain",requires_reconciliation:true};
   }
 }
 
 function validateExecutionWindow(window) {
-  const validTime = value => typeof value === "string" && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
-  if (!window || Object.keys(window).sort().join() !== "expires_at,not_before" || !validTime(window.not_before) || !validTime(window.expires_at) || Date.parse(window.expires_at) <= Date.parse(window.not_before)) throw new Error("Invalid execution window.");
+  if (!window || Object.keys(window).sort().join() !== "expires_at,not_before" || !validUtcInstant(window.not_before) || !validUtcInstant(window.expires_at) || Date.parse(window.expires_at) <= Date.parse(window.not_before)) throw new Error("Invalid execution window.");
 }
 
 export function inspectExecutionWindow(window, now = Date.now()) {
@@ -3029,11 +3054,12 @@ export function verifyBoundPacketIdentity(packet, offered, bindingInputs) {
 
 // Inspect and read the same descriptor. Nonblocking open refuses to wait for
 // a FIFO writer; one byte of lookahead detects growth without chasing EOF.
-function readBoundedFileBytes(filename, maximumBytes, extraFlags, expectedSize, invalidFileMessage) {
+function readBoundedFileBytes(filename, maximumBytes, extraFlags, expectedSize, invalidFileMessage, ownerOnly = false) {
   const fd = openSync(filename, fsFlags.O_RDONLY | fsFlags.O_NONBLOCK | fsFlags.O_NOCTTY | extraFlags);
   try {
     const st = fstatSync(fd);
-    if (!st.isFile() || st.size > maximumBytes || (expectedSize !== undefined && st.size !== expectedSize))
+    if (!st.isFile() || st.size > maximumBytes || (expectedSize !== undefined && st.size !== expectedSize)
+        || (ownerOnly && (st.uid !== process.getuid() || (st.mode & 0o777) !== 0o600 || st.nlink !== 1)))
       throw Error(invalidFileMessage);
     const bytes = Buffer.alloc(st.size + 1);
     let used = 0;
@@ -3045,6 +3071,12 @@ function readBoundedFileBytes(filename, maximumBytes, extraFlags, expectedSize, 
     if (used !== st.size) throw Error("File changed while reading");
     return bytes.subarray(0, used);
   } finally { closeSync(fd); }
+}
+
+export function readPrivateFileBytes(filename, maximumBytes, expectedSize) {
+  if (!Number.isSafeInteger(maximumBytes) || maximumBytes < 0) throw new Error("Invalid private file size limit");
+  return readBoundedFileBytes(filename,maximumBytes,fsFlags.O_NOFOLLOW,expectedSize,
+    "Private file identity or access changed",true);
 }
 
 export function readAssignmentBytes(filename, expectedSize) {

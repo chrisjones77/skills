@@ -82,11 +82,22 @@ if(mode==='suite'){
     'attended replies require the original queue location after restart',
     'explicit goal, accepted identity, ceiling, expiration and cancellation govern admission');
   family('storage.identity','integrated',[],'reviewed and accepted v6 produces a package-bound candidate receipt',
+    'v6 refuses a terminal receipt when its in-flight claim changes',
     'strict format checks the post-read answer with and without result capture',
     'direct v6 rejects FIFO and oversized assignments before effects and preserves the accepted attempt',
     ...[1,2,3,4,5,6].map(v=>'v'+v+' verifies each accepted scope field before effects'),
     'physical ancestry refuses an aliased private directory','v6 refuses a temporary parent inside the checkout before discovery or claim',
     'v6 refuses a replaced temp parent and leaves its contents alone during cleanup');
+  family('ledger.write','roundtrip',[],'ledger finalization: completed pair',
+    ...['parent traversal','short digest','array digest'].map(s=>'ledger identity: '+s),
+    ...['unknown terminal','short evidence','coerced evidence','failed pair','policy redirected','claim removed',
+      'claim modified','claim hard-linked','directory replaced','duplicate finish'].map(s=>'ledger finalization: '+s));
+  family('ledger.recovery','roundtrip',[],'ledger finalization: failed pair',
+    ...['missing timestamp','impossible timestamp','extra claim field','extra terminal field','wrong assignment','wrong claim hash',
+      'terminal without claim','claim without terminal','non-string evidence','duplicate terminal state','changed claim bytes',
+      'unsafe permissions','terminal symlink','claim hard link','terminal hard link','oversized record','terminal FIFO'].map(s=>'ledger reconciliation: '+s));
+  family('ledger.review','candidate',[],'candidate recovery: intact receipt',
+    ...['replacement claim','artifact hard link','artifact symlink','wrong artifact mode','artifact truncated','damaged in-flight claim'].map(s=>'candidate recovery: '+s));
   family('attended.sequence','coordination',['human_hybrid_contracts','call_response'],'concern, alternate answer and transfer preserve attribution and require fresh acceptance',
     'attended lifecycle enforces the transition and actor table');
   family('time.lease','roundtrip',[],'equivalent endpoint URLs share a provider lease until release','concurrent stale lease recovery preserves the replacement owner');

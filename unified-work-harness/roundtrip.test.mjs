@@ -3,12 +3,12 @@ import test from "node:test";
 import { once } from "node:events";
 import assert from "node:assert/strict";
 import { execFileSync, spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, chmodSync, rmSync, realpathSync, statSync, readdirSync, symlinkSync, existsSync, utimesSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, chmodSync, linkSync, renameSync, rmSync, realpathSync, statSync, readdirSync, symlinkSync, existsSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
-import { acquireProviderLease, contractRoundtrip, inspectInvocation, runHarness, summarizeOpenCodeEvent, buildBoundScope, hypervisor, sha256, rejectExplicitlyUnsupportedTools, buildOpenCodeConfig, buildAgentPrompt, validateAssignment, inspectWorkProfile, inspectWorkIntake, listWorkCapabilities, inspectBundledSource } from "./bundle.mjs";
+import { acquireProviderLease, claimInvocation, contractRoundtrip, inspectInvocation, runHarness, summarizeOpenCodeEvent, buildBoundScope, hypervisor, sha256, rejectExplicitlyUnsupportedTools, buildOpenCodeConfig, buildAgentPrompt, validateAssignment, inspectWorkProfile, inspectWorkIntake, listWorkCapabilities, inspectBundledSource } from "./bundle.mjs";
 
 test("untrusted event metadata cannot carry raw text into summaries", () => {
   const secret = "private-canary";
@@ -676,3 +676,125 @@ test('equivalent endpoint URLs share a provider lease until release', async t =>
   const next = await acquireProviderLease(alternate,100);
   next.release();
 });
+
+function ledgerFixture(t) {
+  const temp = realpathSync(mkdtempSync(path.join(tmpdir(),'uwh-ledger-')));
+  t.after(()=>rmSync(temp,{recursive:true,force:true}));
+  const source = path.join(temp,'source'), directory = path.join(temp,'ledger');
+  mkdirSync(source); mkdirSync(directory,{mode:0o700});
+  const policy = {directory,mode:'single_attempt'}, digest = sha256('synthetic offer');
+  const claim = path.join(directory,digest+'.claim.json'), terminal = path.join(directory,digest+'.terminal.json');
+  const evidence = sha256('synthetic evidence');
+  const start = () => claimInvocation(policy,digest,source);
+  return {source,directory,policy,digest,claim,terminal,evidence,start};
+}
+
+for (const [label,id] of [['parent traversal','../source/escaped'],['short digest','abcd'],['array digest',[sha256('offer')]]]) {
+  test('ledger identity: '+label,t=>{
+    const f=ledgerFixture(t);
+    assert.throws(()=>claimInvocation(f.policy,id,f.source),/invocation identity/i);
+    assert.throws(()=>inspectInvocation(f.policy,id),/invocation identity/i);
+    assert.deepEqual(readdirSync(f.source),[]);
+    assert.deepEqual(readdirSync(f.directory),[]);
+  });
+}
+
+for (const [label,kind,hash] of [['unknown terminal','approved',sha256('result')],
+  ['short evidence','completed','ff'],['coerced evidence','failed',[sha256('result')]]]) {
+  test('ledger finalization: '+label,t=>{
+    const f=ledgerFixture(t), handle=f.start();
+    assert.throws(()=>handle.finish(kind,hash));
+    assert.equal(existsSync(f.terminal),false);
+    assert.throws(f.start,/already exists/);
+    handle.finish('failed',f.evidence);
+    assert.equal(inspectInvocation(f.policy,f.digest).state,'failed');
+  });
+}
+
+for (const label of ['completed pair','failed pair','policy redirected','claim removed','claim modified',
+  'claim hard-linked','directory replaced','duplicate finish']) {
+  test('ledger finalization: '+label,t=>{
+    const f=ledgerFixture(t), handle=f.start();
+    if (label==='policy redirected') {
+      f.policy.directory=f.source;
+      handle.finish('completed',f.evidence);
+      assert.deepEqual(readdirSync(f.source),[],'finish must stay in the claimed directory');
+      f.policy.directory=f.directory;
+    } else if (label==='duplicate finish') {
+      handle.finish('failed',f.evidence);
+      const original=readFileSync(f.terminal);
+      assert.throws(()=>handle.finish('completed',sha256('replacement')));
+      assert.deepEqual(readFileSync(f.terminal),original);
+      return;
+    } else if (label.endsWith(' pair')) {
+      handle.finish(label==='failed pair'?'failed':'completed',f.evidence);
+    } else {
+      if (label==='claim removed') rmSync(f.claim);
+      if (label==='claim modified') writeFileSync(f.claim,'{}');
+      if (label==='claim hard-linked') linkSync(f.claim,path.join(f.source,'alias'));
+      if (label==='directory replaced') {
+        const original=readFileSync(f.claim);
+        renameSync(f.directory,f.directory+'-old');
+        mkdirSync(f.directory,{mode:0o700});
+        writeFileSync(f.claim,original,{mode:0o600});
+      }
+      assert.throws(()=>handle.finish('completed',f.evidence),/reconcile/);
+      assert.equal(existsSync(f.terminal),false);
+      assert.equal(inspectInvocation(f.policy,f.digest).requires_reconciliation,true);
+      return;
+    }
+    const state=inspectInvocation(f.policy,f.digest);
+    assert.equal(state.state,label==='failed pair'?'failed':'completed');
+    assert.equal(state.evidence_sha256,f.evidence);
+    assert.equal(state.claim_sha256,handle.receipt.claim_sha256);
+    assert.equal(state.execution_authorized,false);
+    assert.equal(state.retry_authorized,false);
+    assert.throws(f.start,/already exists/);
+  });
+}
+
+for (const label of ['missing timestamp','impossible timestamp','extra claim field','extra terminal field','wrong assignment',
+  'wrong claim hash','terminal without claim','claim without terminal','non-string evidence','duplicate terminal state',
+  'changed claim bytes','unsafe permissions','terminal symlink','claim hard link','terminal hard link','oversized record','terminal FIFO']) {
+  test('ledger reconciliation: '+label,t=>{
+    const f=ledgerFixture(t), handle=f.start();
+    handle.finish('completed',f.evidence);
+    const claim=JSON.parse(readFileSync(f.claim)), terminal=JSON.parse(readFileSync(f.terminal));
+    if (['missing timestamp','impossible timestamp','extra claim field'].includes(label)) {
+      if (label==='missing timestamp') delete claim.claimed_at;
+      if (label==='impossible timestamp') claim.claimed_at='2025-02-30T00:00:00.000Z';
+      if (label==='extra claim field') claim.extra='unbound';
+      writeFileSync(f.claim,JSON.stringify(claim));
+      terminal.claim_sha256=sha256(JSON.stringify(claim));
+    }
+    if (label==='extra terminal field') terminal.extra=true;
+    if (label==='wrong assignment') terminal.assignment_digest=sha256('different offer');
+    if (label==='wrong claim hash') terminal.claim_sha256=sha256('different claim');
+    if (label==='non-string evidence') terminal.evidence_sha256=[f.evidence];
+    writeFileSync(f.terminal,JSON.stringify(terminal));
+    if (label==='duplicate terminal state') writeFileSync(f.terminal,JSON.stringify(terminal).replace('{"','{"state":"failed","'));
+    if (label==='changed claim bytes') writeFileSync(f.claim,JSON.stringify(claim)+'\n');
+    if (label==='claim without terminal') rmSync(f.terminal);
+    if (label==='terminal without claim') rmSync(f.claim);
+    if (label==='unsafe permissions') chmodSync(f.claim,0o644);
+    if (label==='terminal symlink') { renameSync(f.terminal,f.terminal+'.saved'); symlinkSync(f.terminal+'.saved',f.terminal); }
+    if (label==='claim hard link' || label==='terminal hard link') linkSync(label==='claim hard link'?f.claim:f.terminal,path.join(f.source,'alias'));
+    if (label==='oversized record') writeFileSync(f.terminal,Buffer.alloc(65537,32));
+    if (label==='terminal FIFO') {
+      rmSync(f.terminal); execFileSync('mkfifo',[f.terminal]);
+    }
+    const before=readdirSync(f.directory);
+    // A FIFO with no writer must not block recovery. Isolate it behind a hard timeout.
+    const state=label==='terminal FIFO'
+      ? JSON.parse(execFileSync(process.execPath,['--input-type=module','-e',
+        'import {inspectInvocation} from '+JSON.stringify(new URL('./bundle.mjs',import.meta.url).href)+
+        ';console.log(JSON.stringify(inspectInvocation('+JSON.stringify(f.policy)+','+JSON.stringify(f.digest)+')))'],{timeout:5000}))
+      : inspectInvocation(f.policy,f.digest);
+    assert.equal(state.state,'unclaimed_or_uncertain','inconsistent ledger must require reconciliation: '+label);
+    assert.equal(state.requires_reconciliation,true);
+    assert.equal(state.execution_authorized,false);
+    assert.equal(state.retry_authorized,false);
+    assert.deepEqual(readdirSync(f.directory),before);
+    assert.throws(f.start,/already exists/);
+  });
+}

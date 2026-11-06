@@ -10,6 +10,11 @@ ROOT = Path(__file__).resolve().parents[1]
 PKG = 'unified-work-harness'
 # target and control are actual TAP names, not input substrings used as evidence
 cases = [
+    ('redirected-terminal-write', 'bundle.mjs', 'durableExclusiveJson(directory, terminalName,',
+     'durableExclusiveJson(policy.directory, terminalName,', 'roundtrip', 'ledger finalization: policy redirected',
+     'ledger finalization: completed pair', 'finish must stay in the claimed directory'),
+    ('unbound-candidate-claim', 'candidate.mjs', ' && ledger.claim_sha256===receipt.claim_sha256', '',
+     'candidate', 'candidate recovery: replacement claim', 'candidate recovery: intact receipt', 'review must refuse replacement claim'),
     ('over-budget-edit-output', 'bundle.mjs', 'timeout:seconds*1000,maxBuffer:assignment.resources.max_output_bytes',
      'timeout:seconds*1000,maxBuffer:assignment.resources.max_output_bytes*2',
      'integrated', 'edit worker termination: excess stdout', 'edit worker termination: exact stdout',
