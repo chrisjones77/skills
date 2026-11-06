@@ -2187,8 +2187,8 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
   let answerAfterRead = false;
   let timedOut = false;
   let proposalText = "";
-  let responseText = "";
-  let privateResponse = "";
+  let postReadText = "";
+  const strictToken = assignment.acceptance.response_format === "single_ascii_token";
   let finishReason = null;
   let usage = null;
   const permittedTools = new Set(["read"]);
@@ -2245,9 +2245,11 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
       if (event.type === "text" && assignment.authority.mode === "structured_proposal") {
         proposalText += String(event.part?.text ?? "");
       }
-      if (event.type === "text" && assignment.acceptance.response_format === "single_ascii_token") responseText += String(event.part?.text ?? "");
-      if (capturePrivateResult && event.type === "text" && readCalls > 0) privateResponse += String(event.part?.text ?? "");
-      if (event.type === "text" && readCalls > 0 && String(event.part?.text ?? "").trim()) answerAfterRead = true;
+      if (event.type === "text" && readCalls > 0) {
+        const text = String(event.part?.text ?? "");
+        if (capturePrivateResult || strictToken) postReadText += text;
+        if (text.trim()) answerAfterRead = true;
+      }
       if (event.type === "step_finish") {
         const safeEvent = summarizeOpenCodeEvent(event);
         finishReason = safeEvent.reason;
@@ -2294,7 +2296,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
   });
   getTempParent();
   inspectLine(stdoutBuffer + stdoutDecoder.end());
-  if (assignment.acceptance.response_format === "single_ascii_token" && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(responseText.trim())) violations.push("response violates single_ascii_token format");
+  if (strictToken && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(postReadText.trim())) violations.push("response violates single_ascii_token format");
   writeFileSync(path.join(artifactDirectory, "events.ndjson"), `${events.map((event) => JSON.stringify(event)).join("\n")}\n`);
   return {
     ...result,
@@ -2310,7 +2312,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
     stderr_hash: sha256(stderr),
     violations,
     proposal_text: proposalText,
-    ...(capturePrivateResult ? { private_response: privateResponse } : {}),
+    ...(capturePrivateResult ? { private_response: postReadText } : {}),
   };
 }
 

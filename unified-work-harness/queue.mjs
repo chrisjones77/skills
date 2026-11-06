@@ -96,7 +96,12 @@ function privateRecordBytes(item) {
   return bytes;
 }
 
+function requireSeparateReviewer(offer) {
+  if (offer.recipient === offer.reviewer) throw Error('Provider work requires a separate reviewer.');
+}
+
 function verifyProviderWorkspace(packet, offer, scope, bindingInputs) {
+  requireSeparateReviewer(offer);
   if (buildDraftBinding(bindingInputs).binding_sha256 !== scope.binding_sha256) {
     throw Error('Provider workspace binding differs from the accepted offer.');
   }
@@ -252,12 +257,24 @@ export function reconcileInterrupted(directory, {packet, owner, evidenceHash, su
   });
 }
 
-export function reviewCandidate(directory, {assignmentDigest, reviewer, receiptHash, evidenceHash, accept}) {
+export function reviewCandidate(directory, {assignmentDigest, reviewer, receiptHash, evidenceHash, accept, packet}) {
   if (!bounded(reviewer) || ![assignmentDigest,receiptHash,evidenceHash].every(v => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v)) || typeof accept !== 'boolean') throw Error('Review requires exact hashes, reviewer and decision.');
   withDatabase(directory, db => {
-    const r = db.prepare("UPDATE jobs SET state=?,evidence=? WHERE digest=? AND reviewer=? AND state='pending_review' AND receipt=?")
-      .run(accept ? 'reviewed' : 'rejected', evidenceHash, assignmentDigest, digest(reviewer),receiptHash);
-    if (!r.changes) throw Error('Review does not match the pending candidate.');
+    if (db.prepare('SELECT stopped FROM policy').get().stopped) throw Error('Queue stopped.');
+    const job = db.prepare("SELECT reviewer FROM jobs WHERE digest=? AND state='pending_review' AND receipt=?").get(assignmentDigest,receiptHash);
+    const reviewerHash = digest(reviewer);
+    if (job?.reviewer === reviewerHash) {
+      // Earlier reservations stored only the reviewer hash. Recover the two
+      // role IDs from the original accepted offer before recording a decision.
+      if (!packet) throw Error('Legacy provider review requires its original accepted packet.');
+      const {offer} = inspectContract(packet);
+      if (offer.digest !== assignmentDigest || offer.reviewer !== reviewer) throw Error('Review packet differs from the pending candidate.');
+      requireSeparateReviewer(offer);
+    } else if (job?.reviewer !== 'separate:'+reviewerHash) {
+      throw Error('Review does not match the pending candidate.');
+    }
+    db.prepare('UPDATE jobs SET state=?,evidence=? WHERE digest=?')
+      .run(accept ? 'reviewed' : 'rejected', evidenceHash, assignmentDigest);
     if (!accept) stopRemaining(db);
   });
 }
@@ -299,7 +316,8 @@ function reserve(directory, options) {
     const charge = db.prepare('UPDATE budgets SET attempts=attempts-1,seconds=seconds-? WHERE lane=? AND attempts>0 AND seconds>=?')
       .run(reservation,worker.assignee.provider,reservation);
     if (!charge.changes) throw Error('Insufficient provider budget.');
-    db.prepare("UPDATE jobs SET state='running' WHERE digest=?").run(job.digest);
+    // Mark the separate reviewer check in the same transaction as reservation.
+    db.prepare("UPDATE jobs SET state='running',reviewer=? WHERE digest=?").run('separate:'+digest(offer.reviewer),job.digest);
     const version = scope.kind.slice(-2);
     return {job:job.digest, receiptSchema:'unified.contract-executor-receipt.'+version, deadline:Math.min(Date.parse(policy.deadline),Date.now()+reservation*1000), reservation};
   });

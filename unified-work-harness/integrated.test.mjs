@@ -731,3 +731,42 @@ for(const e of [{type:'tool_use',part:{tool:'read',state:{status:'completed',inp
   assert.equal(receipt.review_status,'pending');
   assert.ok(calls.length>0);
 });
+
+test('strict format checks the post-read answer with and without result capture', async t => {
+  const port = await listen(t,'127.0.0.1',(req,res)=>res.end(JSON.stringify({
+    data:[{id:'synthetic:local'}],models:[{name:'synthetic:local'}],version:'test',
+  })));
+  for (const capture of [true,false]) {
+    for (const valid of [false,true]) {
+      const {inputs,accept,temp} = fixture(t,'http://127.0.0.1:'+port+'/v1');
+      const assignment = JSON.parse(inputs.bindingInputs.assignmentJson);
+      assignment.acceptance.response_format = 'single_ascii_token';
+      inputs.bindingInputs.assignmentJson = JSON.stringify(assignment);
+      writeFileSync(inputs.assignmentPath,inputs.bindingInputs.assignmentJson);
+      if (!capture) delete inputs.resultPolicy;
+      const packet = accept(buildPackageScope(inputs));
+      const events = [{type:'text',part:{text:valid?'Looking it up. ':'Checking'}},
+        {type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'cobalt-otter-47'}}},
+        {type:'text',part:{text:valid?'cobalt-':''}},{type:'text',part:{text:valid?'otter-47':'.'}}];
+      const bin = path.join(temp,'bin');
+      mkdirSync(bin);
+      writeFileSync(path.join(bin,'opencode'),'#!/usr/bin/env node\nfor(const e of '+JSON.stringify(events)+')console.log(JSON.stringify(e));',{mode:0o700});
+      const oldPath = process.env.PATH;
+      process.env.PATH = bin + path.delimiter + oldPath;
+      try {
+        const run = contractRoundtrip({...inputs,packet});
+        if (valid) {
+          const receipt = await run;
+          if (capture) {
+            const bytes = readFileSync(path.join(inputs.resultPolicy.directory,receipt.private_result.name));
+            assert.equal(JSON.parse(bytes).response,'cobalt-otter-47');
+          }
+        } else {
+          await assert.rejects(run,/policy violation/);
+          assert.equal(inspectInvocation(inputs.invocationPolicy,hypervisor.currentAssignment(packet).digest).state,'failed');
+          if (capture) assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
+        }
+      } finally { process.env.PATH = oldPath; }
+    }
+  }
+});

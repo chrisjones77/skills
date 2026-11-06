@@ -402,3 +402,28 @@ for (const adapter of ['openai_chat','ollama_chat']) test(adapter+' admits only 
     assert.equal(adapter==='ollama_chat'?body.options.num_predict:body.max_tokens,tokens);
   }
 });
+
+for (const adapter of ['openai_chat','ollama_chat']) {
+  test(adapter+' checks serialized request size before claiming', async t => {
+    const {request,source,accept,results} = await fixture(t);
+    request.provider.adapter = adapter;
+    if (adapter === 'ollama_chat') request.provider.endpoint = request.provider.endpoint.replace('/v1/chat/completions','/api/chat');
+    // Measure the actual protocol body with the same accepted source and task.
+    await candidateRoundtrip({packet:accept(),request});
+    const size = Buffer.byteLength(JSON.stringify(source.requests[0].body));
+    const ledger = readdirSync(request.invocationPolicy.directory).sort();
+    const artifacts = readdirSync(results).sort();
+    for (const contextBytes of [128,size-1]) {
+      request.limits.contextBytes = contextBytes;
+      const packet = accept();
+      await assert.rejects(candidateRoundtrip({packet,request}),/context budget/);
+      assert.deepEqual(readdirSync(request.invocationPolicy.directory).sort(),ledger);
+      assert.deepEqual(readdirSync(results).sort(),artifacts);
+      assert.equal(source.requests.length,1);
+    }
+    request.limits.contextBytes = size;
+    await candidateRoundtrip({packet:accept(),request});
+    assert.equal(source.requests.length,2);
+    assert.deepEqual(source.requests[1].body,source.requests[0].body);
+  });
+}

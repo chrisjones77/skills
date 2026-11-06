@@ -38,10 +38,12 @@ if(mode==='suite'){
     ...['v5','v6'].map(v=>v+' rejects substituted policies before reservation and accepts the original envelope'),
     ...['v5','v6'].map(v=>v+' matches the packet workspace and resume before charging'),
     ...['v5','v6'].flatMap(v=>['verifies the source before creating queue storage','refuses a relocated queue before reservation'].map(s=>v+' '+s)),
+    'v5 self-review cannot enter a queue or advance an older queue',
     'provider refuses a queue copied into another selected workspace',
     'attended replies require the original queue location after restart',
     'explicit goal, accepted identity, ceiling, expiration and cancellation govern admission');
   family('storage.identity','integrated',[],'reviewed and accepted v6 produces a package-bound candidate receipt',
+    'strict format checks the post-read answer with and without result capture',
     'direct v6 rejects FIFO and oversized assignments before effects and preserves the accepted attempt',
     ...[1,2,3,4,5,6].map(v=>'v'+v+' verifies each accepted scope field before effects'),
     'physical ancestry refuses an aliased private directory','v6 refuses a temporary parent inside the checkout before discovery or claim',
@@ -50,11 +52,13 @@ if(mode==='suite'){
     'attended lifecycle enforces the transition and actor table');
   family('time.lease','roundtrip',[],'equivalent endpoint URLs share a provider lease until release','concurrent stale lease recovery preserves the replacement owner');
   family('recovery.queue','queue',['sequential_queue'],'running work excludes a concurrent caller and review gates advancement after restart',
+    'stop blocks both decisions on a pending provider receipt',
     ...['reserved','claimed','persisted','completed','write failure'].map(p=>'queue recovers worker loss at '+p),
     'a cleanup error preserves the reason the supervisor stopped work','mixed human, agent and hybrid work advances only on attended responses and review');
   family('candidate.integrity','candidate',['multiple_adapters','candidate_changes'],'both provider protocols produce a private candidate and preserve source; attempts cannot replay',
     ...['openai_chat','ollama_chat'].map(a=>a+' observes response limits, integrity and private evidence'),
     ...['openai_chat','ollama_chat'].map(a=>a+' admits only its canonical route and bounded token budget'),
+    ...['openai_chat','ollama_chat'].map(a=>a+' checks serialized request size before claiming'),
     'defect reproduction safely returns a failing accepted data fixture','cancellation during a provider request blocks persistence and replay');
   family('package.methods','package-profile',['engineering_safety','fair_process','ai_lifecycle','professional_practice','coverage_review','issue_triage','advisory_workflow'],
     'manifest-only installation runs the documented offline walkthrough','all inventory entries resolve to inspected package bytes without conferring authority','changed guidance invalidates the accepted package pin');
