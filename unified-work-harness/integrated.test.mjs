@@ -1256,3 +1256,163 @@ test('Codex proposal launches outside the checkout with explicit read-only permi
   assert.equal(editArgs[editArgs.indexOf('--sandbox')+1],'workspace-write');
   assert.ok(editArgs.includes('--approve-for-me'));
 });
+
+function syntheticEditor(t, {prepare, program, target='source.txt', defect=false}) {
+  const {assignment,cwd,temp,run} = lowLevelFixture(t,prepare);
+  assignment.authority = {mode:defect?'defect_reproduction':'candidate_edit',
+    allowed_paths:[target],allowed_read_paths:[target],allow_test_changes:defect};
+  assignment.worker.adapter = 'aider';
+  const stub = path.join(temp,'fake-editor'), marker=path.join(temp,'launch.json');
+  writeFileSync(stub,'#!/usr/bin/env node\n'+"const fs=require('node:fs');\n"+
+    'fs.writeFileSync('+JSON.stringify(marker)+',JSON.stringify(process.argv.slice(2)));\n'+program,{mode:0o700});
+  const previous = process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN;
+  process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN=stub;
+  t.after(()=>{
+    if (previous===undefined) delete process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN;
+    else process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN=previous;
+  });
+  return {assignment,cwd,marker,run};
+}
+
+for (const label of ['at source budget','over source budget','nested link','new target','forbidden test edit']) {
+  test('edit worker grants: '+label, async t=>{
+    const {assignment,marker,run}=syntheticEditor(t,{prepare(root){
+      mkdirSync(path.join(root,'docs'));
+      const n=4096-Buffer.byteLength('test input')+(label==='over source budget'?1:0);
+      writeFileSync(path.join(root,'docs','edit.txt'),Buffer.alloc(n,0x78));
+      writeFileSync(path.join(root,'docs','unit.test.mjs'),'test input');
+      if (label==='nested link') symlinkSync('../source.txt',path.join(root,'docs','shortcut'));
+    },program:"fs.writeFileSync('docs/"+(label==='new target'?'new':'edit')+".txt','revised');"});
+    assignment.authority.allowed_read_paths=['docs','docs/edit.txt'];
+    assignment.authority.allowed_paths=label==='new target'?['docs/new.txt']:label==='forbidden test edit'?['docs/unit.test.mjs']:['docs'];
+    assignment.worker.max_context_bytes=4096;
+    const result=run();
+    if (['over source budget','nested link','forbidden test edit'].includes(label)) {
+      const expected={'over source budget':/byte budget/,'nested link':/symbolic link/,'forbidden test edit':/test path/}[label];
+      await assert.rejects(result,e=>expected.test(e.cause?.message));
+      assert.equal(existsSync(marker),false);
+    } else {
+      const {evidence}=await result;
+      assert.equal(evidence.disposition,'candidate');
+      const args=JSON.parse(readFileSync(marker));
+      const values=flag=>args.flatMap((a,i)=>a===flag?[args[i+1]]:[]);
+      assert.deepEqual(values('--file'),[label==='new target'?'docs/new.txt':'docs/edit.txt']);
+      assert.deepEqual(values('--read'),label==='new target'?['docs/edit.txt','docs/unit.test.mjs']:['docs/unit.test.mjs']);
+    }
+  });
+}
+
+for (const label of ['exact stdout','excess stdout','excess stderr','binary output','nonzero exit','signal','timeout']) {
+  test('edit worker termination: '+label,async t=>{
+    const prefix="fs.writeFileSync('source.txt','revised');\n";
+    const actions={
+      'exact stdout':"process.stdout.write(Buffer.alloc(1024,0x61));",
+      'excess stdout':"process.stdout.write(Buffer.alloc(1025,0x61));",
+      'excess stderr':"process.stderr.write(Buffer.alloc(1025,0x61));",
+      'binary output':"process.stdout.write(Buffer.from([0xff,0x00,0xc3]));process.stderr.write(Buffer.from([0x80]));",
+      'nonzero exit':"process.exitCode=7;",signal:"process.kill(process.pid,'SIGTERM');",timeout:"setInterval(()=>{},1000);",
+    };
+    const {assignment,run}=syntheticEditor(t,{program:prefix+actions[label]});
+    assignment.resources.max_output_bytes=1024;
+    assignment.resources.timeout_seconds=10;
+    const {artifactDirectory,evidence}=await run();
+    const event=JSON.parse(readFileSync(path.join(artifactDirectory,'events.ndjson')));
+    const ok=['exact stdout','binary output'].includes(label);
+    assert.equal(evidence.disposition,ok?'candidate':'rejected','unexpected worker result: '+label);
+    assert.equal(evidence.acceptance.length,ok?1:0);
+    assert.equal(event.status,ok?'completed':'failed');
+    if (label.startsWith('excess')) {
+      assert.match(evidence.violations.join('\n'),/output budget/);
+      assert.equal(event.output_hash,null);
+    } else if (label==='binary output') {
+      const stdout=Buffer.from([0xff,0x00,0xc3]), stderr=Buffer.from([0x80]);
+      assert.equal(event.output_hash,sha256(Buffer.concat([stdout,Buffer.from('\n'),stderr])));
+      assert.equal(evidence.agent.stderr_hash,sha256(stderr));
+    } else if (label==='timeout') {
+      assert.equal(evidence.agent.timed_out,true);
+      assert.equal(event.output_hash,null);
+    }
+  });
+}
+
+for (const [label,defect,script,passed] of [
+  ['expected zero',false,"process.stdout.write(Buffer.from([0xff]));",true],
+  ['unexpected nonzero',false,"process.exitCode=9;",false],
+  ['expected nonzero',true,"process.exitCode=9;",true],
+  ['unexpected zero',true,"process.exitCode=0;",false],
+  ['signal is not a reproduced defect',true,"process.kill(process.pid,'SIGTERM');",false],
+  ['timeout is not a reproduced defect',true,"setInterval(()=>{},1000);",false],
+  ['excess output is not a reproduced defect',true,"process.stdout.write(Buffer.alloc(5242881));process.exitCode=9;",false],
+]) {
+  test('edit acceptance: '+label, async t=>{
+    const target=defect?'probe.test.mjs':'source.txt';
+    const {assignment,run}=syntheticEditor(t,{target,defect,program:`fs.writeFileSync('${target}','revised');`});
+    const check={command:'node',args:['-e',script],expected_result:defect?'nonzero':'zero',timeout_seconds:label.startsWith('timeout')?1:10};
+    assignment.acceptance.checks=[check,{...check,args:['-e',defect?'process.exitCode=1;':'process.exitCode=0;']}];
+    const {evidence}=await run();
+    assert.equal(evidence.disposition,passed?(defect?'reproduction_candidate':'candidate'):'rejected');
+    assert.equal(evidence.acceptance.length,passed?2:1);
+    const first=evidence.acceptance[0];
+    assert.equal(first.passed,passed);
+    if (label==='expected zero') assert.equal(first.stdout_hash,sha256(Buffer.from([0xff])));
+    if (label.startsWith('excess')) {
+      assert.equal(first.output_exceeded,true);
+      assert.equal(first.stdout_hash,null);
+    }
+    if (label.startsWith('timeout')) assert.equal(first.timed_out,true);
+    if (label.startsWith('signal')) assert.equal(first.signal,'SIGTERM');
+  });
+}
+
+for (const [label,action,unchanged] of [
+  ['unchanged edit',"fs.readFileSync('source.txt');",true],
+  ['mutated edit',"fs.writeFileSync('source.txt','independently rewritten');",false],
+  ['modified tracked input',"fs.writeFileSync('other.txt','changed by the check');",false],
+  ['moved revision',"cp.execFileSync('git',['commit','--allow-empty','-qm','moved by check']);",false],
+  ['untracked build output',"fs.writeFileSync('build.tmp','scratch');",true],
+]) {
+  test('acceptance patch binding: '+label,async t=>{
+    const {assignment,run}=syntheticEditor(t,{prepare(root){writeFileSync(path.join(root,'other.txt'),'original');},
+      program:"fs.writeFileSync('source.txt','worker candidate');"});
+    const check=code=>({command:'node',args:['-e',code],expected_result:'zero',timeout_seconds:10});
+    assignment.acceptance.checks=[check("const fs=require('node:fs'),cp=require('node:child_process');"+action),
+      check("process.exit(0);")];
+    const {evidence,artifactDirectory}=await run();
+    assert.equal(evidence.disposition,unchanged?'candidate':'rejected','check result must match the delivered patch');
+    assert.equal(evidence.acceptance.length,unchanged?2:1,'stop checking a different candidate');
+    assert.equal(evidence.acceptance[0].passed,unchanged);
+    assert.equal(evidence.acceptance[0].candidate_unchanged,unchanged);
+    const patch=readFileSync(path.join(artifactDirectory,'candidate.patch'),'utf8');
+    assert.equal(sha256(patch),evidence.candidate_patch_hash);
+    assert.ok(patch.includes('+worker candidate'));
+  });
+}
+
+for (const [label,mutate,reason] of [
+  ['missing test authority',a=>{a.authority.allow_test_changes=false;},/test-change authority/],
+  ['non-test target',a=>{a.authority.allowed_read_paths=a.authority.allowed_paths=['source.txt'];},/must identify test files/],
+  ['changes optional',a=>{a.acceptance.require_changes=false;},/must require changes/],
+  ['expects success',a=>{a.acceptance.checks[0].expected_result='zero';},/must expect nonzero/],
+  ['outside read grant',a=>{a.authority.allowed_read_paths=['source.txt'];},/inside an allowed read path/],
+  ['unapproved command',a=>{a.acceptance.checks[0].command='sh';},/command is not permitted/],
+  ['wrong adapter mode',a=>{a.authority.mode='read_only';},/aider adapter requires/],
+]) {
+  test('defect edit admission: '+label,async t=>{
+    const {assignment,run,marker}=syntheticEditor(t,{defect:true,target:'probe.test.mjs',program:"process.exit(0);"});
+    assignment.acceptance.checks[0].expected_result='nonzero';
+    mutate(assignment);
+    await assert.rejects(run(),reason);
+    assert.equal(existsSync(marker),false);
+  });
+}
+
+test('edit worker passes option-shaped files as literal arguments', async t=>{
+  const {assignment,run,marker}=syntheticEditor(t,{target:'--model',prepare(root){writeFileSync(path.join(root,'--config'),'context');},
+    program:"fs.writeFileSync('--model','revised');"});
+  assignment.authority.allowed_read_paths=['--config','--model'];
+  const {evidence}=await run();
+  assert.equal(evidence.disposition,'candidate');
+  const args=JSON.parse(readFileSync(marker));
+  assert.ok(args.some((a,i)=>a==='--file' && args[i+1]==='./--model'));
+  assert.ok(args.some((a,i)=>a==='--read' && args[i+1]==='./--config'));
+});

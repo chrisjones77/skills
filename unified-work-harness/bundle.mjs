@@ -1797,36 +1797,36 @@ function summarizeCodexEvent(event) {
   return summary;
 }
 
-// Inspect the complete byte stream. Parsing a tail could drop an earlier
-// violation or splice UTF-8 bytes across chunk boundaries.
-async function captureCodex(executable, args, assignment, worktree) {
-  const violations = [];
-  const options = {cwd:worktree, env:{...process.env, NO_COLOR:"1"}, encoding:"buffer",
-    timeout:assignment.resources.timeout_seconds * 1_000, killSignal:"SIGKILL", maxBuffer:assignment.resources.max_output_bytes};
-  let code = 0, signal = null, timedOut = false, stdout, stderr;
+// Capture raw bytes so a truncated tail, split UTF-8 sequence or signal cannot
+// stand in for a complete worker transcript or a check's expected nonzero exit.
+async function captureProcess(executable, args, {cwd, env, timeout, maxBuffer}) {
+  let code = 0, signal = null, timedOut = false, overflow = false, stdout, stderr;
   const started = performance.now();
   try {
-    ({stdout,stderr} = await execFileAsync(executable, args, options));
+    ({stdout,stderr} = await execFileAsync(executable,args,{cwd,env,timeout,maxBuffer,encoding:"buffer",killSignal:"SIGKILL"}));
   } catch (error) {
     code = Number.isInteger(error.code) ? error.code : null;
     signal = error.signal ?? null;
     stdout = error.stdout;
     stderr = error.stderr;
-    if (error.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") violations.push("Codex CLI output budget exceeded");
-    else if (error.killed && signal === "SIGKILL") timedOut = true;
-    else if (code === null && !signal) throw error;
-    else violations.push(code === null ? "Codex CLI terminated by signal" : `Codex CLI returned exit code ${code}`);
+    overflow = error.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER";
+    timedOut = !overflow && error.killed === true && signal === "SIGKILL";
+    if (!overflow && !timedOut && code === null && !signal) throw error;
   }
-  if (timedOut || performance.now()-started >= options.timeout) {
-    timedOut = true;
-    violations.push(`wall-clock timeout exceeded: ${assignment.resources.timeout_seconds} seconds`);
-  }
-  let text = "";
-  if (!violations.length || (!timedOut && code !== null && code !== 0)) {
-    try { text = new TextDecoder("utf-8",{fatal:true}).decode(stdout); }
-    catch { violations.push("Codex CLI output is not valid UTF-8"); }
-  }
-  return {stdout:text, stderr:stderr ?? "", code, signal, timedOut, violations};
+  timedOut ||= performance.now()-started >= timeout;
+  return {code,signal,timedOut,overflow,stdout,stderr,complete:!overflow && !timedOut && !signal};
+}
+
+async function captureNativeWorker(name, executable, args, assignment, cwd) {
+  const seconds = assignment.resources.timeout_seconds;
+  const result = await captureProcess(executable,args,{cwd,env:{...process.env,NO_COLOR:"1"},
+    timeout:seconds*1000,maxBuffer:assignment.resources.max_output_bytes});
+  const violations = [];
+  if (result.overflow) violations.push(name+" output budget exceeded");
+  else if (result.signal && !result.timedOut) violations.push(name+" terminated by signal");
+  else if (result.code !== null && result.code !== 0) violations.push(name+" returned exit code "+result.code);
+  if (result.timedOut) violations.push(`wall-clock timeout exceeded: ${seconds} seconds`);
+  return {...result,violations};
 }
 
 async function runCodex({ assignment, worktree, artifactDirectory }) {
@@ -1873,7 +1873,7 @@ async function runCodex({ assignment, worktree, artifactDirectory }) {
   // The prompt already contains the reviewed context. Keep automatic project
   // discovery away from the disposable checkout and its repository instructions.
   const workerDirectory = context ? mkdtempSync(path.join(path.dirname(worktree),"codex-proposal-")) : worktree;
-  const result = await captureCodex(executable, buildCodexCommand(assignment, artifactDirectory, prompt), assignment, workerDirectory);
+  const result = await captureNativeWorker("Codex CLI", executable, buildCodexCommand(assignment, artifactDirectory, prompt), assignment, workerDirectory);
   const events = [];
   const violations = [...result.violations];
   let proposalText = "";
@@ -1881,7 +1881,12 @@ async function runCodex({ assignment, worktree, artifactDirectory }) {
   let steps = 0;
   let toolCalls = 0;
   let turnOpen = false;
-  for (const line of result.stdout.split("\n").filter(line=>line.trim())) {
+  let transcript = "";
+  if (result.complete) {
+    try { transcript = new TextDecoder("utf-8",{fatal:true}).decode(result.stdout); }
+    catch { violations.push("Codex CLI output is not valid UTF-8"); }
+  }
+  for (const line of transcript.split("\n").filter(line=>line.trim())) {
     let event;
     try { event = JSON.parse(line); }
     catch { violations.push("Codex CLI emitted malformed JSON event output"); continue; }
@@ -1939,7 +1944,7 @@ async function runCodex({ assignment, worktree, artifactDirectory }) {
     finish_reason: result.timedOut ? "timeout" : result.code === 0 && !violations.length ? "stop" : "error",
     usage,
     timed_out: result.timedOut,
-    stderr_hash: sha256(result.stderr),
+    stderr_hash: result.complete ? sha256(result.stderr) : null,
     violations: [...new Set(violations)],
     proposal_text: proposalText,
   };
@@ -2147,6 +2152,10 @@ async function createCandidatePatch(worktree, filenames, baseCommit) {
   if (untracked.length) {
     await candidateGitOutput(worktree, ["--literal-pathspecs", "add", "-f", "-N", "--", ...untracked]);
   }
+  return readCandidatePatch(worktree,baseCommit);
+}
+
+function readCandidatePatch(worktree, baseCommit) {
   return candidateGitOutput(worktree, ["diff", "--binary", "--no-ext-diff", "--no-textconv", "--no-color",
     "--no-renames", baseCommit, "--"], 20_971_520);
 }
@@ -2531,16 +2540,29 @@ async function runDirectJson({ assignment, worktree, artifactDirectory, endpoint
 
 export function buildAiderCommand(assignment, worktree, artifactDirectory, endpoint) {
   endpoint = parseLoopbackEndpoint(endpoint).href;
-  const editable = assignment.authority.allowed_paths.map(normalizeAllowedPath);
-  for (const filename of editable) {
-    if (hasSymlinkComponent(worktree, filename)) throw new Error(`editable path crosses a symbolic link: ${filename}`);
+  const grants = assignment.authority.allowed_paths.map(checkedScopePath);
+  const editable = new Set();
+  for (const filename of grants) {
+    const access = validatePathAccess(assignment,filename,"edit",worktree);
+    if (!access.allowed) throw new Error(access.reason);
+    if (!existsSync(path.join(worktree,filename))) editable.add(filename);
   }
-  const readable = [...new Set(assignment.authority.allowed_read_paths.flatMap((declaredPath) => {
-    const normalized = normalizeAllowedPath(declaredPath);
-    return editable.includes(normalized) && !existsSync(path.join(worktree, normalized)) ? [] : enumerateContextFiles(worktree, normalized);
-  }))]
-    .filter((filename) => !editable.some((prefix) => pathMatchesPrefix(filename, prefix)))
-    .sort();
+  const files = new Set(assignment.authority.allowed_read_paths.flatMap(name => {
+    const filename = checkedScopePath(name);
+    return editable.has(filename) ? [] : enumerateContextFiles(worktree,filename);
+  }));
+  const readable = [];
+  let remaining = assignment.worker?.max_context_bytes ?? 65_536;
+  for (const file of [...files].sort()) {
+    const readAccess = validatePathAccess(assignment,file,"read",worktree);
+    if (!readAccess.allowed) throw new Error(readAccess.reason);
+    const bytes = readBoundedFileBytes(path.join(worktree,file),remaining,fsFlags.O_NOFOLLOW,undefined,
+      "Aider source exceeds the byte budget or is not regular");
+    remaining -= bytes.length;
+    if (validatePathAccess(assignment,file,"edit",worktree).allowed) editable.add(file);
+    else readable.push(file);
+  }
+  if (!editable.size) throw new Error("Aider needs at least one permitted edit file");
   const configPath = path.join(artifactDirectory, "aider.conf.yml");
   const envPath = path.join(artifactDirectory, "aider.env");
   const transientState = path.join(artifactDirectory, "state", "aider");
@@ -2574,25 +2596,22 @@ export function buildAiderCommand(assignment, worktree, artifactDirectory, endpo
     "--chat-history-file", path.join(transientState, "chat-history.md"),
     "--llm-history-file", path.join(transientState, "llm-history.log"),
   ];
-  for (const filename of readable) args.push("--read", filename);
-  for (const filename of editable) args.push("--file", filename);
+  const cliPath = file => file.startsWith("-") ? "./"+file : file;
+  for (const filename of readable) args.push("--read", cliPath(filename));
+  for (const filename of [...editable].sort()) args.push("--file", cliPath(filename));
   return args;
 }
 
 async function runAider({ assignment, worktree, artifactDirectory, endpoint }) {
   const executable = process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN || "aider";
-  const result = await runCommand(executable, buildAiderCommand(assignment, worktree, artifactDirectory, endpoint), {
-    cwd: worktree,
-    timeoutMs: assignment.resources.timeout_seconds * 1_000,
-    maxOutputBytes: assignment.resources.max_output_bytes,
-    env: { ...process.env, NO_COLOR: "1" },
-  });
-  const transcript = `${result.stdout}\n${result.stderr}`;
+  const result = await captureNativeWorker("Aider",executable,
+    buildAiderCommand(assignment,worktree,artifactDirectory,endpoint),assignment,worktree);
+  const transcript = result.complete ? Buffer.concat([result.stdout,Buffer.from("\n"),result.stderr]) : null;
   writeFileSync(path.join(artifactDirectory, "events.ndjson"), `${JSON.stringify({
     type: "aider_run",
-    status: result.code === 0 ? "completed" : "failed",
-    output_bytes: Buffer.byteLength(transcript),
-    output_hash: sha256(transcript),
+    status: result.code === 0 && !result.violations.length ? "completed" : "failed",
+    output_bytes: transcript?.length ?? null,
+    output_hash: transcript ? sha256(transcript) : null,
   })}\n`);
   return {
     code: result.code,
@@ -2602,23 +2621,27 @@ async function runAider({ assignment, worktree, artifactDirectory, endpoint }) {
     steps: 1,
     tool_calls: null,
     read_calls: null,
-    finish_reason: result.timedOut ? "timeout" : result.code === 0 ? "stop" : "error",
+    finish_reason: result.timedOut ? "timeout" : result.code === 0 && !result.violations.length ? "stop" : "error",
     usage: null,
     timed_out: result.timedOut,
-    stderr_hash: sha256(result.stderr),
-    violations: result.timedOut ? [`wall-clock timeout exceeded: ${assignment.resources.timeout_seconds} seconds`] : [],
+    stderr_hash: result.complete ? sha256(result.stderr) : null,
+    violations: result.violations,
     proposal_text: "",
   };
 }
 
-async function runAcceptanceChecks(assignment, worktree) {
+async function runAcceptanceChecks(assignment, worktree, verifyCandidate) {
   const results = [];
   for (const check of assignment.acceptance.checks) {
-    const result = await runCommand(check.command, check.args, {
+    const result = await captureProcess(check.command, check.args, {
       cwd: worktree,
-      timeoutMs: check.timeout_seconds * 1_000,
-      maxOutputBytes: 5_242_880,
+      timeout: check.timeout_seconds * 1_000,
+      maxBuffer: 5_242_880,
     });
+    const expectedExit = result.complete && (check.expected_result === "zero" ? result.code === 0 : result.code !== 0);
+    // A passing command must still describe the patch that will be delivered.
+    // Untracked build products are separate from the candidate's tracked diff.
+    const candidateUnchanged = expectedExit && verifyCandidate ? await verifyCandidate() : undefined;
     results.push({
       command: check.command,
       args: check.args,
@@ -2626,9 +2649,11 @@ async function runAcceptanceChecks(assignment, worktree) {
       signal: result.signal,
       timed_out: result.timedOut,
       expected_result: check.expected_result,
-      stdout_hash: sha256(result.stdout),
-      stderr_hash: sha256(result.stderr),
-      passed: !result.timedOut && (check.expected_result === "zero" ? result.code === 0 : result.code !== 0 && result.code !== null),
+      output_exceeded: result.overflow,
+      stdout_hash: result.complete ? sha256(result.stdout) : null,
+      stderr_hash: result.complete ? sha256(result.stderr) : null,
+      ...(candidateUnchanged !== undefined ? {candidate_unchanged:candidateUnchanged} : {}),
+      passed: expectedExit && candidateUnchanged !== false,
     });
     if (!results.at(-1).passed) break;
   }
@@ -2737,7 +2762,8 @@ export async function runHarness({
     const allViolations = [...new Set([...agentResult.violations, ...policyViolations, ...proposalViolations])];
     const patch = readOnly || policyViolations.length ? "" : await createCandidatePatch(worktree, changedFiles, baseCommit);
     const acceptanceResults = assignment.authority.mode !== "structured_proposal" && agentResult.code === 0 && allViolations.length === 0
-      ? await runAcceptanceChecks(assignment, worktree)
+      ? await runAcceptanceChecks(assignment, worktree, readOnly ? undefined : async () =>
+          await readHeadCommit(worktree) === baseCommit && await readCandidatePatch(worktree,baseCommit) === patch)
       : [];
     if (patch) writeFileSync(path.join(artifactDirectory, "candidate.patch"), patch, { mode: 0o600 });
     if (proposal) writeFileSync(path.join(artifactDirectory, "proposal.json"), `${JSON.stringify(proposal, null, 2)}\n`, { mode: 0o600 });

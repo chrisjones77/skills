@@ -47,6 +47,18 @@ if(mode==='suite'){
   family('worker.edits','integrated',[],'edit worker: staged authorized edit',
     ...['new ignored file','staged rename from outside scope','commit moved','unoffered file','BOM-prefixed unoffered file','unauthorized test','no changes'].map(s=>'edit worker: '+s),
     'edit worker refuses a new destination below a symlink before launch');
+  family('worker.edit.inputs','integrated',[],'edit worker grants: at source budget',
+    ...['over source budget','nested link','new target','forbidden test edit'].map(s=>'edit worker grants: '+s),
+    'edit worker passes option-shaped files as literal arguments');
+  family('worker.edit.termination','integrated',[],'edit worker termination: exact stdout',
+    ...['excess stdout','excess stderr','binary output','nonzero exit','signal','timeout'].map(s=>'edit worker termination: '+s));
+  family('worker.edit.acceptance','integrated',[],'edit acceptance: expected nonzero',
+    ...['expected zero','unexpected nonzero','unexpected zero','signal is not a reproduced defect',
+      'timeout is not a reproduced defect','excess output is not a reproduced defect'].map(s=>'edit acceptance: '+s),
+    ...['missing test authority','non-test target','changes optional','expects success','outside read grant',
+      'unapproved command','wrong adapter mode'].map(s=>'defect edit admission: '+s));
+  family('worker.edit.patch','integrated',[],'acceptance patch binding: unchanged edit',
+    ...['mutated edit','modified tracked input','moved revision','untracked build output'].map(s=>'acceptance patch binding: '+s));
   family('worker.codex','integrated',[],'synthetic Codex worker: valid proposal',
     ...['malformed event','second turn','execution error','cloud processing denied'].map(s=>'synthetic Codex worker: '+s));
   family('worker.codex.transcript','integrated',[],'Codex proposal transcript: ordered turn',

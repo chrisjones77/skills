@@ -10,6 +10,13 @@ ROOT = Path(__file__).resolve().parents[1]
 PKG = 'unified-work-harness'
 # target and control are actual TAP names, not input substrings used as evidence
 cases = [
+    ('over-budget-edit-output', 'bundle.mjs', 'timeout:seconds*1000,maxBuffer:assignment.resources.max_output_bytes',
+     'timeout:seconds*1000,maxBuffer:assignment.resources.max_output_bytes*2',
+     'integrated', 'edit worker termination: excess stdout', 'edit worker termination: exact stdout',
+     'unexpected worker result: excess stdout'),
+    ('unbound-check-result', 'bundle.mjs', 'passed: expectedExit && candidateUnchanged !== false,',
+     'passed: expectedExit,', 'integrated', 'acceptance patch binding: moved revision',
+     'acceptance patch binding: untracked build output', 'check result must match the delivered patch'),
     ('incomplete-codex-turn', 'bundle.mjs',
      'if (result.code === 0 && (!steps || turnOpen)) violations.push("Codex CLI returned an incomplete turn");',
      '// trust proposal text without a terminal turn event', 'integrated', 'Codex proposal transcript: missing completion',
