@@ -32,7 +32,7 @@ Use the native tool exposed by the active harness. In the Codex runtime document
 
 The [work contract interface](work-contract-interface.md) distinguishes engineering purpose, dispatch kind, assignment revision, recipient disposition and review. The local CLI's optional contract extension provides the attended assignment loop; legacy packet state does not prove acceptance. See the [CLI guide](hypervisor-cli.md) for supported commands and compatibility.
 
-Use a portable Markdown or JSON packet with these fields. The repository's [task-packet YAML template](docs/delegation/templates/task-packet.yaml) is one fill-in format. Omit sensitive or irrelevant history; include exact paths and identifiers when they are needed to resume safely. Populate packets in task-local/private context and do not commit them by default.
+Use a portable Markdown or JSON packet with these fields. The repository's [task-packet YAML template](delegation/templates/task-packet.yaml) is one fill-in format. Omit sensitive or irrelevant history; include exact paths and identifiers when they are needed to resume safely. Populate packets in task-local/private context and do not commit them by default.
 
 > **Two packet vocabularies, and which one a tool reads.** The portable packet
 > above is a *fill-in format for a human or a model to read*; the YAML template
@@ -100,7 +100,7 @@ Check at task admission and between bounded work units, before starting a long b
 
 Record the owner's threshold separately from the observed remaining value. Do not spend down to a target just to demonstrate a stop. A user-directed bounded stop is not evidence of quota exhaustion, a successful abrupt-interruption recovery, or a completed ownership transfer. It grants no use of reset credits, paid fallback, or another provider. The existing natural-interruption evidence gate remains open.
 
-Before writing the packet, verify its private task-local destination: use system temporary storage or a pre-existing ignored path whose ignored status has been checked. Do not broaden ignore rules or place populated packets in shared documentation, `.obsidian/`, or a new task ledger. Reuse the [task-packet template](docs/delegation/templates/task-packet.yaml), attaching this concise human-readable checkpoint to the task's private packet when useful:
+Before writing the packet, verify its private task-local destination: use system temporary storage or a pre-existing ignored path whose ignored status has been checked. Do not broaden ignore rules or place populated packets in shared documentation, `.obsidian/`, or a new task ledger. Reuse the [task-packet template](delegation/templates/task-packet.yaml), attaching this concise human-readable checkpoint to the task's private packet when useful:
 
 ```text
 Checkpoint time (with timezone): ...; task ID / packet location: ...
