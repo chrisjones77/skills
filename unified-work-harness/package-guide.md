@@ -1,5 +1,7 @@
 # Select a packaged method
 
+For the system boundary, architecture, contract lifecycle, control limits and verification trace, read the [engineered system description](engineered-system.md).
+
 Use Node 22.13 or later on POSIX for the complete package, including the SQLite queue. Start from the directory containing SKILL.md. Reading guidance requires no worker, account or endpoint.
 
 From a reviewed repository checkout, copy the entire `unified-work-harness/` directory to your host’s skill directory, or use it in place. Keep its relative paths intact, including guides, fixtures, manifest and license. There is no dependency-install step for the JavaScript modules. Start in that directory with `node package.mjs inventory`. For a first human-led exercise, open [methods.md](methods.md) and run the two shelf-label examples; they use only the included files. To see the corresponding offer, recipient response and reviewer decision, run `node examples/attended-review.mjs`. This demonstration uses fictional responses and does not contact anyone. To verify the installation on a POSIX host with Git and Node, run `node --test *.test.mjs`; the synthetic tests need loopback access. Real provider tests are opt-in.
