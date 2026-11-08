@@ -9,6 +9,8 @@ Carry the task through storyboard, render, verification, and saved deliverables 
 
 For a quick rendition or an end-to-end review cut with planning up front, read the [one-shot review method](references/one-shot-review.md). It defines a bounded production pass, reference recovery, defect corrections, phone delivery and preservation; use it without changing the user’s requested approval boundary.
 
+For ChatGPT-only production and social publication, use the [ChatGPT-native publication adapter](references/chatgpt-native-publication.md) and its [sanitized regression cases](references/chatgpt-publication-cases.md). This is a host-specific method under Unified Work Harness (UWH) routing, not a second router or an executable UWH contract adapter. Check destination post type, account-specific duration/format limits, available transfer tools and publication authority **before** rendering. A scheduled post is not a confirmed public release.
+
 ## 1. Establish the source and continuity
 
 - Resolve the supplied audio, latest lyrics, reference art, and corrections. Use connected storage for referenced files; use local paths when supplied. Inspect actual audio metadata with FFprobe.
