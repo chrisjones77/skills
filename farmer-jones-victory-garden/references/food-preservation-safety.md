@@ -6,4 +6,4 @@ Use a current authoritative tested recipe applicable to the food and the exact i
 - **HOLD** applies when information needed to make that comparison is missing. Obtain it before proceeding.
 - **BLOCK** applies when a known change lacks validation. Record the difference and stop the shelf-stable recommendation.
 
-Treat sealed jars, prior success and household ratio calculations as insufficient evidence. For a proposed unsupported change, return to the exact tested recipe or consider a separately supported refrigerated or frozen preparation. A tested recipe for a different product provides no validation for the change.
+Treat sealed jars, prior success and household ratio calculations as insufficient evidence. If an applicable tested recipe is identified, use it as written. Otherwise record the tested comparison as unknown and keep the proposed shelf-stable process blocked. A historical ingredient list alone cannot establish what a tested recipe requires. Consider a separately supported refrigerated or frozen preparation. A tested recipe for a different product provides no validation for the change.

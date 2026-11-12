@@ -4,4 +4,6 @@ Use a representative weather station, current local forecast, and site observati
 
 Work backward from the likely fall frost and the crop's stated maturity range. Check whether days to maturity count from sowing or transplanting. Allow for establishment and cooler weather. For the next few days, use the forecast and the crop's sensitivity to choose between harvest, temporary protection and leaving the crop in place.
 
+If frost is forecast tonight and vulnerable crops are already ripe, prioritize the portion that can be harvested with the time and equipment available. Base today's actions on the forecast and use station normals for seasonal planning. If no covers are available, leave covering out of today's task list.
+
 Sort tasks by latest useful date and available hands-on time. Include setup and cleanup. Reserve succession planting for crops whose remaining window and expected labour fit. Keep uncertain frost dates and crop timing visible in the plan.
