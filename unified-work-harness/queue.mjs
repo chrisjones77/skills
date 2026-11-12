@@ -401,31 +401,42 @@ function runSupervised(directory, options, claim, tempParent) {
   });
 }
 
+function failSupervision(directory, job) {
+  withDatabase(directory, db => {
+    const changed = db.prepare("UPDATE jobs SET state='failed' WHERE digest=? AND state='running'").run(job);
+    if (changed.changes) recordTransition(db, job, 'execution_failed', 'failed',
+      {reason:'supervised_dispatch_failed', phase:'supervision'});
+    stopRemaining(db);
+  });
+}
+
 export async function dispatchNext(directory, envelope) {
   if (!record(envelope) || Object.keys(envelope).some(key => !fields.has(key))) throw Error('Queue accepts only the documented contract fields.');
   const options = structuredClone(envelope);
   const getTempParent = pinTempParent(options.packet?.workspace?.root);
   const claim = reserve(directory,options);
   if (claim.hold) throw Error(claim.hold);
+  let receipt;
   try {
-    const receipt = await runSupervised(directory,options,claim,getTempParent());
-    const recorded = withDatabase(directory, db => {
-      const policy = db.prepare('SELECT stopped,deadline FROM policy').get();
-      if (policy.stopped || Date.now() >= claim.deadline) return false;
-      db.prepare("UPDATE jobs SET state='pending_review',receipt=? WHERE digest=? AND state='running'").run(receipt.receipt_sha256,claim.job);
-      recordTransition(db,claim.job,'result_received','review_pending',{evidence:receipt.receipt_sha256});
-      return true;
-    });
-    if (!recorded) throw Error('Candidate returned after cancellation or deadline; reconcile ledger.');
-    return receipt;
+    receipt = await runSupervised(directory,options,claim,getTempParent());
   } catch (error) {
-    withDatabase(directory, db => {
-      const changed=db.prepare("UPDATE jobs SET state='failed' WHERE digest=? AND state='running'").run(claim.job);
-      if(changed.changes)recordTransition(db,claim.job,'execution_failed','failed',{reason:'supervised_dispatch_failed',phase:'supervision'});
-      stopRemaining(db);
-    });
+    failSupervision(directory, claim.job);
     throw error;
   }
+  // A completed invocation can already have durable evidence. Leave the
+  // running reservation for reconciliation if recording its result fails.
+  const recorded = withDatabase(directory, db => {
+    const policy = db.prepare('SELECT stopped,deadline FROM policy').get();
+    if (policy.stopped || Date.now() >= claim.deadline) return false;
+    db.prepare("UPDATE jobs SET state='pending_review',receipt=? WHERE digest=? AND state='running'").run(receipt.receipt_sha256,claim.job);
+    recordTransition(db,claim.job,'result_received','review_pending',{evidence:receipt.receipt_sha256});
+    return true;
+  });
+  if (!recorded) {
+    failSupervision(directory, claim.job);
+    throw Error('Candidate returned after cancellation or deadline; reconcile ledger.');
+  }
+  return receipt;
 }
 
 if (isQueueWorkerProcess()) {

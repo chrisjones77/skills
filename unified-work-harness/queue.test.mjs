@@ -716,6 +716,33 @@ for(const version of ['v5','v6']) test(version+' records reservation and reviewe
   assert.equal(inspectQueue(f.directory).remaining[0].attempts,1);assert.equal(inspectQueue(f.directory).jobs[0].state,'reviewed');
 });
 
+test('failed result recording preserves the completed invocation for reconciliation', async t => {
+  const f = fixture(t, await simulatedProvider(t));
+  const events = [{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'reference'}}},
+    {type:'text',part:{text:'reference'}}];
+  installWorker(t, f, 'for (const event of '+JSON.stringify(events)+') console.log(JSON.stringify(event));');
+  createQueue(f.directory, {...f.config, recording:{mode:'transactional-outbox-v1'}});
+  const db = new DatabaseSync(path.join(f.directory, 'queue.sqlite'));
+  try {
+    db.exec(`CREATE TRIGGER fail_result_event BEFORE INSERT ON recorder_outbox
+      WHEN json_extract(NEW.body, '$.kind') = 'result_received'
+      BEGIN SELECT RAISE(ABORT, 'synthetic-result-write-failure'); END;`);
+  } finally { db.close(); }
+
+  await assert.rejects(dispatchNext(f.directory, f.first), /synthetic-result-write-failure/);
+  const held = inspectQueue(f.directory);
+  assert.deepEqual(held.jobs.map(job => job.state), ['running', 'queued']);
+  assert.equal(held.remaining[0].attempts, 1);
+  assert.deepEqual(readPendingEvents(f.directory).map(({event}) => event.kind),
+    ['offer_recorded', 'offer_recorded', 'reservation_recorded']);
+  await assert.rejects(dispatchNext(f.directory, f.second), /unavailable|out of order/);
+
+  assert.deepEqual(reconcileInterrupted(f.directory, {packet:f.first.packet, owner:'owner',
+    supervisorExited:true, evidenceHash:sha256('synthetic completed invocation')}),
+  {state:'reconciliation_required', invocation_state:'completed'});
+  assert.deepEqual(inspectQueue(f.directory).jobs.map(job => job.state), ['reconciliation_required', 'cancelled']);
+});
+
 test('outbox distinguishes an active stop request from confirmed worker termination',async t=>{
   const f=fixture(t,await simulatedProvider(t));
   installWorker(t,f,'setInterval(()=>{},1000);');

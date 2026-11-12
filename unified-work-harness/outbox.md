@@ -101,6 +101,8 @@ outbox.test.mjs covers explicit opt-in, attended lifecycle mapping, insertion/ac
 failure, process loss before and after commit, exact/idempotent acknowledgement, corrupt
 readback, paging and stop recording. queue.test.mjs exercises opted-in v5/v6 provider paths,
 including zero provider calls and unchanged budgets when an event cannot be committed.
+If result recording fails after a completed invocation, the queue keeps its running
+reservation and blocks further dispatch until the owner reconciles the invocation.
 The existing queue and convergence suites continue to test unrecorded compatibility paths.
 
 The repository integration check scripts/test_outbox_recorder.mjs takes an explicitly supplied,
