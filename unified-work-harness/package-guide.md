@@ -49,3 +49,9 @@ Score each blocker against the requested outcome, not just the verdict. In the m
 **Smoke check:** use the [three fictional assignments and scoring notes](examples/native-review-cases.json) in a disposable project. Keep the cases and answer key outside that project. In a fresh session per case, delegate to the exact installed role with only the `excerpt`. Check the named child's finding against `verdict`, `rejected` and `check`. For the scope-conflict case, identifying the email without explicitly rejecting it does not pass. For the control, referring a bounded assignment is not approval. Verify no child tool invocation, worker launch or file edits, and an unchanged fixture including untracked files. A clean checkout alone does not prove isolation. Record host and model separately; a successful smoke is not qualification of the model for other assignments.
 
 Inventory inspection requires regular, single-link files at their exact manifest spellings. Install the package as a copy on a POSIX filesystem. The manifest and CLI profile input each have a 64 KiB limit. A listed file may occupy up to 2 MiB, and all listed files together may occupy up to 16 MiB. A missing, linked, changing or oversized package entry stops inspection. An explicitly selected CLI profile may be a link to a bounded regular file.
+
+## Optional queue outbox
+
+For newly reviewed queues that require durable event emission, use [transactional recording](outbox.md).
+This option changes private metadata retention and must be selected explicitly before queue
+creation. It does not install the independent recorder or authorize delivery.

@@ -5,6 +5,8 @@ on:
     paths: &paths
       - "unified-work-harness/**"
       - "scripts/test_convergence*"
+      - "scripts/test_outbox_recorder.mjs"
+      - "scripts/outbox-recorder-pin.json"
       - "scripts/test_storyboard*"
       - "scripts/validate_storyboards.py"
       - "docs/skill-storyboards/**"
@@ -107,3 +109,23 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: "22"}
       - run: python3 scripts/test_convergence_mutations.py
+
+  outbox-recorder:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: "22"}
+      - name: Exercise pinned independent Git recorder
+        shell: bash
+        run: |
+          git fetch origin 2d3e2d69d2f8ac052e0e75e59a2e7582504dd83d
+          mkdir -p "$RUNNER_TEMP/outbox-recorder-source"
+          git archive 2d3e2d69d2f8ac052e0e75e59a2e7582504dd83d work-recorder | tar -x -C "$RUNNER_TEMP/outbox-recorder-source"
+          recorder_path=$(cd "$RUNNER_TEMP/outbox-recorder-source/work-recorder" && pwd -P)
+          node scripts/test_outbox_recorder.mjs "$recorder_path"

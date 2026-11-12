@@ -1,3 +1,4 @@
+import {validateRecording,initializeOutbox,recordTransition,pendingOutbox,acknowledgeOutbox} from './outbox.mjs';
 import { DatabaseSync } from 'node:sqlite';
 import { inspectCoordination, respond } from './coordination.mjs';
 import { buildPackageScope } from './integrated.mjs';
@@ -130,7 +131,8 @@ function admitJob(item) {
   return {offer,packet,expires:checked.expires_at,state:'attended_offered',privateRecord:privateRecordBytes(item)};
 }
 
-export function createQueue(directory, {goal, packets, deadline, providerBudgets = {}}) {
+export function createQueue(directory, {goal, packets, deadline, providerBudgets = {}, recording}) {
+  validateRecording(recording);
   const proposal = proposeGoal(goal);
   if (!validDate(deadline) || Date.parse(deadline) <= Date.now()) throw Error('Queue deadline must be a future UTC instant.');
   if (!Array.isArray(packets) || packets.length !== proposal.selected.length || !record(providerBudgets)) throw Error('One accepted packet per selected task and explicit provider budgets required.');
@@ -155,16 +157,26 @@ export function createQueue(directory, {goal, packets, deadline, providerBudgets
       CREATE TABLE jobs (seq INTEGER PRIMARY KEY, digest TEXT UNIQUE, reviewer TEXT, expires TEXT, state TEXT, receipt TEXT, evidence TEXT, reconciliation TEXT);
       CREATE TABLE attended (digest TEXT PRIMARY KEY, revision TEXT, body TEXT);
       CREATE TABLE budgets (lane TEXT PRIMARY KEY, attempts INTEGER, seconds INTEGER);`);
+    initializeOutbox(db,recording,jobs);
     db.prepare('INSERT INTO policy VALUES (?,?,?,0)').run(digest(proposal),digest(proposal.owner),deadline);
     const add = db.prepare('INSERT INTO jobs (digest,reviewer,expires,state) VALUES (?,?,?,?)');
     const preserve = db.prepare('INSERT INTO attended VALUES (?,?,?)');
     for (const job of jobs) {
       add.run(job.offer.digest,digest(job.offer.reviewer),job.expires,job.state);
+      recordTransition(db,job.offer.digest,'offer_recorded',job.state);
       if (job.privateRecord) preserve.run(job.offer.digest,sha256(job.privateRecord),job.privateRecord);
     }
     for (const [lane, budget] of budgets) db.prepare('INSERT INTO budgets VALUES (?,?,?)').run(lane,budget.attempts,budget.workerSeconds);
     return {goal_sha256:digest(proposal), queued:jobs.length};
   });
+}
+
+// Delivery declarations never change queue jobs, budgets, contracts or attempt claims.
+export function readPendingEvents(directory,{limit=100}={}) {
+  return withDatabase(directory,db=>pendingOutbox(db,limit),true);
+}
+export function acknowledgeEvent(directory,acknowledgement) {
+  return withDatabase(directory,db=>acknowledgeOutbox(db,acknowledgement));
 }
 
 export function inspectQueue(directory) {
@@ -176,7 +188,12 @@ export function inspectQueue(directory) {
 }
 
 function stopRemaining(db) {
+  const alreadyStopped=db.prepare('SELECT stopped FROM policy').get().stopped;
+  const running=alreadyStopped?[]:db.prepare("SELECT digest FROM jobs WHERE state='running'").all();
+  const affected=db.prepare("SELECT digest FROM jobs WHERE state='queued' OR state GLOB 'attended_*'").all();
   db.exec("UPDATE policy SET stopped=1; UPDATE jobs SET state='cancelled' WHERE state='queued' OR state GLOB 'attended_*'");
+  for(const job of running)recordTransition(db,job.digest,'stop_recorded','stop_requested',{reason:'queue_stopped'});
+  for(const job of affected)recordTransition(db,job.digest,'stop_recorded','cancelled',{reason:'queue_stopped'});
 }
 
 function currentAttended(db, assignmentDigest) {
@@ -214,6 +231,7 @@ export function respondAttended(directory, {assignmentDigest,revision,action,by,
     if (current.revision !== revision) throw Error('Stale attended response.');
     if (Date.now() >= Math.min(Date.parse(job.expires),Date.parse(policy.deadline))) {
       db.prepare("UPDATE jobs SET state='expired' WHERE digest=?").run(assignmentDigest);
+      recordTransition(db,assignmentDigest,'stop_recorded','expired',{reason:'review_expired'});
       stopRemaining(db);
       return {hold:'Queue or attended review expired.'};
     }
@@ -225,6 +243,8 @@ export function respondAttended(directory, {assignmentDigest,revision,action,by,
       : attendedStates[action];
     db.prepare('UPDATE attended SET body=?,revision=? WHERE digest=?').run(bytes,nextRevision,assignmentDigest);
     db.prepare('UPDATE jobs SET state=?,evidence=? WHERE digest=?').run(state,nextRevision,assignmentDigest);
+    const kind={accept:'recipient_accepted',resume:'execution_started',submit:'result_received',approve:'review_recorded',close:'review_recorded'}[action]??(stoppingResponses.has(action)||action==='pause'?'stop_recorded':'reconciliation_recorded');
+    recordTransition(db,assignmentDigest,kind,state,{reason:action,evidence:nextRevision});
     if (stoppingResponses.has(action)) stopRemaining(db);
     return {state,revision:nextRevision};
   });
@@ -252,6 +272,7 @@ export function reconcileInterrupted(directory, {packet, owner, evidenceHash, su
     // Ledger records identify the accepted offer, but any dispatcher may have claimed it.
     // Without a receipt delivered by this supervisor, we cannot attribute that attempt.
     db.prepare("UPDATE jobs SET state='reconciliation_required',reconciliation=? WHERE digest=?").run(evidenceHash,offer.digest);
+    recordTransition(db,offer.digest,'reconciliation_recorded','reconciliation_required',{reason:'supervisor_interrupted',evidence:evidenceHash});
     stopRemaining(db);
     return {state:'reconciliation_required', invocation_state:observation.state};
   });
@@ -276,6 +297,7 @@ export function reviewCandidate(directory, {assignmentDigest, reviewer, receiptH
     }
     db.prepare('UPDATE jobs SET state=?,evidence=? WHERE digest=?')
       .run(accept ? 'reviewed' : 'rejected', evidenceHash, assignmentDigest);
+    recordTransition(db,assignmentDigest,'review_recorded',accept?'reviewed':'rejected',{evidence:evidenceHash});
     if (!accept) stopRemaining(db);
   });
 }
@@ -304,6 +326,7 @@ function reserve(directory, options) {
     if (!job || job.digest !== offer.digest || job.state !== 'queued') throw Error('Job is unavailable, out of order, running or awaiting review.');
     if (Date.now() >= Date.parse(policy.deadline) || Date.now() >= Date.parse(job.expires)) {
       db.prepare("UPDATE jobs SET state='expired' WHERE digest=?").run(job.digest);
+      recordTransition(db,job.digest,'stop_recorded','expired',{reason:'assignment_expired'});
       stopRemaining(db);
       return {hold:'Queue or assignment expired.'};
     }
@@ -319,6 +342,7 @@ function reserve(directory, options) {
     if (!charge.changes) throw Error('Insufficient provider budget.');
     // Mark the separate reviewer check in the same transaction as reservation.
     db.prepare("UPDATE jobs SET state='running',reviewer=? WHERE digest=?").run('separate:'+digest(offer.reviewer),job.digest);
+    recordTransition(db,job.digest,'reservation_recorded','running');
     const version = scope.kind.slice(-2);
     return {job:job.digest, receiptSchema:'unified.contract-executor-receipt.'+version, deadline:Math.min(Date.parse(policy.deadline),Date.now()+reservation*1000), reservation};
   });
@@ -377,29 +401,42 @@ function runSupervised(directory, options, claim, tempParent) {
   });
 }
 
+function failSupervision(directory, job) {
+  withDatabase(directory, db => {
+    const changed = db.prepare("UPDATE jobs SET state='failed' WHERE digest=? AND state='running'").run(job);
+    if (changed.changes) recordTransition(db, job, 'execution_failed', 'failed',
+      {reason:'supervised_dispatch_failed', phase:'supervision'});
+    stopRemaining(db);
+  });
+}
+
 export async function dispatchNext(directory, envelope) {
   if (!record(envelope) || Object.keys(envelope).some(key => !fields.has(key))) throw Error('Queue accepts only the documented contract fields.');
   const options = structuredClone(envelope);
   const getTempParent = pinTempParent(options.packet?.workspace?.root);
   const claim = reserve(directory,options);
   if (claim.hold) throw Error(claim.hold);
+  let receipt;
   try {
-    const receipt = await runSupervised(directory,options,claim,getTempParent());
-    const recorded = withDatabase(directory, db => {
-      const policy = db.prepare('SELECT stopped,deadline FROM policy').get();
-      if (policy.stopped || Date.now() >= claim.deadline) return false;
-      db.prepare("UPDATE jobs SET state='pending_review',receipt=? WHERE digest=? AND state='running'").run(receipt.receipt_sha256,claim.job);
-      return true;
-    });
-    if (!recorded) throw Error('Candidate returned after cancellation or deadline; reconcile ledger.');
-    return receipt;
+    receipt = await runSupervised(directory,options,claim,getTempParent());
   } catch (error) {
-    withDatabase(directory, db => {
-      db.prepare("UPDATE jobs SET state='failed' WHERE digest=? AND state='running'").run(claim.job);
-      stopRemaining(db);
-    });
+    failSupervision(directory, claim.job);
     throw error;
   }
+  // A completed invocation can already have durable evidence. Leave the
+  // running reservation for reconciliation if recording its result fails.
+  const recorded = withDatabase(directory, db => {
+    const policy = db.prepare('SELECT stopped,deadline FROM policy').get();
+    if (policy.stopped || Date.now() >= claim.deadline) return false;
+    db.prepare("UPDATE jobs SET state='pending_review',receipt=? WHERE digest=? AND state='running'").run(receipt.receipt_sha256,claim.job);
+    recordTransition(db,claim.job,'result_received','review_pending',{evidence:receipt.receipt_sha256});
+    return true;
+  });
+  if (!recorded) {
+    failSupervision(directory, claim.job);
+    throw Error('Candidate returned after cancellation or deadline; reconcile ledger.');
+  }
+  return receipt;
 }
 
 if (isQueueWorkerProcess()) {
