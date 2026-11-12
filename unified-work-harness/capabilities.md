@@ -25,6 +25,10 @@ Read this table alongside the [source notes](sources.md). Method lineage describ
 | multiple_adapters | Original executor adapters and candidate interface; [candidate.md](candidate.md) | Local OpenAI-compatible and native Ollama candidate routes share a constrained text exchange. The read-only contract uses OpenCode. Codex and Aider are lower-level executor interfaces; neither is a supported contract adapter. |
 | candidate_changes | Candidate-edit and defect-reproduction executor; [candidate.md](candidate.md) | Prepare a review artifact against pinned source, with a separately scoped write contract. The recipient reviews its contents before any application. |
 
+## Host-specific guided production (not a bundled runtime capability)
+
+Under UWH's purpose selection and effect/authority review, the [build-music-video ChatGPT publication method](../build-music-video/references/chatgpt-native-publication.md) describes a ChatGPT-native route for image creation, media rendering/validation, authorized file transfer and connected social-media scheduling. The [sanitized case matrix](../build-music-video/references/chatgpt-publication-cases.md) records observed failure modes. This route is **guidance applied through available host tools**, not an automatically resolved `package.mjs` capability, independent router, dispatched UWH executor, installed private overlay, or validated contract adapter. The host must check its actual tools, permissions, package/source revisions and user authorization. A social connector scheduling receipt does not prove delivery to the platform.
+
 ## Separately developed controls
 
 The [optional native reviewer roles](package-guide.md#optional-native-assignment-reviewer) give Codex and Claude Code a pre-offer advisory method. They do not add a provider adapter, change the contract or satisfy independent human review.

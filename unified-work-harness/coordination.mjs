@@ -49,12 +49,13 @@ export function offerCoordination({intake, review, id, workspace, purpose}) {
 export function inspectCoordination(record) {
   if (record?.schema_version !== "attended-coordination.v1" || !Array.isArray(record.predecessors) || record.predecessors.length > 32)
     throw new Error("Invalid coordination record");
-  let previous = null;
+  let previous = null, predecessor = null;
   const seen = new Set();
   for (const item of [...record.predecessors, record]) {
-    h.validatePacket(item.packet);
+    if (!Array.isArray(item.revisions)) throw new Error("Invalid coordination revision history");
+    h.validatePacket(item.packet,item.revisions.map(revision=>revision.workspace));
     const a = h.currentAssignment(item.packet);
-    if (!Array.isArray(item.revisions) || item.revisions.length !== item.packet.work_contract.assignments.length - 1 ||
+    if (item.revisions.length !== item.packet.work_contract.assignments.length - 1 ||
         item.revisions.length > 64 || seen.has(a.digest)) throw new Error("Invalid coordination revision history");
     [...item.revisions, item].forEach(({intake,review,workspace}, index) => {
       const assignment = item.packet.work_contract.assignments[index];
@@ -78,6 +79,18 @@ export function inspectCoordination(record) {
     if (item !== record && (item.packet.work_contract.disposition !== "withdrawn" ||
         item.packet.handoff.current_writer || item.packet.clarifications?.some(c => c.status !== "resolved")))
       throw new Error("Transferred work must retain its stopped predecessor");
+    if (predecessor) {
+      const prior = h.currentAssignment(predecessor);
+      const withdrawal = predecessor.work_contract.events.at(-1);
+      const first = item.packet.work_contract.assignments[0];
+      const workspace = item.revisions[0]?.workspace ?? item.packet.workspace;
+      if (withdrawal.kind !== 'withdrawn' || withdrawal.by !== prior.assigner ||
+          predecessor.work_contract.review.status !== 'pending' || Date.parse(withdrawal.at) > Date.parse(first.created_at) ||
+          first.work_id !== prior.work_id || first.assigner !== prior.assigner || first.recipient === prior.recipient ||
+          first.engineering_purpose !== prior.engineering_purpose || workspaceDigest(workspace) !== workspaceDigest(predecessor.workspace))
+        throw Error('Handoff successor conflicts with the assigner withdrawal, work identity or workspace.');
+    }
+    predecessor = item.packet;
     seen.add(a.digest);
     previous = sha256(JSON.stringify({intake:item.intake,review:item.review,revisions:item.revisions,packet:item.packet}));
   }
@@ -104,19 +117,18 @@ export function respond(record, action, options) {
   else if (action === "reassess") packet = h.reassessClarification(p,options);
   else if (action === "reroute") packet = h.routeClarification(p,options);
   else if (["submit","rework","approve","close"].includes(action)) {
-    if (action === "submit" && p.status !== "active") throw new Error("Resume before submitting");
     packet = h.reviewWork(p,{...options,decision: action === "approve" ? "accept" : action});
-  } else if (["pause","resume"].includes(action)) {
-    if (by !== a.recipient || p.work_contract.disposition !== "accepted" ||
-        !["pending","rework"].includes(p.work_contract.review.status) ||
-        (action === "resume" && (p.status !== "paused" || p.clarifications?.some(c => c.status !== "resolved"))) ||
-        (action === "pause" && p.status !== "active")) throw new Error("Unavailable transition");
+  } else if (action === "resume") {
+    requireText(options.note,"checkpoint note");
+    packet = h.resumeAssignment(p,options);
+  } else if (action === "pause") {
+    if (by !== a.recipient || p.status !== "active") throw new Error("Unavailable transition");
     requireText(options.note,"checkpoint note");
     packet = structuredClone(p);
-    packet.status = action === "pause" ? "paused" : "active";
-    packet.handoff.current_writer = action === "pause" ? null : by;
-    packet.checkpoints.push({kind:action === "pause" ? "paused" : "resumed",owner:by,
-      workspace:p.workspace.identity,note:options.note,at:new Date().toISOString(),reconciled:false});
+    packet.status = "paused";
+    packet.handoff.current_writer = null;
+    packet.checkpoints.push({kind:"paused",owner:by,workspace:p.workspace.identity,note:options.note,
+      at:new Date().toISOString(),reconciled:false,assignment_digest:assignmentDigest,work_event_count:p.work_contract.events.length});
   } else throw new Error("Unknown coordination action");
   const next = {...structuredClone(record),packet};
   inspectCoordination(next);

@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
-import { spawn, execFileSync } from "node:child_process";
+import { spawn, execFile, execFileSync } from "node:child_process";
+import { promisify } from "node:util";
 import { createServer, request as httpRequest } from "node:http";
 import { AsyncLocalStorage } from "node:async_hooks";
 import * as cryptoModule from "node:crypto";
 const {createHash, randomUUID} = cryptoModule;
+const execFileAsync = promisify(execFile);
 import {
   accessSync,
   existsSync,
@@ -22,7 +24,9 @@ import {
   readSync,
   realpathSync,
   rmSync,
+  opendirSync,
   rmdirSync,
+  unlinkSync,
   statSync,
   symlinkSync,
   writeFileSync,
@@ -58,7 +62,20 @@ function makeAssignment(packet, {scope, acceptanceEvidence, engineeringPurpose =
     authority:structuredClone(packet.authorization), created_at:at, digest:''};
   a.digest = assignmentDigest(a); return a;
 }
-function validateWorkContract(packet) {
+function matchesResume(checkpoints, index, assignment, eventCount, eventTime, workspace) {
+  const cp = checkpoints[index], preceding = checkpoints[index-1];
+  if (cp?.kind !== 'resumed' || cp.owner !== assignment.recipient || (workspace !== undefined && cp.workspace !== workspace) ||
+      !timestamp(cp.at)) return false;
+  const time = Date.parse(cp.at), previousCheckpointTime = Date.parse(preceding?.at);
+  if (time < eventTime || time < previousCheckpointTime) return false;
+  if (['assignment_digest','work_event_count','checkpoint_index'].some(key => Object.hasOwn(cp,key))) {
+    return cp.assignment_digest === assignment.digest && cp.work_event_count === eventCount && cp.checkpoint_index === index;
+  }
+  // A legacy resume can share the first acceptance tick, but after another
+  // transition its timestamp must distinguish it from the preceding event.
+  return (eventCount === 2 || time > eventTime) && (!preceding || preceding.kind === 'created' || time > previousCheckpointTime);
+}
+function validateWorkContract(packet, priorWorkspaces) {
   const w = packet.work_contract; if (w === undefined) return;
   if (!exact(w,['version','assignments','disposition','acceptance','events','review']) || w.version !== 1 || !Array.isArray(w.assignments) || !w.assignments.length || w.assignments.length>100 || !Array.isArray(w.events) || w.events.length>1000 || !statuses.includes(w.disposition)) throw Error('Invalid work contract.');
   for (const [i,a] of w.assignments.entries()) {
@@ -68,6 +85,7 @@ function validateWorkContract(packet) {
       if (['recipient','assigner','reviewer','dispatch_kind'].some(field => a[field] !== prior[field]) || !same(a.authority, prior.authority)) throw Error('Revision cannot change declared authority, roles or dispatch kind.');
     }
   }
+  validateClarifications(packet,priorWorkspaces);
   const a = currentAssignment(packet);
   if (a.outcome !== packet.objective || a.dispatch_kind !== packet.mode || !same(a.authority,packet.authorization)) throw Error('Assignment changed outside a recorded revision.');
   if (packet.owner !== a.recipient || (packet.handoff.current_writer !== null && packet.handoff.current_writer !== a.recipient)) throw Error('Owner and writer must match the assignment recipient.');
@@ -94,9 +112,9 @@ function validateWorkContract(packet) {
   }
   if (reviewStates.get(a.digest) !== w.review.status) throw Error('Review state does not match its recorded history.');
   const opened = new Set(), reofferRequired = new Set(), dispositionEvents = new Map(), reviewEvents = [];
-  let previousEventRevision = 0;
+  let previousEventRevision = 0, previousTime = -Infinity, nextCheckpoint = 0;
   let closed = false;
-  for (const e of w.events) {
+  for (const [index,e] of w.events.entries()) {
     if (closed) throw Error('Work events cannot follow review closure.');
     if (!exact(e, ['kind','by','note','at','assignment_digest']) || !text(e.by) || !text(e.note) || !timestamp(e.at)) throw Error('Invalid work event.');
     const assignment = w.assignments.find(item => item.digest === e.assignment_digest);
@@ -104,6 +122,23 @@ function validateWorkContract(packet) {
     const openingKind = assignment.revision === 1 ? 'offered' : 'revised';
     if (!opened.has(assignment.digest) && e.kind !== openingKind) throw Error('Assignment history requires its opening event.');
     if (opened.has(assignment.digest) && ['offered','revised'].includes(e.kind)) throw Error('Assignment history contains a repeated opening event.');
+    const time = Date.parse(e.at), created = Date.parse(assignment.created_at);
+    if (time < previousTime || time < created || (!opened.has(assignment.digest) && created < previousTime))
+      throw Error('Work event chronology conflicts with its offer or preceding events.');
+    if (e.kind === 'review-submit') {
+      // Consume checkpoints in sequence. Their work-event counts separate a
+      // pause or resume on the same clock tick but after this submission.
+      const firstUnused = nextCheckpoint;
+      while (nextCheckpoint < packet.checkpoints.length) {
+        const cp = packet.checkpoints[nextCheckpoint];
+        if (cp?.work_event_count > index || Date.parse(cp?.at) > time) break;
+        nextCheckpoint++;
+      }
+      const workspace = assignment.digest === a.digest ? packet.workspace.identity : priorWorkspaces?.[assignment.revision-1]?.identity;
+      if (nextCheckpoint === firstUnused || !matchesResume(packet.checkpoints,nextCheckpoint-1,assignment,index,previousTime,workspace))
+        throw Error('Submission history requires its own matching resume checkpoint.');
+    }
+    previousTime = time;
     const permittedActors = e.kind === 'offered' || e.kind === 'revised' || e.kind === 'timeout' ? [assignment.assigner]
       : ['accepted','declined','deferred','review-submit'].includes(e.kind) ? [assignment.recipient]
         : e.kind === 'withdrawn' ? [assignment.recipient, assignment.assigner]
@@ -126,9 +161,16 @@ function validateWorkContract(packet) {
   if (w.acceptance && (latestDisposition.by !== w.acceptance.by || latestDisposition.at !== w.acceptance.at)) throw Error('Acceptance does not match its work event.');
   const reviewProjection = w.review.history.map(r => [r.decision, r.by, r.note, r.at, r.assignment_digest]);
   if (!same(reviewEvents, reviewProjection)) throw Error('Review history does not match its work events.');
+  if (packet.status === 'active') {
+    if (w.disposition !== 'accepted' || packet.handoff.current_writer !== a.recipient ||
+        !matchesResume(packet.checkpoints,packet.checkpoints.length-1,a,w.events.length,previousTime,packet.workspace.identity))
+      throw Error('Active contract requires a current resume checkpoint matching its workspace and latest work event.');
+  }
 }
 function event(packet,kind,by,note,at) {
   if (!text(by) || !text(note) || !timestamp(at) || packet.work_contract.events.length>=1000) throw Error('Provide bounded actor, note and timestamp.');
+  if (Date.parse(at) < Date.parse(packet.checkpoints?.at(-1)?.at))
+    throw Error('Work event chronology precedes the latest checkpoint.');
   packet.work_contract.events.push({kind,by,note,at,assignment_digest:currentAssignment(packet).digest});packet.updated_at=at;
   return packet;
 }
@@ -136,10 +178,11 @@ function offerAssignment(packet, options) {
   if (packet.work_contract || packet.handoff.pending_transfer || packet.clarifications?.length) throw Error('Offer requires a new or explicitly unencumbered legacy packet.');
   const next=structuredClone(packet);
   next.work_contract={version:1,assignments:[],disposition:'offered',acceptance:null,events:[],review:{status:'pending',history:[]}};
-  next.work_contract.assignments.push(makeAssignment(next,options));
+  const at = options.at ?? new Date().toISOString();
+  next.work_contract.assignments.push(makeAssignment(next,{...options,at}));
   next.dispatch_kind=next.mode;next.engineering_purpose=options.engineeringPurpose??null;
   next.status='paused';next.handoff.current_writer=null;next.next_action='Recipient must explicitly accept the current assignment digest.';
-  event(next,'offered',currentAssignment(next).assigner,'Assignment offered; no acceptance inferred.',options.at??new Date().toISOString());validateWorkContract(next);return next;
+  event(next,'offered',currentAssignment(next).assigner,'Assignment offered; no acceptance inferred.',at);validateWorkContract(next);return next;
 }
 function acceptAssignment(packet,{by,assignmentDigest:pin,note,at=new Date().toISOString()}) {
   validateWorkContract(packet);const a=currentAssignment(packet);
@@ -147,6 +190,21 @@ function acceptAssignment(packet,{by,assignmentDigest:pin,note,at=new Date().toI
   const next=structuredClone(packet);next.work_contract.disposition='accepted';next.work_contract.acceptance={by,assignment_digest:pin,at};
   next.next_action='Accepted, not started. Revalidate workspace and explicitly resume.';
   event(next,'accepted',by,note,at);validateWorkContract(next);return next;
+}
+function resumeAssignment(packet, {by,assignmentDigest:pin,note,at=new Date().toISOString()}) {
+  validatePacket(packet);
+  const w = packet.work_contract, a = currentAssignment(packet);
+  if (!a || a.digest !== pin || by !== a.recipient || packet.status !== 'paused' || w.disposition !== 'accepted' ||
+      !['pending','rework'].includes(w.review.status) || pendingConcern(packet) || packet.handoff.pending_transfer ||
+      !text(note) || !timestamp(at) || Date.parse(at) > Date.now() || Date.parse(at) < Date.parse(packet.checkpoints.at(-1)?.at))
+    throw Error('Resume requires the accepted recipient, current assignment and a fresh checkpoint.');
+  const next = structuredClone(packet);
+  next.status='active'; next.handoff.current_writer=by;
+  next.checkpoints.push({kind:'resumed',owner:by,at,note,workspace:packet.workspace.identity,reconciled:false,
+    assignment_digest:pin,work_event_count:w.events.length,checkpoint_index:next.checkpoints.length});
+  next.updated_at=at;
+  validatePacket(next);
+  return next;
 }
 function reviseAssignment(packet,{outcome,scope,acceptanceEvidence,engineeringPurpose,by,note,at=new Date().toISOString()}) {
   validateWorkContract(packet);
@@ -185,6 +243,7 @@ function reviewWork(packet,{decision,by,note,evidence,at=new Date().toISOString(
   if (!w || w.disposition!=='accepted' || pendingConcern(packet) || packet.handoff.pending_transfer || packet.status==='complete' || !text(evidence)) throw Error('Review requires accepted work, evidence reference, and no unresolved concern.');
   const allowed=decision==='submit'?['pending','rework']:decision==='rework'||decision==='accept'?['submitted']:decision==='close'?['accepted']:[];
   if (!allowed.includes(w.review.status)) throw Error('Invalid review transition.');
+  if (decision==='submit' && packet.status!=='active') throw Error('Resume before submitting completion evidence.');
   if (decision==='submit' && by!==currentAssignment(packet).recipient) throw Error('Only the recipient submits completion evidence.');
   if (decision!=='submit' && by!==currentAssignment(packet).reviewer) throw Error('Only the declared reviewer may accept, request rework or close.');
   const next=structuredClone(packet);next.work_contract.review.status={submit:'submitted',rework:'rework',accept:'accepted',close:'closed'}[decision];
@@ -203,7 +262,7 @@ function integrityFindings(packet) {
   results.push(finding('authority-validity','unknown','Authority references are declared, not authenticated or externally resolved.'));
   return results;
 }
-return { currentAssignment, validateWorkContract, offerAssignment, acceptAssignment, reviseAssignment, recordDisposition, reviewWork };
+return { currentAssignment, validateWorkContract, offerAssignment, acceptAssignment, resumeAssignment, reviseAssignment, recordDisposition, reviewWork };
 })();
 const {currentAssignment, validateWorkContract} = work;
 const clarification = (() => {
@@ -231,8 +290,71 @@ function clarificationNext(packet) {
 
 // Optional extension to existing v1 task packets. Role labels are declarations,
 // not authentication. This validates continuity, not the truth of an answer.
-function validateClarifications(packet) {
-  if (packet.clarifications === undefined) return;
+function* clarificationTransitions(concern) {
+  const {id, opened_at, assignment_digest, responses, assessments, routes = []} = concern;
+  const transition = (kind, at, status, pin) => ({id, kind:'clarification-' + kind, at, status, pin});
+  yield transition('requested', opened_at, 'awaiting_assigner', assignment_digest);
+  let route = 0, status = 'awaiting_assigner';
+  for (const [index, response] of responses.entries()) {
+    const target = response.route_index ?? 0;
+    if (index === 0 && response.route_index !== undefined) throw Error('Assigner response cannot use a human route.');
+    if (index > 0 && (status !== 'awaiting_human' || !Number.isInteger(target) || target < route || target > routes.length))
+      throw Error('Invalid clarification response route or transition.');
+    while (route < target) yield transition('rerouted', routes[route++].at, 'awaiting_human');
+    yield transition('answered', response.at, 'awaiting_worker', response.assignment_digest);
+    status = 'awaiting_worker';
+    const assessment = assessments[index];
+    if (assessment) {
+      status = assessment.decision === 'clear' ? 'resolved' : 'awaiting_human';
+      yield transition('reassessed', assessment.at, status, response.assignment_digest);
+    }
+  }
+  if (route < routes.length && status !== 'awaiting_human') throw Error('Clarification reroute requires a pending human answer.');
+  while (route < routes.length) yield transition('rerouted', routes[route++].at, status);
+}
+
+function validateClarificationCheckpoints(packet) {
+  function* transitions() {
+    for (const concern of packet.clarifications ?? []) yield* clarificationTransitions(concern);
+  }
+  const history = transitions();
+  let held = false, lastTime = -Infinity, lastCount = 0;
+  for (const cp of packet.checkpoints) {
+    if (!String(cp?.kind).startsWith('clarification-') && cp?.concern_id === undefined) {
+      if (held && cp?.kind === 'resumed') throw Error('Resume during unresolved clarification.');
+      const moment = Date.parse(cp?.at);
+      if (Number.isFinite(moment)) lastTime = Math.max(lastTime, moment);
+      if (Number.isInteger(cp?.work_event_count)) lastCount = Math.max(cp.work_event_count, lastCount);
+      continue;
+    }
+    const expected = history.next().value;
+    if (!expected || expected.id !== cp.concern_id || expected.kind !== cp.kind ||
+        expected.at !== cp.at || expected.status !== cp.status) throw Error('Clarification checkpoint disagrees with its recorded transition.');
+    if (held && cp.kind === 'clarification-requested') throw Error('Overlapping clarification requests.');
+    const moment = Date.parse(cp.at);
+    if (moment < lastTime) throw Error('Clarification checkpoint chronology regressed.');
+    lastTime = moment;
+    if (Object.hasOwn(cp,'work_event_count') || Object.hasOwn(cp,'assignment_digest')) {
+      const events = packet.work_contract?.events;
+      const count = cp.work_event_count;
+      const preceding = Number.isInteger(count) && count > 0 && events?.[count-1];
+      if (!preceding || count < lastCount || cp.assignment_digest !== preceding.assignment_digest ||
+          (expected.pin !== undefined && cp.assignment_digest !== expected.pin) ||
+          moment < Date.parse(preceding.at) || moment > Date.parse(events[count]?.at))
+        throw Error('Clarification checkpoint conflicts with its work event or assignment.');
+      lastCount = count;
+    }
+    held = cp.status !== 'resolved';
+  }
+  if (!history.next().done) throw Error('Missing clarification checkpoint.');
+}
+
+function validateClarifications(packet, priorWorkspaces) {
+  if (packet.clarifications === undefined) {
+    if (packet.checkpoints.some(cp => cp?.concern_id !== undefined || String(cp?.kind).startsWith('clarification-')))
+      throw Error('Missing clarification records for existing checkpoints.');
+    return;
+  }
   if (!Array.isArray(packet.clarifications) || packet.clarifications.length > 100) throw new Error('Invalid clarification collection.');
   const seen = new Set();
   let unresolved = 0;
@@ -246,6 +368,8 @@ function validateClarifications(packet) {
     if (c.work_id !== undefined && (c.work_id !== packet.task_id || !packet.work_contract?.assignments.some(a => a.digest === c.assignment_digest))) throw new Error('Clarification assignment identity mismatch.');
     if (packet.work_contract) {
       const opening = packet.work_contract.assignments.find(a => a.digest === c.assignment_digest);
+      const workspace = opening === currentAssignment(packet) ? packet.workspace : priorWorkspaces?.[opening?.revision-1];
+      if (workspace && c.base_revision !== workspace.revision) throw Error('Clarification opening workspace revision mismatch.');
       const expectedContext = opening && {task_id:packet.task_id, objective:opening.outcome, authorization:opening.authority};
       if (c.work_id !== packet.task_id || !opening || c.worker !== opening.recipient || c.assigner !== opening.assigner || JSON.stringify(c.context) !== JSON.stringify(expectedContext)) throw new Error('Clarification must retain its opening assignment context and roles.');
     }
@@ -274,10 +398,13 @@ function validateClarifications(packet) {
     }
   }
   if (unresolved > 1) throw new Error('Resolve the current clarification before opening another for this task.');
+  validateClarificationCheckpoints(packet);
 }
 
 function event(packet, kind, concern, at) {
-  packet.checkpoints.push({ at, kind, concern_id: concern.id, status: concern.status });
+  const a = currentAssignment(packet);
+  packet.checkpoints.push({ at, kind, concern_id: concern.id, status: concern.status,
+    ...(a ? {assignment_digest:a.digest,work_event_count:packet.work_contract.events.length} : {}) });
   packet.next_action = clarificationNext(packet);
   packet.updated_at = at;
   validateClarifications(packet);
@@ -362,7 +489,7 @@ function digestPacket(packet) {
   return createHash('sha256').update(JSON.stringify(normalized)).digest('hex');
 }
 
-function validatePacket(packet) {
+function validatePacket(packet, priorWorkspaces) {
   const problems = [];
   if (!packet || typeof packet !== 'object' || Array.isArray(packet)) throw new Error('Invalid task packet: packet must be an object');
   if (packet.schema_version !== 1) problems.push('unsupported schema_version');
@@ -399,8 +526,8 @@ function validatePacket(packet) {
   if (pending && (pending.acknowledgement === 'acknowledged' || pending.mode === 'takeover') && packet.handoff.current_writer !== null) problems.push('no writer is allowed while transfer is unverified');
   if (pending && !['pending', 'acknowledged'].includes(pending.acknowledgement)) problems.push('invalid acknowledgement state');
   if (problems.length) throw new Error(`Invalid task packet: ${problems.join('; ')}`);
-  validateClarifications(packet);
-  validateWorkContract(packet);
+  if (!packet.work_contract) validateClarifications(packet);
+  validateWorkContract(packet,priorWorkspaces);
   return [];
 }
 
@@ -727,13 +854,29 @@ function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-// Only a reclaimer removes another owner's directory. Serialize reclaimers
-// outside the replaceable lease, then check that the observed owner still holds it.
+// Missing/incomplete metadata is possible while an owner is starting. Only
+// recover a private directory containing exactly the receipt this protocol owns.
+function readLeaseOwner(directory) {
+  try {
+    const st = lstatSync(directory);
+    if (!st.isDirectory() || st.uid !== process.getuid() || (st.mode & 0o777) !== 0o700) return null;
+    const entries = opendirSync(directory);
+    try {
+      if (entries.readSync()?.name !== "owner.json" || entries.readSync() !== null) return null;
+    } finally { entries.closeSync(); }
+    return JSON.parse(readPrivateFileBytes(path.join(directory,"owner.json"),4096).toString("utf8"));
+  } catch { return null; }
+}
+
+function removeLease(directory) {
+  unlinkSync(path.join(directory,"owner.json"));
+  // Preserve any unexpected entry added since the inspection.
+  rmdirSync(directory);
+}
+
+// Serialize reclaimers outside the replaceable lease and recheck its owner.
 function reclaimDeadProviderLease(lockDirectory) {
-  const ownerPath = path.join(lockDirectory, "owner.json");
-  let owner;
-  try { owner = JSON.parse(readFileSync(ownerPath, "utf8")); }
-  catch { return false; } // A new owner may still be writing its receipt.
+  const owner = readLeaseOwner(lockDirectory);
   if (!Number.isSafeInteger(owner?.pid) || owner.pid <= 0 || typeof owner.token !== "string" || !owner.token) return false;
   try { process.kill(owner.pid, 0); return false; }
   catch (error) { if (error.code !== "ESRCH") return false; }
@@ -742,11 +885,9 @@ function reclaimDeadProviderLease(lockDirectory) {
   try { mkdirSync(guard, {mode:0o700}); }
   catch (error) { if (error.code === "EEXIST") return false; throw error; }
   try {
-    let current;
-    try { current = JSON.parse(readFileSync(ownerPath, "utf8")); }
-    catch { return false; }
+    const current = readLeaseOwner(lockDirectory);
     if (current?.token !== owner.token || current.pid !== owner.pid) return false;
-    rmSync(lockDirectory, {recursive:true});
+    removeLease(lockDirectory);
     return true;
   } finally {
     rmdirSync(guard);
@@ -761,24 +902,24 @@ export async function acquireProviderLease(endpoint, timeoutMs, { pollMs = 25, g
   const lockDirectory = path.join(getTempParent(), `unified-harness-agent-provider-${sha256(listener).slice(0, 20)}.lock`);
   const ownerPath = path.join(lockDirectory, "owner.json");
   const token = randomUUID();
-  const started = Date.now();
+  const started = performance.now();
   const deadline = started + timeoutMs;
 
   while (true) {
     getTempParent();
     try {
       mkdirSync(lockDirectory, { mode: 0o700 });
-      writeFileSync(ownerPath, `${JSON.stringify({ pid: process.pid, token, acquired_at: new Date().toISOString() })}\n`, { mode: 0o600 });
+      writeFileSync(ownerPath, `${JSON.stringify({ pid: process.pid, token, acquired_at: new Date().toISOString() })}\n`, { mode: 0o600, flag:"wx" });
       let released = false;
       return {
-        waitedMs: Date.now() - started,
+        waitedMs: Math.floor(performance.now() - started),
         release() {
           if (released) return;
           released = true;
           try {
             getTempParent();
-            const owner = JSON.parse(readFileSync(ownerPath, "utf8"));
-            if (owner.token === token) rmSync(lockDirectory, { recursive: true, force: true });
+            const owner = readLeaseOwner(lockDirectory);
+            if (owner?.token === token && owner.pid === process.pid) removeLease(lockDirectory);
           } catch {
             // A missing or replaced lease is already released from this owner.
           }
@@ -787,8 +928,8 @@ export async function acquireProviderLease(endpoint, timeoutMs, { pollMs = 25, g
     } catch (error) {
       if (error?.code !== "EEXIST") throw error;
       if (reclaimDeadProviderLease(lockDirectory)) continue;
-      if (Date.now() >= deadline) throw new Error(`provider lease wait exceeded ${timeoutMs} ms`);
-      await delay(Math.min(pollMs, Math.max(1, deadline - Date.now())));
+      if (performance.now() >= deadline) throw new Error(`provider lease wait exceeded ${timeoutMs} ms`);
+      await delay(Math.min(pollMs, Math.max(1, deadline - performance.now())));
     }
   }
 }
@@ -861,6 +1002,12 @@ export function pathMatchesPrefix(filename, prefix) {
   return filename === prefix || filename.startsWith(`${prefix}/`);
 }
 
+// A denial must cover spellings that may address the same entry on a
+// case-insensitive checkout. Keep the positive defect-reproduction grant exact.
+function isDeniedTestPath(filename) {
+  return isTestPath(protectedPathKey(filename));
+}
+
 export function isTestPath(filename) {
   return /(^|\/)(tests?|__tests__)(\/|$)|\.(test|spec)\.[^.]+$|_test\.go$/.test(filename);
 }
@@ -887,8 +1034,18 @@ export function isProtectedPath(filename) {
     || PROTECTED_PATHS.some((prefix) => pathMatchesPrefix(normalized, prefix));
 }
 
+function hasSymlinkComponent(root, normalized) {
+  let current = root;
+  for (const component of normalized.split("/")) {
+    current = path.join(current, component);
+    if (lstatSync(current, {throwIfNoEntry:false})?.isSymbolicLink()) return true;
+  }
+  return false;
+}
+
 export function validatePathAccess(assignment, filename, operation = "read", worktree = null) {
   if (!["read", "edit"].includes(operation)) throw new Error("operation must be read or edit");
+  if (typeof filename === "string" && filename.includes("\\")) return {allowed:false, reason:"ambiguous path separator"};
   const normalized = normalizeAllowedPath(filename);
   if (isProtectedPath(normalized)) return { allowed: false, reason: `protected path: ${normalized}` };
   const allowedPaths = operation === "read"
@@ -900,17 +1057,11 @@ export function validatePathAccess(assignment, filename, operation = "read", wor
   if (operation === "edit" && !["candidate_edit", "defect_reproduction"].includes(assignment.authority.mode)) {
     return { allowed: false, reason: `${assignment.authority.mode} authority does not permit edits` };
   }
-  if (operation === "edit" && !assignment.authority.allow_test_changes && isTestPath(normalized)) {
+  if (operation === "edit" && !assignment.authority.allow_test_changes && isDeniedTestPath(normalized)) {
     return { allowed: false, reason: `unauthorized test path: ${normalized}` };
   }
-  if (worktree) {
-    let current = worktree;
-    for (const component of normalized.split("/")) {
-      current = path.join(current, component);
-      if (existsSync(current) && lstatSync(current).isSymbolicLink()) {
-        return { allowed: false, reason: `symbolic link path: ${normalized}` };
-      }
-    }
+  if (worktree && hasSymlinkComponent(worktree, normalized)) {
+    return { allowed: false, reason: `symbolic link path: ${normalized}` };
   }
   return { allowed: true };
 }
@@ -1068,7 +1219,7 @@ export function validateAssignment(value) {
     }
     if (value.authority.mode === "defect_reproduction") {
       if (value.authority.allow_test_changes !== true) errors.push("defect_reproduction assignments require test-change authority");
-      for (const allowedPath of value.authority.allowed_paths ?? []) {
+      for (const allowedPath of Array.isArray(value.authority.allowed_paths) ? value.authority.allowed_paths : []) {
         try {
           if (!isTestPath(normalizeAllowedPath(allowedPath))) {
             errors.push("defect_reproduction allowed paths must identify test files or test directories");
@@ -1154,10 +1305,10 @@ export function validateAssignment(value) {
     if (typeof value.acceptance.require_changes !== "boolean") errors.push("acceptance.require_changes must be boolean");
     if (value.authority?.mode === "defect_reproduction") {
       if (value.acceptance.require_changes !== true) errors.push("defect_reproduction assignments must require changes");
-      if (value.acceptance.checks?.some((check) => check.expected_result !== "nonzero")) {
+      if (Array.isArray(value.acceptance.checks) && value.acceptance.checks.some(check => check?.expected_result !== "nonzero")) {
         errors.push("defect_reproduction acceptance checks must expect nonzero results");
       }
-    } else if (value.acceptance.checks?.some((check) => check.expected_result !== "zero")) {
+    } else if (Array.isArray(value.acceptance.checks) && value.acceptance.checks.some(check => check?.expected_result !== "zero")) {
       errors.push("only defect_reproduction assignments may expect nonzero acceptance results");
     }
     if (value.authority?.mode === "structured_proposal" && value.acceptance.require_changes !== true) {
@@ -1327,12 +1478,16 @@ export function validateStructuredProposal(assignment, text) {
     errors.push("proposal.changes must contain between 1 and 10 changes");
   } else {
     const normalizedAllowed = assignment.authority.allowed_paths.map(normalizeAllowedPath);
+    const destinations = new Set();
     for (const [index, change] of proposal.changes.entries()) {
       const location = `proposal.changes[${index}]`;
       if (!checkKeys(errors, change, location, ["path", "operation", "rationale", "content"])) continue;
       let normalized;
       try {
+        if (typeof change.path === "string" && change.path.includes("\\")) throw Error("uses an ambiguous path separator");
         normalized = normalizeAllowedPath(change.path);
+        if (destinations.has(normalized)) errors.push(`${location}.path is a duplicate proposal path`);
+        destinations.add(normalized);
       } catch (error) {
         errors.push(`${location}.path ${error.message}`);
       }
@@ -1342,7 +1497,7 @@ export function validateStructuredProposal(assignment, text) {
       if (normalized && isProtectedPath(normalized)) {
         errors.push(`${location}.path is protected`);
       }
-      if (normalized && !assignment.authority.allow_test_changes && isTestPath(normalized)) {
+      if (normalized && !assignment.authority.allow_test_changes && isDeniedTestPath(normalized)) {
         errors.push(`${location}.path is an unauthorized test path`);
       }
       if (change.operation !== "create_or_replace") errors.push(`${location}.operation must be create_or_replace`);
@@ -1405,9 +1560,9 @@ function enumerateContextFiles(worktree, declaredPath) {
     throw new Error(`context path is protected: ${normalized}`);
   }
   const absolute = path.join(worktree, normalized);
+  if (hasSymlinkComponent(worktree, normalized)) throw new Error(`declared context path crosses a symbolic link: ${normalized}`);
   if (!existsSync(absolute)) throw new Error(`declared context path does not exist: ${normalized}`);
   const stat = lstatSync(absolute);
-  if (stat.isSymbolicLink()) throw new Error(`declared context path is a symbolic link: ${normalized}`);
   if (stat.isFile()) return [normalized];
   if (!stat.isDirectory()) throw new Error(`declared context path is not a regular file or directory: ${normalized}`);
   const files = [];
@@ -1429,17 +1584,17 @@ export function buildDeterministicContext(assignment, worktree) {
   const files = [];
   let totalBytes = 0;
   for (const filename of filenames) {
-    const source = readFileSync(path.join(worktree, filename));
+    const source = readBoundedFileBytes(path.join(worktree, filename), maximumBytes - totalBytes,
+      fsFlags.O_NOFOLLOW, undefined, "Context file exceeds the byte budget or is not regular");
     let content;
     try {
-      content = new TextDecoder("utf-8", { fatal: true }).decode(source);
+      content = new TextDecoder("utf-8", { fatal:true, ignoreBOM:true }).decode(source);
     } catch {
       throw new Error(`context file is not valid UTF-8: ${filename}`);
     }
     const bytes = source.length;
     totalBytes += bytes;
-    if (totalBytes > maximumBytes) throw new Error(`deterministic context exceeds ${maximumBytes} bytes`);
-    files.push({ path: filename, bytes, sha256: sha256(content), content });
+    files.push({ path: filename, bytes, sha256: sha256(source), content });
   }
   if (files.length === 0) throw new Error("deterministic context contains no files");
   const bundle = JSON.stringify({ schema_version: "unified-harness.agent-context.v1", files });
@@ -1549,6 +1704,12 @@ export function evaluateChangedFiles(assignment, filenames) {
   const violations = [];
   const normalizedAllowed = assignment.authority.allowed_paths.map(normalizeAllowedPath);
   for (const filename of filenames) {
+    // Git emits literal POSIX names. A backslash is part of one entry here,
+    // even when the same spelling in a caller's grant is a path separator.
+    if (filename.includes("\\")) {
+      violations.push("ambiguous path separator in changed file");
+      continue;
+    }
     const normalized = normalizeAllowedPath(filename);
     if (isProtectedPath(normalized)) {
       violations.push(`protected path changed: ${normalized}`);
@@ -1558,7 +1719,7 @@ export function evaluateChangedFiles(assignment, filenames) {
     } else if (!normalizedAllowed.some((prefix) => pathMatchesPrefix(normalized, prefix))) {
       violations.push(`out-of-scope path changed: ${normalized}`);
     }
-    if (!assignment.authority.allow_test_changes && isTestPath(normalized)) {
+    if (!assignment.authority.allow_test_changes && isDeniedTestPath(normalized)) {
       violations.push(`test change was not authorized: ${normalized}`);
     }
     if (assignment.authority.mode === "defect_reproduction" && !isTestPath(normalized)) {
@@ -1680,12 +1841,15 @@ export function assertLoopbackEndpoint(endpoint) {
 }
 
 export function rejectExplicitlyUnsupportedTools(tag) {
-  if (Array.isArray(tag?.capabilities) && !tag.capabilities.includes("tools")) {
+  if (tag?.capabilities !== undefined && (!Array.isArray(tag.capabilities) || !tag.capabilities.includes("tools"))) {
     throw new Error("local model explicitly does not advertise tool calling; choose a local chat model with tool support");
   }
 }
 
-async function discoveryResponse(url, optional = false) {
+// Count decoded bytes including streamed and compressed metadata. Optional
+// metadata may be unavailable, but an oversized response stops discovery.
+const discoveryByteLimit = 1024 * 1024;
+async function discoveryJson(url, provider, optional = false) {
   let response;
   try {
     response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(5_000) });
@@ -1698,14 +1862,22 @@ async function discoveryResponse(url, optional = false) {
     await response.body?.cancel();
     throw new Error("Provider discovery redirect is not authorized.");
   }
-  return response;
+  if (!response.ok) {
+    await response.body?.cancel();
+    if (optional) return null;
+    throw Error(`${provider} model endpoint returned HTTP ${response.status}`);
+  }
+  let result;
+  try { result = await readBoundedJsonResponse(response, discoveryByteLimit); }
+  catch (error) { if (optional) return null; throw error; }
+  if (result.size > discoveryByteLimit) throw Error("Provider discovery response exceeds byte limit.");
+  if (result.violation && !optional) throw Error(result.violation);
+  return result.payload ?? null;
 }
 
 async function checkModelEndpoint(endpoint, modelId, provider, requiresTools = false, beforeRequest = () => {}) {
   beforeRequest();
-  const response = await discoveryResponse(`${endpoint}/models`);
-  if (!response.ok) throw new Error(`${provider} model endpoint returned HTTP ${response.status}`);
-  const payload = await response.json();
+  const payload = await discoveryJson(`${endpoint}/models`, provider);
   const advertisedModel = Array.isArray(payload?.data) ? payload.data.find((item) => item?.id === modelId) : undefined;
   if (!advertisedModel) throw new Error(`${provider} endpoint does not advertise ${modelId}`);
   if (provider !== "ollama") return { server_version: null, model_digest: null };
@@ -1715,8 +1887,7 @@ async function checkModelEndpoint(endpoint, modelId, provider, requiresTools = f
   const tagsURL = new URL("api/tags", root);
   const optionalJson = async url => {
     beforeRequest();
-    const response = await discoveryResponse(url, true);
-    return response?.ok ? response.json().catch(() => null) : null;
+    return discoveryJson(url, provider, true);
   };
   const [versionPayload, tagsPayload] = await Promise.all([optionalJson(versionURL), optionalJson(tagsURL)]);
   const modelTag = Array.isArray(tagsPayload?.models)
@@ -1746,7 +1917,7 @@ export function buildCodexCommand(assignment, artifactDirectory, prompt = buildA
     "exec",
     "--model", assignment.assignee.model_id,
     "--sandbox", sandbox,
-    "--approve-for-me",
+    ...(sandbox === "read-only" ? ["-c", 'approval_policy="never"'] : ["--approve-for-me"]),
     "--ephemeral",
     "--ignore-user-config",
     "-c", 'web_search="disabled"',
@@ -1756,22 +1927,72 @@ export function buildCodexCommand(assignment, artifactDirectory, prompt = buildA
   if (assignment.authority.mode === "structured_proposal") {
     const schemaPath = path.join(artifactDirectory, "codex-output-schema.json");
     writeFileSync(schemaPath, `${JSON.stringify(buildProposalJsonSchema(assignment), null, 2)}\n`, { mode: 0o600 });
-    args.push("--output-schema", schemaPath);
+    args.push("--skip-git-repo-check", "--output-schema", schemaPath, "-c", "skills.include_instructions=false");
+    for (const feature of ["shell_tool","unified_exec","multi_agent","apps","plugins","hooks","memories","view_image","image_generation"]) {
+      args.push("--disable", feature);
+    }
   }
   args.push(prompt);
   return args;
 }
 
+const codexEventTypes = new Set(["thread.started","turn.started","turn.completed","turn.failed",
+  "item.started","item.updated","item.completed","error"]);
+const codexToolItems = new Set(["command_execution","file_change","mcp_tool_call","web_search"]);
+const codexProposalItems = new Set(["agent_message","reasoning","todo_list"]);
+
 function summarizeCodexEvent(event) {
-  const summary = { type: event?.type ?? "unknown" };
-  if (event?.item?.type) summary.item_type = event.item.type;
-  if (event?.type === "item.completed" && event?.item?.type === "agent_message") {
-    summary.text_bytes = Buffer.byteLength(String(event.item.text ?? ""));
-    summary.text_hash = sha256(String(event.item.text ?? ""));
+  const type = codexEventTypes.has(event?.type) ? event.type : "unknown";
+  const summary = {type};
+  if (type.startsWith("item.")) {
+    const kind = event.item?.type;
+    summary.item_type = codexToolItems.has(kind) || codexProposalItems.has(kind) || kind === "error" ? kind : "unknown";
+    if (type === "item.completed" && kind === "agent_message" && typeof event.item.text === "string") {
+      summary.text_bytes = Buffer.byteLength(event.item.text);
+      summary.text_hash = sha256(event.item.text);
+    }
+  } else if (type === "turn.completed") {
+    summary.usage = {};
+    for (const key of ["input_tokens","cached_input_tokens","cache_write_input_tokens","output_tokens","reasoning_output_tokens"]) {
+      const n = event.usage?.[key];
+      if (Number.isSafeInteger(n) && n >= 0) summary.usage[key] = n;
+    }
+  } else if (type === "error" || type === "turn.failed") {
+    summary.message_hash = sha256(String(event.message ?? event.error?.message ?? "unknown"));
   }
-  if (event?.type === "turn.completed") summary.usage = event.usage ?? null;
-  if (event?.type === "error") summary.message_hash = sha256(String(event.message ?? event.error ?? ""));
   return summary;
+}
+
+// Capture raw bytes so a truncated tail, split UTF-8 sequence or signal cannot
+// stand in for a complete worker transcript or a check's expected nonzero exit.
+async function captureProcess(executable, args, {cwd, env, timeout, maxBuffer}) {
+  let code = 0, signal = null, timedOut = false, overflow = false, stdout, stderr;
+  const started = performance.now();
+  try {
+    ({stdout,stderr} = await execFileAsync(executable,args,{cwd,env,timeout,maxBuffer,encoding:"buffer",killSignal:"SIGKILL"}));
+  } catch (error) {
+    code = Number.isInteger(error.code) ? error.code : null;
+    signal = error.signal ?? null;
+    stdout = error.stdout;
+    stderr = error.stderr;
+    overflow = error.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER";
+    timedOut = !overflow && error.killed === true && signal === "SIGKILL";
+    if (!overflow && !timedOut && code === null && !signal) throw error;
+  }
+  timedOut ||= performance.now()-started >= timeout;
+  return {code,signal,timedOut,overflow,stdout,stderr,complete:!overflow && !timedOut && !signal};
+}
+
+async function captureNativeWorker(name, executable, args, assignment, cwd) {
+  const seconds = assignment.resources.timeout_seconds;
+  const result = await captureProcess(executable,args,{cwd,env:{...process.env,NO_COLOR:"1"},
+    timeout:seconds*1000,maxBuffer:assignment.resources.max_output_bytes});
+  const violations = [];
+  if (result.overflow) violations.push(name+" output budget exceeded");
+  else if (result.signal && !result.timedOut) violations.push(name+" terminated by signal");
+  else if (result.code !== null && result.code !== 0) violations.push(name+" returned exit code "+result.code);
+  if (result.timedOut) violations.push(`wall-clock timeout exceeded: ${seconds} seconds`);
+  return {...result,violations};
 }
 
 async function runCodex({ assignment, worktree, artifactDirectory }) {
@@ -1815,33 +2036,66 @@ async function runCodex({ assignment, worktree, artifactDirectory }) {
       proposal_text: "",
     };
   }
-  const result = await runCommand(executable, buildCodexCommand(assignment, artifactDirectory, prompt), {
-    cwd: worktree,
-    timeoutMs: assignment.resources.timeout_seconds * 1_000,
-    maxOutputBytes: assignment.resources.max_output_bytes,
-    env: { ...process.env, NO_COLOR: "1" },
-  });
+  // The prompt already contains the reviewed context. Keep automatic project
+  // discovery away from the disposable checkout and its repository instructions.
+  const workerDirectory = context ? mkdtempSync(path.join(path.dirname(worktree),"codex-proposal-")) : worktree;
+  const result = await captureNativeWorker("Codex CLI", executable, buildCodexCommand(assignment, artifactDirectory, prompt), assignment, workerDirectory);
   const events = [];
-  const violations = [];
+  const violations = [...result.violations];
   let proposalText = "";
   let usage = null;
   let steps = 0;
   let toolCalls = 0;
-  for (const line of result.stdout.split("\n").filter(Boolean)) {
-    try {
-      const event = JSON.parse(line);
-      events.push(summarizeCodexEvent(event));
-      if (event.type === "turn.started") steps += 1;
-      if (["command_execution", "file_change", "mcp_tool_call", "web_search"].includes(event?.item?.type)) toolCalls += 1;
-      if (event.type === "item.completed" && event?.item?.type === "agent_message") proposalText = String(event.item.text ?? "");
-      if (event.type === "turn.completed") usage = event.usage ?? null;
-      if (event.type === "error") violations.push("Codex CLI reported an execution error");
-    } catch {
-      violations.push("Codex CLI emitted malformed JSON event output");
+  let turnOpen = false;
+  let transcript = "";
+  if (result.complete) {
+    try { transcript = new TextDecoder("utf-8",{fatal:true}).decode(result.stdout); }
+    catch { violations.push("Codex CLI output is not valid UTF-8"); }
+  }
+  for (const line of transcript.split("\n").filter(line=>line.trim())) {
+    let event;
+    try { event = JSON.parse(line); }
+    catch { violations.push("Codex CLI emitted malformed JSON event output"); continue; }
+    const summary = summarizeCodexEvent(event);
+    events.push(summary);
+    switch (summary.type) {
+      case "thread.started":
+        if (steps || events.length !== 1) violations.push("Unexpected thread start in Codex CLI output");
+        break;
+      case "turn.started":
+        if (turnOpen) violations.push("Codex CLI turn already active");
+        turnOpen = true;
+        proposalText = "";
+        steps++;
+        break;
+      case "turn.completed":
+        if (!turnOpen) violations.push("Codex CLI completion outside an active turn");
+        turnOpen = false;
+        usage = summary.usage;
+        break;
+      case "turn.failed":
+        violations.push("Codex CLI reported a failed turn");
+        turnOpen = false;
+        break;
+      case "item.started":
+      case "item.updated":
+      case "item.completed":
+        if (!turnOpen) violations.push("Codex CLI item outside an active turn");
+        if (codexToolItems.has(summary.item_type)) toolCalls++;
+        if (context && !codexProposalItems.has(summary.item_type)) violations.push("Codex CLI reported an item outside proposal scope");
+        if (summary.type === "item.completed" && summary.item_type === "agent_message") {
+          proposalText = typeof event.item.text === "string" ? event.item.text : "";
+        }
+        break;
+      case "error":
+        violations.push("Codex CLI reported an execution error");
+        break;
+      default:
+        violations.push("Codex CLI emitted an unknown event");
     }
   }
+  if (result.code === 0 && (!steps || turnOpen)) violations.push("Codex CLI returned an incomplete turn");
   if (steps > assignment.resources.max_steps) violations.push(`step budget exceeded: ${steps}/${assignment.resources.max_steps}`);
-  if (result.timedOut) violations.push(`wall-clock timeout exceeded: ${assignment.resources.timeout_seconds} seconds`);
   writeFileSync(path.join(artifactDirectory, "events.ndjson"), `${events.map((event) => JSON.stringify(event)).join("\n")}\n`);
   return {
     code: result.code,
@@ -1853,10 +2107,10 @@ async function runCodex({ assignment, worktree, artifactDirectory }) {
     read_calls: context?.receipt.file_count ?? null,
     context: context?.receipt ?? null,
     preflight,
-    finish_reason: result.timedOut ? "timeout" : result.code === 0 ? "stop" : "error",
+    finish_reason: result.timedOut ? "timeout" : result.code === 0 && !violations.length ? "stop" : "error",
     usage,
     timed_out: result.timedOut,
-    stderr_hash: sha256(result.stderr),
+    stderr_hash: result.complete ? sha256(result.stderr) : null,
     violations: [...new Set(violations)],
     proposal_text: proposalText,
   };
@@ -1957,13 +2211,14 @@ function workerReadBoundary(root, assignment, pinnedPaths) {
   const folded = name => name.normalize("NFKC").toLowerCase().replace(/\p{Default_Ignorable_Code_Point}/gu, "");
   const overlaps = (a, b) => pathMatchesPrefix(a, b) || pathMatchesPrefix(b, a);
   const keys = grants.map(folded);
-  const matched = new Set();
+  const matched = new Set(), regularFiles = new Set();
   function checkEntry(name, isLink, isRegularFile) {
     for (const grant of grants) {
       // The Git index represents a tracked directory by its descendants.
       if (pathMatchesPrefix(name, grant)) {
         if (pinnedPaths && !pinnedPaths.has(name)) throw Error("Read scope contains an entry outside the pinned Git tree");
         matched.add(grant);
+        if (isRegularFile) regularFiles.add(name);
       }
     }
     const key = folded(name);
@@ -2013,7 +2268,7 @@ function workerReadBoundary(root, assignment, pinnedPaths) {
       }
     }
   }
-  return {checkEntry, verifyGrants};
+  return {checkEntry, verifyGrants, regularFiles};
 }
 
 function changedCheckoutPaths(before, after) {
@@ -2043,33 +2298,33 @@ async function prepareReadOnlyCheckout(projectRoot, worktree, baseRef) {
   await git(worktree, ["checkout", "--quiet", "--detach", revision]);
 }
 
-async function collectChangedFiles(worktree, baseline) {
-  const [tracked, untracked] = await Promise.all([
-    runCommand("git", ["diff", baseline, "--name-only", "-z", "--"], { cwd: worktree, timeoutMs: 10_000 }),
-    runCommand("git", ["ls-files", "--others", "-z"], { cwd: worktree, timeoutMs: 10_000 }),
-  ]);
-  if (tracked.code !== 0 || untracked.code !== 0) throw new Error("Failed to inspect candidate changes");
-  return [...new Set([...parseNullDelimited(tracked.stdout), ...parseNullDelimited(untracked.stdout)])].sort();
+// Changed names and patches are decision inputs: reject on timeout, invalid
+// encoding or overflow rather than using a truncated command transcript.
+async function candidateGitOutput(cwd, args, maxBuffer = 10_485_760) {
+  const {stdout} = await execFileAsync("git", args, {cwd, timeout:30_000, maxBuffer, encoding:"buffer"});
+  return new TextDecoder("utf-8",{fatal:true,ignoreBOM:true}).decode(stdout);
 }
 
-async function createCandidatePatch(worktree, filenames) {
-  const untracked = await runCommand("git", ["ls-files", "--others", "--exclude-standard", "-z"], {
-    cwd: worktree,
-    timeoutMs: 10_000,
-  });
-  const untrackedFiles = parseNullDelimited(untracked.stdout);
-  if (untrackedFiles.length) {
-    const intentToAdd = await runCommand("git", ["add", "-N", "--", ...untrackedFiles], { cwd: worktree, timeoutMs: 10_000 });
-    if (intentToAdd.code !== 0) throw new Error("Failed to prepare untracked files for the candidate patch");
-  }
+async function collectChangedFiles(worktree, baseline) {
+  const [tracked, untracked] = await Promise.all([
+    candidateGitOutput(worktree, ["diff", "--no-renames", baseline, "--name-only", "-z", "--"]),
+    candidateGitOutput(worktree, ["ls-files", "--others", "-z"]),
+  ]);
+  return [...new Set([...parseNullDelimited(tracked), ...parseNullDelimited(untracked)])].sort();
+}
+
+async function createCandidatePatch(worktree, filenames, baseCommit) {
   if (!filenames.length) return "";
-  const diff = await runCommand("git", ["diff", "--binary", "--no-ext-diff", "--"], {
-    cwd: worktree,
-    timeoutMs: 30_000,
-    maxOutputBytes: 20_971_520,
-  });
-  if (diff.code !== 0) throw new Error("Failed to create candidate patch");
-  return diff.stdout;
+  const untracked = parseNullDelimited(await candidateGitOutput(worktree, ["ls-files", "--others", "-z"]));
+  if (untracked.length) {
+    await candidateGitOutput(worktree, ["--literal-pathspecs", "add", "-f", "-N", "--", ...untracked]);
+  }
+  return readCandidatePatch(worktree,baseCommit);
+}
+
+function readCandidatePatch(worktree, baseCommit) {
+  return candidateGitOutput(worktree, ["diff", "--binary", "--no-ext-diff", "--no-textconv", "--no-color",
+    "--no-renames", baseCommit, "--"], 20_971_520);
 }
 
 // queue.mjs is forked as a POSIX group leader. Its supervisor must be able to
@@ -2142,7 +2397,7 @@ async function runGuardedOpenCode(options, beforeLaunch, beforeCompletion) {
   }
 }
 
-async function runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, getTempParent, capturePrivateResult = false }) {
+async function runOpenCode({ assignment, worktree, configPath, artifactDirectory, endpoint, getTempParent, capturePrivateResult = false, readBoundary }) {
   const prompt = buildAgentPrompt(assignment);
   const isolatedHome = path.join(artifactDirectory, "state", "home");
   mkdirSync(isolatedHome, { recursive: true, mode: 0o700 });
@@ -2187,8 +2442,8 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
   let answerAfterRead = false;
   let timedOut = false;
   let proposalText = "";
-  let responseText = "";
-  let privateResponse = "";
+  let postReadText = "";
+  const strictToken = assignment.acceptance.response_format === "single_ascii_token";
   let finishReason = null;
   let usage = null;
   const permittedTools = new Set(["read"]);
@@ -2232,22 +2487,33 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
         if (tool === "read" && event.part?.state?.status === "completed") {
           const rawPath = event.part?.state?.input?.filePath;
           try {
-            if (typeof rawPath !== "string") throw new Error("missing path");
+            if (typeof rawPath !== "string" || rawPath.split("/").includes("..")) throw new Error("invalid read path");
             const relativePath = path.isAbsolute(rawPath) ? path.relative(worktree, rawPath) : rawPath;
             if (!validatePathAccess(assignment, relativePath, "read", worktree).allowed) throw new Error("outside scope");
-            readCalls += 1;
+            const entry = lstatSync(path.join(worktree,relativePath));
+            if (!entry.isDirectory() && !entry.isFile()) throw new Error("unsupported read entry");
+            if (entry.isFile()) {
+              if (readBoundary && !readBoundary.regularFiles.has(normalizeAllowedPath(relativePath))) throw new Error("unverified source file");
+              readCalls += 1;
+            }
           } catch {
             stop("completed read was missing a valid in-scope path");
           }
         }
         if (!permittedTools.has(tool)) stop("prohibited tool requested");
       }
+      if (event.type === "text" && typeof event.part?.text !== "string") {
+        stop("OpenCode emitted a non-string text event");
+        return;
+      }
       if (event.type === "text" && assignment.authority.mode === "structured_proposal") {
         proposalText += String(event.part?.text ?? "");
       }
-      if (event.type === "text" && assignment.acceptance.response_format === "single_ascii_token") responseText += String(event.part?.text ?? "");
-      if (capturePrivateResult && event.type === "text" && readCalls > 0) privateResponse += String(event.part?.text ?? "");
-      if (event.type === "text" && readCalls > 0 && String(event.part?.text ?? "").trim()) answerAfterRead = true;
+      if (event.type === "text" && readCalls > 0) {
+        const text = String(event.part?.text ?? "");
+        if (capturePrivateResult || strictToken) postReadText += text;
+        if (text.trim()) answerAfterRead = true;
+      }
       if (event.type === "step_finish") {
         const safeEvent = summarizeOpenCodeEvent(event);
         finishReason = safeEvent.reason;
@@ -2294,7 +2560,7 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
   });
   getTempParent();
   inspectLine(stdoutBuffer + stdoutDecoder.end());
-  if (assignment.acceptance.response_format === "single_ascii_token" && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(responseText.trim())) violations.push("response violates single_ascii_token format");
+  if (strictToken && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(postReadText.trim())) violations.push("response violates single_ascii_token format");
   writeFileSync(path.join(artifactDirectory, "events.ndjson"), `${events.map((event) => JSON.stringify(event)).join("\n")}\n`);
   return {
     ...result,
@@ -2310,8 +2576,28 @@ async function runOpenCode({ assignment, worktree, configPath, artifactDirectory
     stderr_hash: sha256(stderr),
     violations,
     proposal_text: proposalText,
-    ...(capturePrivateResult ? { private_response: privateResponse } : {}),
+    ...(capturePrivateResult ? { private_response: postReadText } : {}),
   };
+}
+
+// Returning from the async iterator cancels the remaining response body.
+async function readBoundedJsonResponse(response, maximumBytes) {
+  let size = 0;
+  const chunks = [];
+  if (response.body) {
+    for await (const chunk of response.body) {
+      size += chunk.byteLength;
+      if (size > maximumBytes) return {size, hash:null, violation:`output budget exceeded: ${size}/${maximumBytes} bytes`};
+      chunks.push(chunk);
+    }
+  }
+  const bytes = Buffer.concat(chunks,size);
+  const hash = sha256(bytes);
+  let text;
+  try { text = new TextDecoder("utf-8",{fatal:true}).decode(bytes); }
+  catch { return {size, hash, violation:"endpoint returned invalid UTF-8"}; }
+  try { return {size, hash, payload:JSON.parse(text)}; }
+  catch { return {size, hash, violation:"endpoint returned malformed JSON"}; }
 }
 
 async function runDirectJson({ assignment, worktree, artifactDirectory, endpoint, request = fetch }) {
@@ -2365,21 +2651,31 @@ async function runDirectJson({ assignment, worktree, artifactDirectory, endpoint
     body: JSON.stringify(requestBody),
     signal: AbortSignal.timeout(assignment.resources.timeout_seconds * 1_000),
   });
-  const responseText = await response.text();
-  const responseBytes = Buffer.byteLength(responseText);
+  const reply = await readBoundedJsonResponse(response, assignment.resources.max_output_bytes);
   const violations = [];
   if (!response.ok) violations.push(`${adapter} endpoint returned HTTP ${response.status}`);
-  if (responseBytes > assignment.resources.max_output_bytes) violations.push(`output budget exceeded: ${responseBytes}/${assignment.resources.max_output_bytes} bytes`);
-  let payload = null;
-  try {
-    payload = JSON.parse(responseText);
-  } catch {
-    violations.push(`${adapter} endpoint returned malformed JSON`);
+  if (reply.violation) violations.push(reply.violation);
+  const choices = reply.payload?.choices;
+  let finishReason = null;
+  let proposalText = "";
+  if (!violations.length) {
+    if (!Array.isArray(choices) || choices.length !== 1) {
+      violations.push(`${adapter} completion must have exactly one choice`);
+    } else {
+      const choice = choices[0];
+      const message = choice?.message;
+      finishReason = choice?.finish_reason;
+      if (finishReason === "length") violations.push(`${adapter} completion exhausted its token budget`);
+      else if (finishReason !== "stop") violations.push(`${adapter} completion did not stop normally`);
+      if (message?.role !== "assistant") violations.push(`${adapter} endpoint returned a non-assistant message`);
+      if (message?.function_call != null || (message?.tool_calls != null &&
+          !(Array.isArray(message.tool_calls) && message.tool_calls.length === 0))) {
+        violations.push(`${adapter} endpoint requested a tool call`);
+      }
+      if (typeof message?.content === "string" && message.content.trim()) proposalText = message.content;
+      else violations.push(`${adapter} endpoint returned no proposal content`);
+    }
   }
-  const proposalText = payload?.choices?.[0]?.message?.content;
-  if (typeof proposalText !== "string" || !proposalText.trim()) violations.push(`${adapter} endpoint returned no proposal content`);
-  const finishReason = payload?.choices?.[0]?.finish_reason ?? null;
-  if (finishReason === "length") violations.push(`${adapter} completion exhausted its token budget`);
   writeFileSync(path.join(artifactDirectory, "events.ndjson"), `${JSON.stringify({
     type: "direct_completion",
     adapter,
@@ -2388,9 +2684,9 @@ async function runDirectJson({ assignment, worktree, artifactDirectory, endpoint
     reasoning_control: adapter === "direct_validated_json"
       ? (assignment.assignee.provider === "mlx" ? "chat_template_enable_thinking_false" : "none")
       : null,
-    status: response.ok ? "completed" : "failed",
-    response_bytes: responseBytes,
-    response_hash: sha256(responseText),
+    status: violations.length ? "failed" : "completed",
+    response_bytes: reply.size,
+    response_hash: reply.hash,
     context_hash: context.receipt.bundle_hash,
     ...preflight,
   })}\n`);
@@ -2410,23 +2706,39 @@ async function runDirectJson({ assignment, worktree, artifactDirectory, endpoint
     context: context.receipt,
     preflight,
     finish_reason: finishReason,
-    usage: payload?.usage ?? null,
+    usage: reply.payload?.usage ?? null,
     timed_out: false,
     stderr_hash: sha256(""),
     violations,
-    proposal_text: typeof proposalText === "string" ? proposalText : "",
+    proposal_text: violations.length ? "" : proposalText,
   };
 }
 
 export function buildAiderCommand(assignment, worktree, artifactDirectory, endpoint) {
   endpoint = parseLoopbackEndpoint(endpoint).href;
-  const editable = assignment.authority.allowed_paths.map(normalizeAllowedPath);
-  const readable = [...new Set(assignment.authority.allowed_read_paths.flatMap((declaredPath) => {
-    const normalized = normalizeAllowedPath(declaredPath);
-    return editable.includes(normalized) && !existsSync(path.join(worktree, normalized)) ? [] : enumerateContextFiles(worktree, normalized);
-  }))]
-    .filter((filename) => !editable.some((prefix) => pathMatchesPrefix(filename, prefix)))
-    .sort();
+  const grants = assignment.authority.allowed_paths.map(checkedScopePath);
+  const editable = new Set();
+  for (const filename of grants) {
+    const access = validatePathAccess(assignment,filename,"edit",worktree);
+    if (!access.allowed) throw new Error(access.reason);
+    if (!existsSync(path.join(worktree,filename))) editable.add(filename);
+  }
+  const files = new Set(assignment.authority.allowed_read_paths.flatMap(name => {
+    const filename = checkedScopePath(name);
+    return editable.has(filename) ? [] : enumerateContextFiles(worktree,filename);
+  }));
+  const readable = [];
+  let remaining = assignment.worker?.max_context_bytes ?? 65_536;
+  for (const file of [...files].sort()) {
+    const readAccess = validatePathAccess(assignment,file,"read",worktree);
+    if (!readAccess.allowed) throw new Error(readAccess.reason);
+    const bytes = readBoundedFileBytes(path.join(worktree,file),remaining,fsFlags.O_NOFOLLOW,undefined,
+      "Aider source exceeds the byte budget or is not regular");
+    remaining -= bytes.length;
+    if (validatePathAccess(assignment,file,"edit",worktree).allowed) editable.add(file);
+    else readable.push(file);
+  }
+  if (!editable.size) throw new Error("Aider needs at least one permitted edit file");
   const configPath = path.join(artifactDirectory, "aider.conf.yml");
   const envPath = path.join(artifactDirectory, "aider.env");
   const transientState = path.join(artifactDirectory, "state", "aider");
@@ -2460,25 +2772,22 @@ export function buildAiderCommand(assignment, worktree, artifactDirectory, endpo
     "--chat-history-file", path.join(transientState, "chat-history.md"),
     "--llm-history-file", path.join(transientState, "llm-history.log"),
   ];
-  for (const filename of readable) args.push("--read", filename);
-  for (const filename of editable) args.push("--file", filename);
+  const cliPath = file => file.startsWith("-") ? "./"+file : file;
+  for (const filename of readable) args.push("--read", cliPath(filename));
+  for (const filename of [...editable].sort()) args.push("--file", cliPath(filename));
   return args;
 }
 
 async function runAider({ assignment, worktree, artifactDirectory, endpoint }) {
   const executable = process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN || "aider";
-  const result = await runCommand(executable, buildAiderCommand(assignment, worktree, artifactDirectory, endpoint), {
-    cwd: worktree,
-    timeoutMs: assignment.resources.timeout_seconds * 1_000,
-    maxOutputBytes: assignment.resources.max_output_bytes,
-    env: { ...process.env, NO_COLOR: "1" },
-  });
-  const transcript = `${result.stdout}\n${result.stderr}`;
+  const result = await captureNativeWorker("Aider",executable,
+    buildAiderCommand(assignment,worktree,artifactDirectory,endpoint),assignment,worktree);
+  const transcript = result.complete ? Buffer.concat([result.stdout,Buffer.from("\n"),result.stderr]) : null;
   writeFileSync(path.join(artifactDirectory, "events.ndjson"), `${JSON.stringify({
     type: "aider_run",
-    status: result.code === 0 ? "completed" : "failed",
-    output_bytes: Buffer.byteLength(transcript),
-    output_hash: sha256(transcript),
+    status: result.code === 0 && !result.violations.length ? "completed" : "failed",
+    output_bytes: transcript?.length ?? null,
+    output_hash: transcript ? sha256(transcript) : null,
   })}\n`);
   return {
     code: result.code,
@@ -2488,23 +2797,27 @@ async function runAider({ assignment, worktree, artifactDirectory, endpoint }) {
     steps: 1,
     tool_calls: null,
     read_calls: null,
-    finish_reason: result.timedOut ? "timeout" : result.code === 0 ? "stop" : "error",
+    finish_reason: result.timedOut ? "timeout" : result.code === 0 && !result.violations.length ? "stop" : "error",
     usage: null,
     timed_out: result.timedOut,
-    stderr_hash: sha256(result.stderr),
-    violations: result.timedOut ? [`wall-clock timeout exceeded: ${assignment.resources.timeout_seconds} seconds`] : [],
+    stderr_hash: result.complete ? sha256(result.stderr) : null,
+    violations: result.violations,
     proposal_text: "",
   };
 }
 
-async function runAcceptanceChecks(assignment, worktree) {
+async function runAcceptanceChecks(assignment, worktree, verifyCandidate) {
   const results = [];
   for (const check of assignment.acceptance.checks) {
-    const result = await runCommand(check.command, check.args, {
+    const result = await captureProcess(check.command, check.args, {
       cwd: worktree,
-      timeoutMs: check.timeout_seconds * 1_000,
-      maxOutputBytes: 5_242_880,
+      timeout: check.timeout_seconds * 1_000,
+      maxBuffer: 5_242_880,
     });
+    const expectedExit = result.complete && (check.expected_result === "zero" ? result.code === 0 : result.code !== 0);
+    // A passing command must still describe the patch that will be delivered.
+    // Untracked build products are separate from the candidate's tracked diff.
+    const candidateUnchanged = expectedExit && verifyCandidate ? await verifyCandidate() : undefined;
     results.push({
       command: check.command,
       args: check.args,
@@ -2512,9 +2825,11 @@ async function runAcceptanceChecks(assignment, worktree) {
       signal: result.signal,
       timed_out: result.timedOut,
       expected_result: check.expected_result,
-      stdout_hash: sha256(result.stdout),
-      stderr_hash: sha256(result.stderr),
-      passed: !result.timedOut && (check.expected_result === "zero" ? result.code === 0 : result.code !== 0 && result.code !== null),
+      output_exceeded: result.overflow,
+      stdout_hash: result.complete ? sha256(result.stdout) : null,
+      stderr_hash: result.complete ? sha256(result.stderr) : null,
+      ...(candidateUnchanged !== undefined ? {candidate_unchanged:candidateUnchanged} : {}),
+      passed: expectedExit && candidateUnchanged !== false,
     });
     if (!results.at(-1).passed) break;
   }
@@ -2590,7 +2905,7 @@ export async function runHarness({
         ? await runDirectJson({ assignment, worktree, artifactDirectory, endpoint, request: completionRequest })
         : adapter === "aider"
           ? await runAider({ assignment, worktree, artifactDirectory, endpoint })
-        : await runGuardedOpenCode({ assignment, worktree, artifactDirectory, endpoint, getTempParent, capturePrivateResult }, beforeProvider, beforeCompletion);
+        : await runGuardedOpenCode({ assignment, worktree, artifactDirectory, endpoint, getTempParent, capturePrivateResult, readBoundary }, beforeProvider, beforeCompletion);
     } finally {
       providerLease?.release();
       providerLease = null;
@@ -2599,10 +2914,11 @@ export async function runHarness({
     const { proposal_text: proposalText, private_response: privateResponse, ...agentEvidence } = agentResult;
     const changedFiles = readOnly
       ? changedCheckoutPaths(beforeCheckout, snapshotCheckout(worktree))
-      : await collectChangedFiles(worktree, "HEAD");
+      : await collectChangedFiles(worktree, baseCommit);
     const policyViolations = readOnly && changedFiles.length
       ? ["read-only checkout or Git metadata changed"]
       : evaluateChangedFiles(assignment, changedFiles);
+    if (!readOnly && await readHeadCommit(worktree) !== baseCommit) policyViolations.push("worker changed the checkout commit");
     if (assignment.authority.mode === "read_only" && agentResult.read_calls < 1) {
       policyViolations.push("read-only work produced no completed source read");
     }
@@ -2620,10 +2936,11 @@ export async function runHarness({
       }
     }
     const allViolations = [...new Set([...agentResult.violations, ...policyViolations, ...proposalViolations])];
+    const patch = readOnly || policyViolations.length ? "" : await createCandidatePatch(worktree, changedFiles, baseCommit);
     const acceptanceResults = assignment.authority.mode !== "structured_proposal" && agentResult.code === 0 && allViolations.length === 0
-      ? await runAcceptanceChecks(assignment, worktree)
+      ? await runAcceptanceChecks(assignment, worktree, readOnly ? undefined : async () =>
+          await readHeadCommit(worktree) === baseCommit && await readCandidatePatch(worktree,baseCommit) === patch)
       : [];
-    const patch = assignment.authority.mode === "read_only" ? "" : await createCandidatePatch(worktree, changedFiles);
     if (patch) writeFileSync(path.join(artifactDirectory, "candidate.patch"), patch, { mode: 0o600 });
     if (proposal) writeFileSync(path.join(artifactDirectory, "proposal.json"), `${JSON.stringify(proposal, null, 2)}\n`, { mode: 0o600 });
     const acceptancePassed = assignment.authority.mode === "structured_proposal"
@@ -2796,57 +3113,82 @@ function durableExclusiveJson(directory, name, value) {
   try { fsyncSync(dirFd); } finally { closeSync(dirFd); }
 }
 
+function invocationDigest(value) {
+  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+}
+
+function validUtcInstant(value) {
+  return typeof value === "string" && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(value)
+    && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+}
+
+const ledgerByteLimit = 65536;
+const terminalStates = new Set(["completed","failed"]);
+
 // A claim is never deleted or reset, even if writing it fails part way through.
 function claimInvocation(policy, digest, sourceRoot) {
   validateInvocationPolicy(policy);
-  const privatePolicy = {directory:policy.directory,retention:"owner_managed"};
+  if (!invocationDigest(digest)) throw new Error("Invalid invocation identity.");
+  const directory = policy.directory;
+  const privatePolicy = {directory,retention:"owner_managed"};
   const identity = checkResultDirectory(privatePolicy, sourceRoot);
   const claim = {schema_version:"unified-harness.invocation-claim.v1",assignment_digest:digest,state:"claimed",claimed_at:new Date().toISOString()};
+  const claimHash = sha256(JSON.stringify(claim));
+  const terminalName = `${digest}.terminal.json`;
   try {
-    try {
-      lstatSync(path.join(policy.directory,`${digest}.terminal.json`));
-      throw new Error("terminal record exists");
-    } catch (error) { if (error.code !== "ENOENT") throw error; }
-    durableExclusiveJson(policy.directory, `${digest}.claim.json`, claim);
-  }
-  catch { throw new Error("Invocation claim unavailable or already exists; reconcile without retrying."); }
+    if (lstatSync(path.join(directory,terminalName),{throwIfNoEntry:false})) throw new Error("Terminal record exists");
+    durableExclusiveJson(directory, `${digest}.claim.json`, claim);
+  } catch { throw new Error("Invocation claim unavailable or already exists; reconcile without retrying."); }
   return {
-    receipt: {assignment_digest:digest,claim_sha256:sha256(JSON.stringify(claim))},
+    receipt: {assignment_digest:digest,claim_sha256:claimHash},
     finish(state, evidenceHash) {
+      if (!terminalStates.has(state) || !invocationDigest(evidenceHash)) throw new Error("Invalid invocation terminal state or evidence hash.");
       try {
-        if (JSON.stringify(checkResultDirectory(privatePolicy,sourceRoot)) !== JSON.stringify(identity)) throw new Error();
-        durableExclusiveJson(policy.directory, `${digest}.terminal.json`, {schema_version:"unified-harness.invocation-terminal.v1",assignment_digest:digest,claim_sha256:sha256(JSON.stringify(claim)),state,evidence_sha256:evidenceHash});
+        const current = checkResultDirectory(privatePolicy,sourceRoot);
+        if (current.dev !== identity.dev || current.ino !== identity.ino) throw new Error("Ledger directory changed");
+        const bytes = readPrivateFileBytes(path.join(directory,`${digest}.claim.json`),ledgerByteLimit);
+        if (sha256(bytes) !== claimHash) throw new Error("Invocation claim changed");
+        durableExclusiveJson(directory, terminalName, {schema_version:"unified-harness.invocation-terminal.v1",assignment_digest:digest,
+          claim_sha256:claimHash,state,evidence_sha256:evidenceHash});
       } catch { throw new Error("Invocation terminal state unavailable; reconcile without retrying."); }
     },
   };
 }
 
+// Parse only the compact JSON encoding written by durableExclusiveJson. This
+// also detects duplicate fields and preserves the exact bytes bound by the hash.
+function readLedgerRecord(file, fields) {
+  const bytes = readPrivateFileBytes(file,ledgerByteLimit);
+  const record = JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));
+  if (!isObject(record) || Object.keys(record).length !== fields.length || !fields.every(key=>Object.hasOwn(record,key))
+      || !Buffer.from(JSON.stringify(record)).equals(bytes)) throw new Error("Invalid ledger record");
+  return {record,bytes};
+}
+
 export function inspectInvocation(policy, assignmentDigest) {
   validateInvocationPolicy(policy);
-  if (!/^[a-f0-9]{64}$/.test(assignmentDigest)) throw new Error("Invalid invocation identity.");
-  privateDirectoryIdentity(policy.directory);
+  if (!invocationDigest(assignmentDigest)) throw new Error("Invalid invocation identity.");
+  const directory = policy.directory;
+  privateDirectoryIdentity(directory);
   const base = {assignment_digest:assignmentDigest,execution_authorized:false,retry_authorized:false};
-  const read = (suffix) => {
-    const file = path.join(policy.directory, `${assignmentDigest}.${suffix}.json`);
-    const stat = lstatSync(file);
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.uid !== process.getuid() || (stat.mode & 0o777) !== 0o600 || stat.size > 65536) throw new Error();
-    return JSON.parse(readFileSync(file,"utf8"));
-  };
   try {
-    const claim = read("claim");
-    if (claim.schema_version !== "unified-harness.invocation-claim.v1" || claim.assignment_digest !== assignmentDigest || claim.state !== "claimed") throw new Error();
-    const terminal = read("terminal");
-    if (terminal.schema_version !== "unified-harness.invocation-terminal.v1" || terminal.assignment_digest !== assignmentDigest || terminal.claim_sha256 !== sha256(JSON.stringify(claim)) || !["completed","failed"].includes(terminal.state) || !/^[a-f0-9]{64}$/.test(terminal.evidence_sha256)) throw new Error();
-    return {...base,state:terminal.state,evidence_sha256:terminal.evidence_sha256};
+    const prefix = path.join(directory,assignmentDigest);
+    const {record:claim,bytes} = readLedgerRecord(prefix+".claim.json",["schema_version","assignment_digest","state","claimed_at"]);
+    if (claim.schema_version !== "unified-harness.invocation-claim.v1" || claim.assignment_digest !== assignmentDigest
+        || claim.state !== "claimed" || !validUtcInstant(claim.claimed_at)) throw new Error("Invalid claim");
+    const {record:terminal} = readLedgerRecord(prefix+".terminal.json",["schema_version","assignment_digest","claim_sha256","state","evidence_sha256"]);
+    const claimHash = sha256(bytes);
+    if (terminal.schema_version !== "unified-harness.invocation-terminal.v1" || terminal.assignment_digest !== assignmentDigest
+        || terminal.claim_sha256 !== claimHash || !terminalStates.has(terminal.state)
+        || !invocationDigest(terminal.evidence_sha256)) throw new Error("Invalid terminal");
+    return {...base,state:terminal.state,claim_sha256:claimHash,evidence_sha256:terminal.evidence_sha256};
   } catch {
-    // Includes malformed, truncated, missing-terminal and permission errors.
     return {...base,state:"unclaimed_or_uncertain",requires_reconciliation:true};
   }
 }
 
 function validateExecutionWindow(window) {
-  const validTime = value => typeof value === "string" && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
-  if (!window || Object.keys(window).sort().join() !== "expires_at,not_before" || !validTime(window.not_before) || !validTime(window.expires_at) || Date.parse(window.expires_at) <= Date.parse(window.not_before)) throw new Error("Invalid execution window.");
+  if (!window || Object.keys(window).sort().join() !== "expires_at,not_before" || !validUtcInstant(window.not_before) || !validUtcInstant(window.expires_at) || Date.parse(window.expires_at) <= Date.parse(window.not_before)) throw new Error("Invalid execution window.");
 }
 
 export function inspectExecutionWindow(window, now = Date.now()) {
@@ -2888,12 +3230,13 @@ export function verifyBoundPacketIdentity(packet, offered, bindingInputs) {
 
 // Inspect and read the same descriptor. Nonblocking open refuses to wait for
 // a FIFO writer; one byte of lookahead detects growth without chasing EOF.
-export function readAssignmentBytes(filename, expectedSize) {
-  const fd = openSync(filename, fsFlags.O_RDONLY | fsFlags.O_NONBLOCK | fsFlags.O_NOCTTY);
+function readBoundedFileBytes(filename, maximumBytes, extraFlags, expectedSize, invalidFileMessage, ownerOnly = false) {
+  const fd = openSync(filename, fsFlags.O_RDONLY | fsFlags.O_NONBLOCK | fsFlags.O_NOCTTY | extraFlags);
   try {
     const st = fstatSync(fd);
-    if (!st.isFile() || st.size > maxAssignmentBytes || (expectedSize !== undefined && st.size !== expectedSize))
-      throw Error("Assignment file differs from accepted scope or is not a bounded regular file");
+    if (!st.isFile() || st.size > maximumBytes || (expectedSize !== undefined && st.size !== expectedSize)
+        || (ownerOnly && (st.uid !== process.getuid() || (st.mode & 0o777) !== 0o600 || st.nlink !== 1)))
+      throw Error(invalidFileMessage);
     const bytes = Buffer.alloc(st.size + 1);
     let used = 0;
     while (used < bytes.length) {
@@ -2901,9 +3244,20 @@ export function readAssignmentBytes(filename, expectedSize) {
       if (!n) break;
       used += n;
     }
-    if (used !== st.size) throw Error("Assignment file changed while reading");
+    if (used !== st.size) throw Error("File changed while reading");
     return bytes.subarray(0, used);
   } finally { closeSync(fd); }
+}
+
+export function readPrivateFileBytes(filename, maximumBytes, expectedSize) {
+  if (!Number.isSafeInteger(maximumBytes) || maximumBytes < 0) throw new Error("Invalid private file size limit");
+  return readBoundedFileBytes(filename,maximumBytes,fsFlags.O_NOFOLLOW,expectedSize,
+    "Private file identity or access changed",true);
+}
+
+export function readAssignmentBytes(filename, expectedSize) {
+  return readBoundedFileBytes(filename, maxAssignmentBytes, 0, expectedSize,
+    "Assignment file differs from accepted scope or is not a bounded regular file");
 }
 
 export async function contractRoundtrip(options) {
@@ -2947,8 +3301,8 @@ async function executeContractRoundtrip({ packet, assignmentPath, endpoint, outp
       const current = verifyPackagePolicy(bindingInputs, packagePolicy);
       if (JSON.stringify(current) !== JSON.stringify(scope.package_binding)) throw new Error("Package binding changed");
     };
-    endpointCheck = (url, model, provider, needsTools) => checkModelEndpoint(url, model, provider, needsTools, checkFreshness);
   }
+  endpointCheck ??= (url, model, provider, needsTools) => checkModelEndpoint(url, model, provider, needsTools, checkFreshness);
   const integrated = packageBound || ["unified-harness-readonly-v2", "unified-harness-readonly-v3", "unified-harness-readonly-v4", "unified-harness-readonly-v5"].includes(scope?.kind);
   if (integrated) {
     if (!packageBound && offered.scope !== buildBoundScope(bindingInputs, endpoint, resultPolicy, invocationPolicy, executionWindow)) throw new Error("integrated scope or endpoint differs from accepted binding");

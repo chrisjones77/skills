@@ -37,7 +37,7 @@ Prefer a few connected, specific decisions over a checklist of familiar genre ma
 
 ## 4. Adapt for each medium
 
-- **Visual development:** Describe composition, materials, lighting, silhouette, and mood using the seed's own design language. Avoid embedding claims of legal safety in image prompts.
+- **Visual development:** Describe composition, materials, lighting, silhouette, and mood using the seed's own design language. Resolve terms such as 'gems' or other creative metaphors from the conceptual context before literal image generation to avoid incorrect literal interpretations. Avoid embedding claims of legal safety in image prompts.
 - **Games:** Convert motivations into observable goals, constraints, and player-facing behaviors. Tie mechanics to the setting and explain counterplay and variation.
 - **Screen and prose:** Use voice, action, pacing, and consequences to express character. Write new dialogue rather than paraphrasing recognizable quotations.
 - **3D and production design:** Describe function, scale, materials, assembly, and distinctive shape language; identify what is fixed and what may vary across iterations.

@@ -76,9 +76,9 @@ The durable reservation and FIFO order apply across processes. A second caller
 can inspect progress but only the head of the queue can run. The caller supplies
 a fresh accepted envelope for each step, and the child performs normal production
 contract preflight and discovery. A successful receipt enters `pending_review`.
-Only a decision attributed to the offer's reviewer with the matching receipt and
+The provider recipient and reviewer must be distinct at admission and reservation. Only a decision attributed to the offer's reviewer with the matching receipt and
 an evidence hash can advance the queue. A rejection stops the queue. The host
-verifies the identity, authority and substance of each decision.
+verifies the identity, authority and substance of each decision. For a receipt already pending from an older release, pass the original accepted envelope’s `packet` to `reviewCandidate` so it can verify both roles.
 
 ## Human, hybrid and mixed queues
 
@@ -153,7 +153,7 @@ transition is attempted. Notify any active person directly.
 
 Call `stopQueue(directory)` for an operator stop, including a concern described
 by a human stop condition. It durably cancels outstanding reservations that
-have yet to start. The supervisor sends SIGKILL to any remaining members of its job’s POSIX process group when the direct child exits, before returning a receipt or reporting failure. The live supervisor checks for a stop and deadline about
+have yet to start. A stop also blocks approval and rejection of any pending provider receipt. Its recorded state and evidence remain available for inspection. The supervisor sends SIGKILL to any remaining members of its job’s POSIX process group when the direct child exits, before returning a receipt or reporting failure. The live supervisor checks for a stop and deadline about
 every 100 ms, subject to host scheduling. It terminates the active job's POSIX
 process group. Already delivered requests or detached descendants may require
 provider or OS-level intervention. Abrupt cancellation can leave private

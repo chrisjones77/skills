@@ -1,0 +1,31 @@
+name: Independent work recorder
+on:
+  pull_request:
+    paths: ['work-recorder/**', '.github/workflows/work-recorder.yml']
+  push:
+    branches: [main]
+    paths: ['work-recorder/**', '.github/workflows/work-recorder.yml']
+permissions:
+  contents: read
+jobs:
+  recorder:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test work-recorder/recorder.test.mjs
+      - name: Exercise pinned external UWH attended lifecycle
+        shell: bash
+        run: |
+          git fetch origin f5ffbde38ffebaf83f181038c65a6117c0c8e236
+          mkdir -p "$RUNNER_TEMP/recorder-uwh-source"
+          git archive f5ffbde38ffebaf83f181038c65a6117c0c8e236 unified-work-harness | tar -x -C "$RUNNER_TEMP/recorder-uwh-source"
+          source_path=$(cd "$RUNNER_TEMP/recorder-uwh-source/unified-work-harness" && pwd -P)
+          node work-recorder/examples/uwh-roundtrip.mjs "$source_path" "$RUNNER_TEMP/recorder-uwh-demo"

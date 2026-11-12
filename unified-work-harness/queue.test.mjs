@@ -1,3 +1,4 @@
+import {reworkFixture, erasedHoldFixture} from './test-support.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { syncBuiltinESMExports } from 'node:module';
@@ -26,7 +27,7 @@ function fixture(t, endpoint = 'http://127.0.0.1:11434/v1', packageSupport, disp
   const until = offset => new Date(Date.now()+offset).toISOString();
   const invocationPolicy = {directory:ledger,mode:'single_attempt'};
   const resultPolicy = retainResults ? {directory:dir('results'),retention:'owner_managed'} : undefined;
-  function candidate(id) {
+  function candidate(id, reviewer = 'reviewer') {
     const outcome = 'Read source.txt and return its synthetic value for '+id+'.';
     const checks = ['Review source and executor evidence'];
     const assignment = {
@@ -37,10 +38,10 @@ function fixture(t, endpoint = 'http://127.0.0.1:11434/v1', packageSupport, disp
       data:{classification:'public',contains_sensitive_personal_data:false,contains_secrets:false,external_processing_allowed:false},
       resources:{base_ref:revision,timeout_seconds:30,max_steps:4,max_output_bytes:65536},
       supervision:{priority:'normal',target_date:null,available_effort_minutes:10,dependencies:[],decision_owner:'owner',may_pause:true,feedback_route:'Report any concern to owner.'},
-      acceptance:{checks:[{command:'node',args:['--version'],timeout_seconds:10,expected_result:'zero'}],reviewer:'reviewer',require_changes:false},
+      acceptance:{checks:[{command:'node',args:['--version'],timeout_seconds:10,expected_result:'zero'}],reviewer,require_changes:false},
       escalation:{stop_conditions:['Stop if scope is unclear.'],contact:'owner'},
     };
-    const intake = {outcome,exclusions:assignment.exclusions,assignee:{kind:'agent',id:'worker'},accountableHuman:'owner',authority:{allowed:['execute-read-only'],prohibited:['write-source','external-network']},dataClass:'public',resources:{effortMinutes:10,deadline:'none',dependencies:[],reviewerAvailability:'available'},acceptance:{checks,reviewer:'reviewer'},escalation:{stopConditions:assignment.escalation.stop_conditions,contact:'owner',mayPause:true},concerns:[]};
+    const intake = {outcome,exclusions:assignment.exclusions,assignee:{kind:'agent',id:'worker'},accountableHuman:'owner',authority:{allowed:['execute-read-only'],prohibited:['write-source','external-network']},dataClass:'public',resources:{effortMinutes:10,deadline:'none',dependencies:[],reviewerAvailability:'available'},acceptance:{checks,reviewer},escalation:{stopConditions:assignment.escalation.stop_conditions,contact:'owner',mayPause:true},concerns:[]};
     const profile = {primary:'0xB',requiredCapabilities:['readonly_roundtrip'],effectCeiling:['read','write','git','provider','network',...(dispatch?['dispatch']:[])],requestedEffects:dispatch?['dispatch']:[],sourceSha256:inspectBundledSource().sha256};
     const bindingInputs = {profileJson:JSON.stringify(profile),assignmentJson:JSON.stringify(assignment),workspaceJson:JSON.stringify(workspace),intakeJson:JSON.stringify(intake)};
     const assignmentPath = path.join(temp,id+'.json');
@@ -50,7 +51,7 @@ function fixture(t, endpoint = 'http://127.0.0.1:11434/v1', packageSupport, disp
       profileRequest: {...profile, sourceSha256:packageSupport.packageInventory().sourceSha256,
         requiredCapabilities:['readonly_roundtrip','assignment_intake','sequential_queue']},
       intakeReview:packageSupport.reviewIntake(bindingInputs.intakeJson,{
-        by:'reviewer',disposition:'clear',authority:'confirmed',scope:'consistent',concerns:'clear',
+        by:reviewer,disposition:'clear',authority:'confirmed',scope:'consistent',concerns:'clear',
         availableMinutes:10,reviewerAvailable:true,evidenceRef:'synthetic intake review',reviewedAt:until(-10000),expiresAt:until(60000),
       }),
     };
@@ -59,7 +60,7 @@ function fixture(t, endpoint = 'http://127.0.0.1:11434/v1', packageSupport, disp
       : buildBoundScope(bindingInputs,endpoint,resultPolicy,invocationPolicy,executionWindow);
     let packet = hypervisor.createPacket({id,owner:'worker',objective:outcome,mode:'Review',workspace,authorization:['execute-read-only'],grantedBy:'owner'});
     packet.authorization.prohibited.push('write-source','external-network');
-    packet = hypervisor.offerAssignment(packet,{scope,acceptanceEvidence:JSON.stringify(checks),engineeringPurpose:'0xB',assigner:'owner',reviewer:'reviewer'});
+    packet = hypervisor.offerAssignment(packet,{scope,acceptanceEvidence:JSON.stringify(checks),engineeringPurpose:'0xB',assigner:'owner',reviewer});
     packet = hypervisor.acceptAssignment(packet,{by:'worker',assignmentDigest:hypervisor.currentAssignment(packet).digest,note:'Synthetic acceptance'});
     packet.status='active'; packet.handoff.current_writer='worker';
     packet.checkpoints.push({at:packet.work_contract.acceptance.at,kind:'resumed',note:'Synthetic resume',owner:'worker',workspace:workspace.identity,reconciled:false});
@@ -69,7 +70,7 @@ function fixture(t, endpoint = 'http://127.0.0.1:11434/v1', packageSupport, disp
   const packets=[first.packet,second.packet];
   const goal = {owner:'owner',objective:'Evaluate the selected synthetic reads.',stopConditions:['Missing evidence'],tasks:packets.map(p=>({id:p.task_id,outcome:p.objective})),selectedIds:['first','second']};
   const config = {goal,packets:[first,second],deadline:until(60000),providerBudgets:{mlx:{attempts:2,workerSeconds:60}}};
-  return {directory, dir, temp, first, second, config};
+  return {directory, dir, temp, first, second, config, candidate};
 }
 
 test('a substituted endpoint preserves the queued job and its entire reservation', async t => {
@@ -615,6 +616,85 @@ for (const [phase,claims,terminals,artifacts,providerCalls] of [
   });
 }
 
+test('v5 self-review cannot enter a queue or advance an older queue', async t => {
+  const requests = [];
+  const f = fixture(t,await simulatedProvider(t,requests));
+  const self = f.candidate('first','worker');
+  const assignmentDigest = hypervisor.currentAssignment(self.packet).digest;
+  const config = {...f.config,packets:[self,f.second]};
+  assert.throws(() => createQueue(f.directory,config), /separate reviewer/);
+  assert.deepEqual(readdirSync(f.directory),[]);
+  createQueue(f.directory,f.config);
+  // Reconstruct the rows an earlier release persisted for this accepted offer.
+  const db = new DatabaseSync(path.join(f.directory,'queue.sqlite'));
+  try {
+    db.prepare('UPDATE jobs SET digest=?,reviewer=? WHERE seq=1').run(assignmentDigest,sha256(JSON.stringify('worker')));
+    const before = inspectQueue(f.directory);
+    await assert.rejects(dispatchNext(f.directory,self), /separate reviewer/);
+    assert.deepEqual(inspectQueue(f.directory),before);
+    assert.deepEqual(requests,[]);
+    assert.deepEqual(readdirSync(self.invocationPolicy.directory),[]);
+    const receiptHash = sha256('legacy receipt');
+    db.prepare("UPDATE jobs SET receipt=?,state='pending_review' WHERE seq=1").run(receiptHash);
+    const review = {assignmentDigest,reviewer:'worker',receiptHash,evidenceHash:sha256('self-assessment'),accept:true};
+    const pending = inspectQueue(f.directory);
+    assert.throws(() => reviewCandidate(f.directory,review));
+    assert.throws(() => reviewCandidate(f.directory,{...review,packet:self.packet}), /separate reviewer/);
+    assert.throws(() => reviewCandidate(f.directory,{...review,packet:f.first.packet}));
+    await assert.rejects(dispatchNext(f.directory,f.second), /order/);
+    assert.deepEqual(inspectQueue(f.directory),pending);
+    // A genuinely separate reviewer can finish an older pending reservation.
+    const originalDigest = hypervisor.currentAssignment(f.first.packet).digest;
+    db.prepare('UPDATE jobs SET digest=?,reviewer=? WHERE seq=1').run(originalDigest,sha256(JSON.stringify('reviewer')));
+    reviewCandidate(f.directory,{...review,assignmentDigest:originalDigest,reviewer:'reviewer',packet:f.first.packet});
+    assert.equal(inspectQueue(f.directory).jobs[0].state,'reviewed');
+  } finally { db.close(); }
+});
+
+test('stop blocks both decisions on a pending provider receipt', async t => {
+  const f = fixture(t,await simulatedProvider(t));
+  const events = [{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'reference'}}},
+    {type:'text',part:{text:'reference'}}];
+  installWorker(t,f,'for (const event of '+JSON.stringify(events)+') console.log(JSON.stringify(event));');
+  createQueue(f.directory,f.config);
+  const receipt = await dispatchNext(f.directory,f.first);
+  stopQueue(f.directory);
+  const stopped = inspectQueue(f.directory);
+  assert.deepEqual(stopped.jobs.map(job=>job.state),['pending_review','cancelled']);
+  for (const accept of [true,false]) {
+    assert.throws(() => reviewCandidate(f.directory,{assignmentDigest:receipt.assignment_digest,reviewer:'reviewer',
+      receiptHash:receipt.receipt_sha256,evidenceHash:sha256('review'),accept}), /stopped/);
+    assert.deepEqual(inspectQueue(f.directory),stopped);
+  }
+});
+
+for(const version of ['v5','v6']) {
+  for (const [name,makeHold,expectedError] of [
+    [' queue requires a new resume after reviewer rework',reworkFixture,/resume checkpoint/i],
+    [' queue rejects erased clarification before reservation',erasedHoldFixture,/clarification/i],
+  ]) {
+    test(version+name,async t=>{
+      const pkg=version==='v6' && {...await import('./integrated.mjs'),...await import('./package.mjs'),...await import('./intake.mjs')};
+      const requests=[], f=fixture(t,await simulatedProvider(t,requests),pkg||undefined);
+      installWorker(t,f,"console.log(JSON.stringify({type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'reference'}}}));console.log(JSON.stringify({type:'text',part:{text:'reference'}}));");
+      const {paused,stale}=makeHold(hypervisor,f.first.packet);
+      const staleEnvelope={...f.first,packet:stale};
+      assert.throws(()=>createQueue(f.directory,{...f.config,packets:[staleEnvelope,f.second]}),expectedError);
+      assert.deepEqual(readdirSync(f.directory),[]);
+      createQueue(f.directory,f.config);
+      const before=inspectQueue(f.directory);
+      await assert.rejects(dispatchNext(f.directory,staleEnvelope),expectedError);
+      assert.deepEqual(inspectQueue(f.directory),before);
+      assert.deepEqual(requests,[]);
+      assert.deepEqual(readdirSync(f.first.invocationPolicy.directory),[]);
+      const offer=hypervisor.currentAssignment(paused);
+      const packet=hypervisor.resumeAssignment(paused,{by:offer.recipient,assignmentDigest:offer.digest,note:'restart after review'});
+      const result=await dispatchNext(f.directory,{...f.first,packet});
+      assert.equal(result.assignment_digest,offer.digest);
+      assert.equal(inspectQueue(f.directory).remaining[0].attempts,1);
+    });
+  }
+}
 
 for(const version of ['v5','v6']) test(version+' records reservation and reviewed result without changing admission',async t=>{
   const support=version==='v6'?{...await import('./integrated.mjs'),...await import('./package.mjs'),...await import('./intake.mjs')}:undefined;

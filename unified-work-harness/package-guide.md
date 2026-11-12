@@ -1,5 +1,7 @@
 # Select a packaged method
 
+For the system boundary, architecture, contract lifecycle, control limits and verification trace, read the [engineered system description](engineered-system.md).
+
 Use Node 22.13 or later on POSIX for the complete package, including the SQLite queue. Start from the directory containing SKILL.md. Reading guidance requires no worker, account or endpoint.
 
 From a reviewed repository checkout, copy the entire `unified-work-harness/` directory to your host’s skill directory, or use it in place. Keep its relative paths intact, including guides, fixtures, manifest and license. There is no dependency-install step for the JavaScript modules. Start in that directory with `node package.mjs inventory`. For a first human-led exercise, open [methods.md](methods.md) and run the two shelf-label examples; they use only the included files. To see the corresponding offer, recipient response and reviewer decision, run `node examples/attended-review.mjs`. This demonstration uses fictional responses and does not contact anyone. To verify the installation on a POSIX host with Git and Node, run `node --test *.test.mjs`; the synthetic tests need loopback access. Real provider tests are opt-in.
@@ -45,6 +47,8 @@ For fixture scoring call `checkReviewFinding(childText, fixture)` **outside** th
 Score each blocker against the requested outcome, not just the verdict. In the missing-reviewer case, comparing revisions does not require editing either revision. The no-edit rule belongs in `scope_boundaries`, not in `rejected_as_acceptance` or `other_blockers`. Conversely, if an assignment actually requires modifying a protected original, report the incompatible requirement. The checker detects a copied limit, not every paraphrase; do not strip references to prohibitions from model output to make it pass.
 
 **Smoke check:** use the [three fictional assignments and scoring notes](examples/native-review-cases.json) in a disposable project. Keep the cases and answer key outside that project. In a fresh session per case, delegate to the exact installed role with only the `excerpt`. Check the named child's finding against `verdict`, `rejected` and `check`. For the scope-conflict case, identifying the email without explicitly rejecting it does not pass. For the control, referring a bounded assignment is not approval. Verify no child tool invocation, worker launch or file edits, and an unchanged fixture including untracked files. A clean checkout alone does not prove isolation. Record host and model separately; a successful smoke is not qualification of the model for other assignments.
+
+Inventory inspection requires regular, single-link files at their exact manifest spellings. Install the package as a copy on a POSIX filesystem. The manifest and CLI profile input each have a 64 KiB limit. A listed file may occupy up to 2 MiB, and all listed files together may occupy up to 16 MiB. A missing, linked, changing or oversized package entry stops inspection. An explicitly selected CLI profile may be a link to a bounded regular file.
 
 ## Optional queue outbox
 

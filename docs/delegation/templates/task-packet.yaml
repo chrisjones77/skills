@@ -1,13 +1,16 @@
-# Copy per task into private/task-local context. Do not commit populated packets. Omit unrelated history and all secrets, credentials, private records, and local media. This packet transfers context, never authority.
+# Copy per task into the task's private/local context. Do not commit populated
+# packets. Omit unrelated history and all secrets, credentials, private records,
+# and local media. This packet transfers context, never authority.
+# Portable brief, not the local CLI JSON schema or an importable CLI packet.
+# See docs/agent-hypervisor.md for the semantic crosswalk.
 version: 1
-# Portable brief, not an importable runtime schema. See docs/work-contract-interface.md.
 task_id: stable-task-identifier
 objective: one user-stated outcome
 status: active # active | checkpointed | blocked | complete
 mode: Implementation # Review | Research | Implementation
-engineering_purpose: null # Optional 0x1–0xF; not dispatch kind or transfer kind
-assignment_reference: null # Exact work/assignment revision and digest when used
-recipient_disposition: pending # Actual reply recorded separately; receipt is not acceptance
+engineering_purpose: null # Optional 0x1–0xF; not the dispatch kind in `mode`
+assignment_reference: null # Exact work/assignment revision and digest, when used
+recipient_disposition: pending # Explicit recipient answer; receipt is not acceptance
 runtime_compatibility: null # Implementation/source revision, supported operations and gaps
 repository:
   identity: owner/repository
@@ -24,7 +27,7 @@ owner:
   paused_owners: []
   candidate_task_state_verified: false # Titles/idle status are not ownership evidence
 scope:
-  allowed_paths: []
+  allowed_paths: [] # Exact paths or a narrow subsystem; no wildcard repo-wide edit
   allowed_actions: []
   prohibited_paths: []
   prohibited_actions:
@@ -46,29 +49,29 @@ verification:
   required: []
   observed: []
 handoff:
-  current_writer: named-agent-or-human # Sole writer. Null means no writes while takeover is paused or state is unverified.
-  pending_transfer: null # One proposed transfer awaiting acknowledgement and state verification.
-  transfer_log: [] # Append-only completed transfer and return events.
+  current_writer: named-agent-or-human # Sole writer; null means no one may write; delegation does not transfer ownership implicitly
+  pending_transfer: null # Null means no transfer is pending; otherwise use the record below
+  transfer_log: [] # Append-only completed transfer and return events
 # Pending transfer record shape:
 # from: named current owner; to: proposed next owner
 # mode: clean-handoff | takeover
 # reason: why ownership changes; action: bounded requested continuation
-# authority: explicit source authorizing the transfer
+# authority: explicit source authorizing the ownership transfer
 # checkpoint: last verified state; created_at: ISO-8601 timestamp
-# packet_digest and workspace_identity: receiver must acknowledge both
+# packet_digest and workspace_identity: values receiver must acknowledge
 # acknowledgement: pending | acknowledged; sender_paused: true | false
 # return_condition and return_owner: when and to whom ownership returns
 # Clean handoff while pending: current_writer stays `from`; sender remains sole writer.
 # After clean-handoff acknowledgement: pause `from`, set current_writer to null, permit no writes.
-# Takeover while pending: pause `from`, set current_writer to null, permit no writes.
+# Takeover while pending: pause the prior owner and allow no writes until the receiver acknowledges and inspects actual state.
 # After acknowledgement but before state verification, keep the transfer pending and current_writer null.
 # Only after verifying actual state does the receiver become writer.
 # On completion: clear pending_transfer and append its record to transfer_log.
 # Completed transfer event shape: from, to, mode, reason, action, authority, checkpoint,
 # created_at, acknowledged_at, packet_digest, workspace_identity, state_verified,
 # return_condition, return_owner, and returned_at. For a return event, mode is `return`
-# and `to` is the return owner; do not use a second destination field.
-# A return is a separate transfer event; never leave a completed transfer pending.
+# and `to` is the return owner; never use a second destination field.
+# A return is a separate transfer event; never keep a completed transfer pending.
 git_writes:
   commit_authorized: false
   push_authorized: false
@@ -102,5 +105,5 @@ report:
   result: null # completed | blocked | no-findings
   findings: []
   changed_paths: []
-  checks: []
+  checks: [] # Mark each passed, failed, or not run
   limitations: []

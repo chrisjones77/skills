@@ -1,12 +1,14 @@
-import { redirectStatuses, observeDestination } from './test-support.mjs';
+import { pathToFileURL, fileURLToPath } from 'node:url';
+import {gzipSync} from 'node:zlib';
+import { redirectStatuses, observeDestination, reworkFixture, erasedHoldFixture } from './test-support.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, realpathSync, rmSync, readFileSync, readdirSync, renameSync, symlinkSync, existsSync } from 'node:fs';
+import { cpSync, linkSync, mkdtempSync, mkdirSync, writeFileSync, realpathSync, rmSync, readFileSync, readdirSync, renameSync, symlinkSync, existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { runHarness, buildOpenCodeConfig, validatePathAccess, contractRoundtrip, buildBoundScope, inspectInvocation, hypervisor, sha256, inspectBundledSource } from './bundle.mjs';
+import { runHarness, validateAssignment, buildOpenCodeConfig, buildCodexCommand, validatePathAccess, contractRoundtrip, buildBoundScope, inspectInvocation, hypervisor, sha256, inspectBundledSource } from './bundle.mjs';
 import { buildPackageScope } from './integrated.mjs';
 import { packageInventory } from './package.mjs';
 import { reviewIntake } from './intake.mjs';
@@ -731,3 +733,981 @@ for(const e of [{type:'tool_use',part:{tool:'read',state:{status:'completed',inp
   assert.equal(receipt.review_status,'pending');
   assert.ok(calls.length>0);
 });
+
+test('strict format checks the post-read answer with and without result capture', async t => {
+  const port = await listen(t,'127.0.0.1',(req,res)=>res.end(JSON.stringify({
+    data:[{id:'synthetic:local'}],models:[{name:'synthetic:local'}],version:'test',
+  })));
+  for (const capture of [true,false]) {
+    for (const valid of [false,true]) {
+      const {inputs,accept,temp} = fixture(t,'http://127.0.0.1:'+port+'/v1');
+      const assignment = JSON.parse(inputs.bindingInputs.assignmentJson);
+      assignment.acceptance.response_format = 'single_ascii_token';
+      inputs.bindingInputs.assignmentJson = JSON.stringify(assignment);
+      writeFileSync(inputs.assignmentPath,inputs.bindingInputs.assignmentJson);
+      if (!capture) delete inputs.resultPolicy;
+      const packet = accept(buildPackageScope(inputs));
+      const events = [{type:'text',part:{text:valid?'Looking it up. ':'Checking'}},
+        {type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'cobalt-otter-47'}}},
+        {type:'text',part:{text:valid?'cobalt-':''}},{type:'text',part:{text:valid?'otter-47':'.'}}];
+      const bin = path.join(temp,'bin');
+      mkdirSync(bin);
+      writeFileSync(path.join(bin,'opencode'),'#!/usr/bin/env node\nfor(const e of '+JSON.stringify(events)+')console.log(JSON.stringify(e));',{mode:0o700});
+      const oldPath = process.env.PATH;
+      process.env.PATH = bin + path.delimiter + oldPath;
+      try {
+        const run = contractRoundtrip({...inputs,packet});
+        if (valid) {
+          const receipt = await run;
+          if (capture) {
+            const bytes = readFileSync(path.join(inputs.resultPolicy.directory,receipt.private_result.name));
+            assert.equal(JSON.parse(bytes).response,'cobalt-otter-47');
+          }
+        } else {
+          await assert.rejects(run,/policy violation/);
+          assert.equal(inspectInvocation(inputs.invocationPolicy,hypervisor.currentAssignment(packet).digest).state,'failed');
+          if (capture) assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
+        }
+      } finally { process.env.PATH = oldPath; }
+    }
+  }
+});
+
+// Complete the authorized read first: each extra event must invalidate an
+// otherwise deliverable result, including when the child exits successfully.
+for (const [label, trailer] of [
+  ['excess steps', JSON.stringify({type:'step_start'})],
+  ['excess stdout', JSON.stringify({type:'text',part:{text:'x'.repeat(1024)}})],
+  ['malformed stdout', '{malformed}'],
+  ['prohibited tool', JSON.stringify({type:'tool_use',part:{tool:'bash'}})],
+  ['at the step limit', ''],
+]) {
+  test('v6 worker output: '+label, async t => {
+    const port = await listen(t,'127.0.0.1',(req,res)=>res.end(JSON.stringify({
+      data:[{id:'synthetic:local'}],version:'test',models:[{name:'synthetic:local'}],
+    })));
+    const {inputs,accept,temp} = fixture(t,'http://127.0.0.1:'+port+'/v1');
+    const assignment = JSON.parse(inputs.bindingInputs.assignmentJson);
+    assignment.resources.max_steps = 1;
+    assignment.resources.max_output_bytes = 1024;
+    inputs.bindingInputs.assignmentJson = JSON.stringify(assignment);
+    writeFileSync(inputs.assignmentPath,inputs.bindingInputs.assignmentJson);
+    const packet = accept(buildPackageScope(inputs));
+    const events = [{type:'step_start'},{type:'tool_use',part:{tool:'read',state:{status:'completed',
+      input:{filePath:'source.txt'},output:'cobalt-otter-47'}}},{type:'text',part:{text:'cobalt-otter-47'}}];
+    const bin = path.join(temp,'bin');
+    mkdirSync(bin);
+    const stdout = events.map(event=>JSON.stringify(event)).concat(trailer).join('\n')+'\n';
+    writeFileSync(path.join(bin,'opencode'),'#!/usr/bin/env node\nprocess.stdout.write('+JSON.stringify(stdout)+');',{mode:0o700});
+    const previous = process.env.PATH;
+    process.env.PATH = bin+path.delimiter+previous;
+    t.after(()=>{process.env.PATH=previous;});
+    const run = contractRoundtrip({...inputs,packet});
+    const digest = hypervisor.currentAssignment(packet).digest;
+    if (trailer) {
+      await assert.rejects(run,/policy violation/);
+      assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
+      assert.equal(inspectInvocation(inputs.invocationPolicy,digest).state,'failed');
+    } else {
+      const receipt = await run;
+      const result = JSON.parse(readFileSync(path.join(inputs.resultPolicy.directory,receipt.private_result.name)));
+      assert.equal(result.response,'cobalt-otter-47');
+      assert.equal(inspectInvocation(inputs.invocationPolicy,digest).state,'completed');
+    }
+  });
+}
+
+function lowLevelFixture(t, prepareCheckout, endpoint = 'http://127.0.0.1:11434/v1') {
+  const {inputs,temp} = fixture(t,endpoint,'source.txt',30,prepareCheckout);
+  const assignment = JSON.parse(inputs.bindingInputs.assignmentJson);
+  assignment.authority.mode = 'structured_proposal';
+  assignment.authority.allowed_paths = ['source.txt'];
+  assignment.acceptance.require_changes = true;
+  assignment.worker = {adapter:'direct_json',context_strategy:'source_files',max_context_bytes:8192};
+  const cwd = path.join(temp,'repo');
+  function run(completionRequest) {
+    writeFileSync(inputs.assignmentPath,JSON.stringify(assignment));
+    return runHarness({assignmentPath:inputs.assignmentPath,cwd,endpoint:inputs.endpoint,
+      outputRoot:inputs.resultPolicy.directory,endpointCheck:async()=>({}),completionRequest});
+  }
+  return {assignment,cwd,temp,run};
+}
+
+const proposal = {summary:'Correct the synthetic source.',uncertainties:[],
+  changes:[{path:'source.txt',operation:'create_or_replace',rationale:'Expected token',content:'replacement'}]};
+
+for (const [label, options] of [
+  ['authorized proposal', {}],
+  ['outside grant', {path:'other.txt', violation:/outside the allowed proposal scope/}],
+  ['protected path', {path:'.git/config', violation:/path is protected/}],
+  ['traversal', {path:'../other.txt', violation:/without traversal/}],
+  ['unauthorized test', {path:'sample.test.mjs', violation:/unauthorized test path/}],
+  ['literal backslash path', {path:'docs\\file.txt',grant:'docs/file.txt',violation:/ambiguous path separator/}],
+  ['mixed-case test path', {path:'docs/TeStS/unit.txt',grant:'docs',violation:/unauthorized test path/}],
+  ['duplicate destination', {duplicate:'source.txt',violation:/duplicate proposal path/}],
+  ['equivalent destination', {duplicate:'./source.txt',violation:/duplicate proposal path/}],
+  ['truncated completion', {finish:'length', violation:/exhausted its token budget/}],
+  ['oversized response', {padding:1500, violation:/output budget exceeded/}],
+  ['prompt budget', {promptLimit:256, violation:/estimated prompt tokens exceed/}],
+]) {
+  test('direct proposal: '+label, async t => {
+    const {assignment,cwd,run} = lowLevelFixture(t);
+    assignment.resources.max_output_bytes = 1024;
+    if (options.promptLimit) assignment.resources.max_prompt_tokens = options.promptLimit;
+    if (options.grant) assignment.authority.allowed_paths.push(options.grant);
+    if (label === 'unauthorized test') assignment.authority.allowed_paths.push(options.path);
+    let calls = 0;
+    const {evidence,artifactDirectory} = await run(async (url,init)=>{
+      calls++;
+      assert.equal(init.redirect,'error');
+      assert.ok(JSON.parse(init.body).messages.some(m=>m.content.includes('cobalt-otter-47')));
+      const content = structuredClone(proposal);
+      if (options.path) content.changes[0].path = options.path;
+      if (options.duplicate) content.changes.push({...content.changes[0],path:options.duplicate,content:'conflicting revision'});
+      return Response.json({choices:[{finish_reason:options.finish ?? 'stop',message:{role:'assistant',content:JSON.stringify(content)}}],
+        padding:'x'.repeat(options.padding ?? 0)});
+    });
+    const file = path.join(artifactDirectory,'proposal.json');
+    assert.equal(calls,options.promptLimit ? 0 : 1);
+    if (options.violation) {
+      assert.equal(evidence.disposition,'rejected');
+      assert.match(evidence.violations.join('\n'),options.violation);
+      assert.equal(existsSync(file),false);
+    } else {
+      assert.equal(evidence.disposition,'proposal_candidate');
+      assert.deepEqual(JSON.parse(readFileSync(file)).changes,proposal.changes);
+      assert.equal(evidence.proposal_hash,sha256(JSON.stringify(JSON.parse(readFileSync(file)))));
+    }
+    assert.equal(readFileSync(path.join(cwd,'source.txt'),'utf8'),'cobalt-otter-47');
+  });
+}
+
+test('direct context rejects a grant below a symlink before sending source', async t => {
+  const {assignment,run} = lowLevelFixture(t,(root,temp)=>{
+    const outside = path.join(temp,'outside');
+    mkdirSync(outside);
+    writeFileSync(path.join(outside,'token.txt'),'unoffered-source-canary');
+    symlinkSync(outside,path.join(root,'linked'));
+  });
+  assignment.authority.allowed_read_paths = ['linked/token.txt'];
+  const requests = [];
+  await assert.rejects(run(async (url,init)=>{
+    requests.push(init.body);
+    return Response.json({choices:[{finish_reason:'stop',message:{role:'assistant',content:JSON.stringify(proposal)}}]});
+  }),error=>/symbolic link/.test(error.cause?.message));
+  assert.deepEqual(requests,[]);
+});
+
+for (const [label,program,violation] of [
+  ['staged authorized edit',"fs.writeFileSync('source.txt','replacement\\n'); cp.execFileSync('git',['add','source.txt']);",null],
+  ['new ignored file',"fs.writeFileSync('new.txt','replacement\\n');",null],
+  ['staged rename from outside scope',"cp.execFileSync('git',['mv','source.txt','new.txt']);",/out-of-scope path changed: source.txt/],
+  ['commit moved',"fs.writeFileSync('source.txt','replacement'); cp.execFileSync('git',['commit','-qam','unexpected']);",/changed the checkout commit/],
+  ['unoffered file',"fs.writeFileSync('other.txt','unoffered');",/out-of-scope path changed: other.txt/],
+  ['BOM-prefixed unoffered file',"fs.writeFileSync('\uFEFFsource.txt','unoffered');",/out-of-scope path changed: \uFEFFsource.txt/],
+  ['unauthorized test',"fs.writeFileSync('sample.test.mjs','unoffered');",/test change was not authorized/],
+  ['no changes','',/required a candidate change/],
+]) {
+  test('edit worker: '+label, async t => {
+    const {assignment,run,temp,cwd} = lowLevelFixture(t,root=>writeFileSync(path.join(root,'.gitignore'),'new.txt\n'));
+    const target = ['new ignored file','staged rename from outside scope'].includes(label) ? 'new.txt' : 'source.txt';
+    assignment.authority.allowed_paths = [target];
+    assignment.authority.allowed_read_paths = [...new Set(['source.txt',target])];
+    assignment.authority.mode = 'candidate_edit';
+    assignment.worker.adapter = 'aider';
+    const bin = path.join(temp,'aider');
+    writeFileSync(bin,"#!/usr/bin/env node\nconst fs=require('node:fs'), cp=require('node:child_process');\n"+program,{mode:0o700});
+    const previous = process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN;
+    process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN = bin;
+    t.after(()=>{
+      if (previous === undefined) delete process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN;
+      else process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN = previous;
+    });
+    const {artifactDirectory,evidence} = await run();
+    if (violation) {
+      assert.equal(evidence.disposition,'rejected');
+      assert.match(evidence.violations.join('\n'),violation);
+      assert.deepEqual(evidence.acceptance,[]);
+      assert.equal(existsSync(path.join(artifactDirectory,'candidate.patch')),false);
+    } else {
+      assert.equal(evidence.disposition,'candidate');
+      const patch = readFileSync(path.join(artifactDirectory,'candidate.patch'),'utf8');
+      assert.equal(sha256(patch),evidence.candidate_patch_hash);
+      // Apply only to an isolated index, proving the delivered patch reconstructs the edit.
+      const env = {...process.env,GIT_INDEX_FILE:path.join(temp,'review-index')};
+      execFileSync('git',['read-tree','HEAD'],{cwd,env});
+      execFileSync('git',['apply','--cached','-'],{cwd,env,input:patch});
+      assert.equal(execFileSync('git',['show',':'+target],{cwd,env,encoding:'utf8'}),'replacement\n');
+    }
+    assert.equal(readFileSync(path.join(cwd,'source.txt'),'utf8'),'cobalt-otter-47');
+  });
+}
+
+test('edit worker refuses a new destination below a symlink before launch', async t => {
+  const {assignment,temp,run} = lowLevelFixture(t,(root,temp)=>{
+    mkdirSync(path.join(temp,'outside'));
+    symlinkSync(path.join(temp,'outside'),path.join(root,'linked'));
+  });
+  assignment.worker.adapter = 'aider';
+  assignment.authority = {mode:'candidate_edit',allowed_read_paths:['linked/new.txt'],
+    allowed_paths:['linked/new.txt'],allow_test_changes:false};
+  const marker = path.join(temp,'started');
+  const binary = path.join(temp,'fake-aider');
+  writeFileSync(binary,"#!/usr/bin/env node\nrequire('node:fs').writeFileSync("+JSON.stringify(marker)+",'started');",{mode:0o700});
+  const previous = process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN;
+  process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN = binary;
+  try {
+    await assert.rejects(run(),error=>/symbolic link/.test(error.cause?.message));
+    assert.equal(existsSync(marker),false);
+    assert.deepEqual(readdirSync(path.join(temp,'outside')),[]);
+  } finally {
+    if (previous === undefined) delete process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN;
+    else process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN = previous;
+  }
+});
+
+for (const [label,trailer,violation] of [
+  ['valid proposal','',null],
+  ['malformed event','broken JSON',/malformed JSON event/],
+  ['second turn',JSON.stringify({type:'turn.started'}),/step budget exceeded/],
+  ['execution error',JSON.stringify({type:'error',message:'synthetic-error-canary'}),/execution error/],
+  ['cloud processing denied','',null],
+]) {
+  test('synthetic Codex worker: '+label, async t => {
+    const {assignment,temp,run} = lowLevelFixture(t);
+    assignment.worker.adapter = 'codex';
+    assignment.assignee = {...assignment.assignee,provider:'codex',processing:'external_cloud',model_id:'gpt-5.6-sol'};
+    assignment.data.external_processing_allowed = label !== 'cloud processing denied';
+    assignment.resources.max_steps = 1;
+    const bin = path.join(temp,'fake-codex'), argsFile = path.join(temp,'worker-args');
+    const output = [{type:'turn.started'},{type:'item.completed',item:{type:'agent_message',text:JSON.stringify(proposal)}},
+      {type:'turn.completed',usage:{output_tokens:23}}].map(e=>JSON.stringify(e)).concat(trailer).join('\n');
+    writeFileSync(bin,"#!/usr/bin/env node\nrequire('node:fs').writeFileSync("+JSON.stringify(argsFile)+
+      ",JSON.stringify(process.argv.slice(2)));console.log("+JSON.stringify(output)+");",{mode:0o700});
+    const previous = process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN;
+    process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN = bin;
+    t.after(()=>{
+      if (previous === undefined) delete process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN;
+      else process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN = previous;
+    });
+    if (!assignment.data.external_processing_allowed) {
+      await assert.rejects(run(),/external_processing_allowed=true/);
+      assert.equal(existsSync(argsFile),false);
+      return;
+    }
+    const {artifactDirectory,evidence} = await run();
+    const args = JSON.parse(readFileSync(argsFile));
+    assert.equal(args[args.indexOf('--sandbox')+1],'read-only');
+    assert.ok(args.includes('--ignore-user-config'));
+    assert.equal(evidence.agent.read_calls,1);
+    assert.equal(evidence.disposition,violation?'rejected':'proposal_candidate');
+    assert.equal(existsSync(path.join(artifactDirectory,'proposal.json')),!violation);
+    if (violation) assert.match(evidence.violations.join('\n'),violation);
+    const log = readFileSync(path.join(artifactDirectory,'events.ndjson'),'utf8');
+    assert.ok(!log.includes('synthetic-error-canary') && !log.includes(proposal.summary));
+  });
+}
+
+// Both direct adapters consume the same OpenAI-compatible response envelope.
+// Drive them through runHarness so a rejected reply cannot publish a proposal.
+for (const [label,provider,adapter] of [
+  ['schema-constrained','llamacpp','direct_json'],
+  ['post-validated','mlx','direct_validated_json'],
+]) {
+  const choice = {message:{role:'assistant',content:JSON.stringify(proposal)},finish_reason:'stop'};
+  for (const [scenario,reply,expectedViolation] of [
+    ['complete', {choices:[choice]}, null],
+    ['missing finish', {choices:[{message:choice.message}]}, /completion did not stop/],
+    ['filtered finish', {choices:[{...choice,finish_reason:'content_filter'}]}, /completion did not stop/],
+    ['second choice', {choices:[choice,choice]}, /exactly one choice/],
+    ['wrong role', {choices:[{...choice,message:{...choice.message,role:'user'}}]}, /assistant/],
+    ['tool request', {choices:[{...choice,message:{...choice.message,tool_calls:[{id:'synthetic'}]}}]}, /tool call/],
+    ['legacy function request', {choices:[{...choice,message:{...choice.message,function_call:{name:'read'}}}]}, /tool call/],
+  ]) {
+    test('direct reply '+label+': '+scenario, async t=>{
+      const {assignment,run} = lowLevelFixture(t);
+      assignment.assignee.provider = provider;
+      assignment.assignee.model_id = provider === 'mlx' ? 'mlx-community/test-model' : 'synthetic-local';
+      assignment.worker.adapter = adapter;
+      let requests = 0;
+      const {artifactDirectory,evidence} = await run(async (_url,init)=>{
+        requests++;
+        const sent = JSON.parse(init.body);
+        if (provider === 'mlx') assert.deepEqual(sent.chat_template_kwargs,{enable_thinking:false});
+        else assert.deepEqual(sent.json_schema.properties.changes.items.properties.path.enum,['source.txt']);
+        return Response.json(reply);
+      });
+      assert.equal(requests,1);
+      assert.equal(existsSync(path.join(artifactDirectory,'proposal.json')),!expectedViolation);
+      assert.equal(evidence.disposition,expectedViolation ? 'rejected' : 'proposal_candidate');
+      assert.equal(evidence.agent.generation_constraint,provider === 'mlx' ? 'none' : 'json_schema');
+      if (expectedViolation) assert.match(evidence.violations.join('\n'),expectedViolation);
+    });
+  }
+}
+
+for (const scenario of ['exact bytes','one byte over','invalid UTF-8','malformed JSON','HTTP failure']) {
+  test('direct response stream: '+scenario, async t=>{
+    const {assignment,run} = lowLevelFixture(t);
+    const limit = 1024;
+    assignment.resources.max_output_bytes = limit;
+    const change = structuredClone(proposal);
+    change.summary = 'Synthetic café';
+    const json = Buffer.from(JSON.stringify({choices:[{finish_reason:'stop',message:{role:'assistant',content:JSON.stringify(change)}}]}));
+    const first = Buffer.concat([json,Buffer.alloc(limit-json.length,0x20)]);
+    const split = first.indexOf(Buffer.from('é'))+1;
+    if (scenario === 'invalid UTF-8') first[split] = 0xff;
+    if (scenario === 'malformed JSON') first[0] = 0x21;
+    const chunks = [first.subarray(0,split),first.subarray(split)];
+    if (scenario === 'one byte over') chunks.push(Buffer.from(' '),Buffer.from('unneeded tail'));
+    let delivered = 0, cancelled = false;
+    const {artifactDirectory,evidence} = await run(async ()=>new Response(new ReadableStream({
+      pull(controller) {
+        if (delivered < chunks.length) controller.enqueue(chunks[delivered++]);
+        else controller.close();
+      },
+      cancel() { cancelled = true; },
+    },{highWaterMark:0}),{status:scenario==='HTTP failure' ? 503 : 200}));
+    const ok = scenario === 'exact bytes';
+    assert.equal(evidence.disposition,ok?'proposal_candidate':'rejected');
+    assert.equal(existsSync(path.join(artifactDirectory,'proposal.json')),ok);
+    const event = JSON.parse(readFileSync(path.join(artifactDirectory,'events.ndjson')));
+    if (scenario === 'one byte over') {
+      assert.equal(cancelled,true,'cancel the stream on the first over-budget byte');
+      assert.equal(delivered,3);
+      assert.equal(event.response_bytes,limit+1);
+      assert.equal(event.response_hash,null);
+    } else {
+      assert.equal(event.response_hash,sha256(first));
+      assert.equal(event.response_bytes,limit);
+    }
+    if (ok) assert.equal(JSON.parse(readFileSync(path.join(artifactDirectory,'proposal.json'))).summary,change.summary);
+    else assert.match(evidence.violations.join('\n'),{
+      'one byte over':/output budget exceeded/,'invalid UTF-8':/UTF-8/,'malformed JSON':/malformed JSON/,'HTTP failure':/HTTP 503/,
+    }[scenario]);
+    assert.equal(event.status,ok?'completed':'failed');
+  });
+}
+
+for (const scenario of ['at the aggregate limit','over the aggregate limit','invalid source UTF-8','nested symlink','missing grant']) {
+  test('direct directory context: '+scenario, async t=>{
+    const limit = 4096;
+    const header = Buffer.from('\uFEFFcafé');
+    const tail = Buffer.alloc(limit-header.length,0x78);
+    const {assignment,run} = lowLevelFixture(t,(root,temp)=>{
+      if (scenario === 'missing grant') return;
+      const dir = path.join(root,'inputs');
+      mkdirSync(dir);
+      writeFileSync(path.join(dir,'a.txt'),header);
+      mkdirSync(path.join(dir,'nested'));
+      const lastFile = path.join(dir,'nested','b.txt');
+      if (scenario === 'nested symlink') symlinkSync(path.join(temp,'unoffered'),lastFile);
+      else if (scenario === 'over the aggregate limit') writeFileSync(lastFile,Buffer.concat([tail,Buffer.from([0xff])]));
+      else writeFileSync(lastFile,scenario==='invalid source UTF-8' ? Buffer.from([0xff]) : tail);
+    });
+    assignment.authority.allowed_read_paths = ['inputs','inputs/a.txt'];
+    if (scenario === 'missing grant') assignment.authority.allowed_read_paths = ['inputs'];
+    assignment.worker.max_context_bytes = limit;
+    let requests = 0;
+    const result = run(async (_url,init)=>{
+      requests++;
+      const text = JSON.parse(init.body).messages.at(-1).content;
+      const sent = JSON.parse(text.split('Deterministic repository evidence (JSON):\n')[1]);
+      assert.deepEqual(sent.files.map(f=>f.path),['inputs/a.txt','inputs/nested/b.txt']);
+      assert.equal(sent.files[0].content,header.toString());
+      assert.equal(sent.files[0].sha256,sha256(header));
+      return Response.json({choices:[{finish_reason:'stop',message:{role:'assistant',content:JSON.stringify(proposal)}}]});
+    });
+    if (scenario === 'at the aggregate limit') {
+      const {evidence} = await result;
+      assert.equal(evidence.disposition,'proposal_candidate');
+      assert.equal(evidence.agent.context.total_bytes,limit);
+      assert.equal(requests,1);
+    } else {
+      const reason = {'over the aggregate limit':/context.*(budget|exceeds)/i,'invalid source UTF-8':/not valid UTF-8/,
+        'nested symlink':/symbolic link/,'missing grant':/path does not exist/}[scenario];
+      await assert.rejects(result,error=>reason.test(error.cause?.message));
+      assert.equal(requests,0);
+    }
+  });
+}
+
+test('direct reply overflow closes the loopback response before EOF', async t=>{
+  let finishObservation;
+  const closed = new Promise(resolve=>{finishObservation=resolve;});
+  let requests = 0, sentTail = false;
+  const port = await listen(t,'127.0.0.1',(req,res)=>{
+    requests++;
+    req.resume();
+    res.writeHead(200,{'content-type':'application/json'});
+    res.write(Buffer.alloc(1025,0x20));
+    // A client waiting for EOF will consume the tail and fail the assertion.
+    const fallback = setTimeout(()=>{sentTail=true;res.end('tail');},5000);
+    res.once('close',()=>{clearTimeout(fallback);finishObservation();});
+  });
+  const {assignment,run} = lowLevelFixture(t,undefined,'http://127.0.0.1:'+port+'/v1');
+  assignment.resources.max_output_bytes = 1024;
+  const {artifactDirectory,evidence} = await run();
+  assert.equal(requests,1);
+  await closed;
+  assert.equal(sentTail,false,'release the provider connection rather than waiting for EOF');
+  assert.equal(evidence.disposition,'rejected');
+  assert.match(evidence.violations.join('\n'),/output budget exceeded/);
+  assert.equal(existsSync(path.join(artifactDirectory,'proposal.json')),false);
+});
+
+const nativeStart = {type:'turn.started'};
+const nativeMessage = {type:'item.completed',item:{type:'agent_message',text:JSON.stringify(proposal)}};
+const nativeFinish = {type:'turn.completed',usage:{input_tokens:6,output_tokens:23}};
+const nativeTool = type => ({type:'item.started',item:{type}});
+for (const [label,events,violation] of [
+  ['ordered turn',[{type:'thread.started',thread_id:'synthetic'},nativeStart,
+    {type:'item.updated',item:{type:'reasoning',text:'private-canary'}},nativeMessage,nativeFinish],null],
+  ['last completed turn',[nativeStart,{...nativeMessage,item:{...nativeMessage.item,text:'obsolete answer'}},nativeFinish,
+    nativeStart,nativeMessage,nativeFinish],null],
+  ['nonzero exit',[nativeStart,nativeMessage,nativeFinish],/exit code/],
+  ['terminated by signal',[nativeStart,nativeMessage,nativeFinish],/terminated by signal/],
+  ['timeout',[nativeStart,nativeMessage,nativeFinish],/wall-clock timeout/],
+  ['missing completion',[nativeStart,nativeMessage],/incomplete turn/],
+  ['failed turn',[nativeStart,nativeMessage,{type:'turn.failed',error:{message:'private-canary'}}],/failed turn/],
+  ['missing start',[nativeMessage,nativeFinish],/outside an active turn/],
+  ['message after completion',[nativeStart,nativeFinish,nativeMessage],/outside an active turn/],
+  ['duplicate completion',[nativeStart,nativeMessage,nativeFinish,nativeFinish],/outside an active turn/],
+  ['overlapping turns',[nativeStart,nativeStart,nativeMessage,nativeFinish],/already active/],
+  ['stale proposal',[nativeStart,nativeMessage,nativeFinish,nativeStart,nativeFinish],/response was empty/],
+  ...['command_execution','file_change','mcp_tool_call','web_search','unrecognized-private-canary'].map(type=>[
+    'disallowed '+type,[nativeStart,nativeTool(type),nativeMessage,nativeFinish],/item outside proposal scope/]),
+  ['unknown event',[nativeStart,{type:'unrecognized-private-canary'},nativeMessage,nativeFinish],/unknown event/],
+  ['usage metadata',[nativeStart,nativeMessage,{type:'turn.completed',usage:{output_tokens:23,input_tokens:-1,secret:'private-canary'}}],null],
+  ['exact output budget',[nativeStart,nativeMessage,nativeFinish],null],
+  ['excess stdout',[nativeStart,nativeMessage,nativeFinish],/output budget/],
+  ['excess stderr',[nativeStart,nativeMessage,nativeFinish],/output budget/],
+  ['invalid event bytes',[nativeStart,nativeMessage,nativeFinish],/UTF-8/],
+  ['prompt exceeds budget',[nativeStart,nativeMessage,nativeFinish],/estimated prompt tokens/],
+]) {
+  test('Codex proposal transcript: '+label, async t=>{
+    const {assignment,temp,run} = lowLevelFixture(t);
+    assignment.assignee = {...assignment.assignee,provider:'codex',processing:'external_cloud',model_id:'gpt-5.6-sol'};
+    assignment.worker.adapter='codex';
+    assignment.data.external_processing_allowed=true;
+    assignment.resources.max_steps=2;
+    if (label==='timeout') assignment.resources.timeout_seconds=10;
+    assignment.resources.max_output_bytes=1024;
+    if (label==='prompt exceeds budget') assignment.resources.max_prompt_tokens=256;
+    let output = Buffer.from(events.map(event=>JSON.stringify(event)).join('\n')+'\n');
+    if (label==='exact output budget' || label==='excess stdout') {
+      const target = label==='excess stdout' ? 1025 : 1024;
+      output=Buffer.concat([Buffer.alloc(target-output.length,0x20),output]);
+    }
+    if (label==='invalid event bytes') {
+      const reasoning=Buffer.concat([Buffer.from('{"type":"item.updated","item":{"type":"reasoning","text":"'),Buffer.from([0xff]),Buffer.from('"}}\n')]);
+      const split=output.indexOf(10)+1;
+      output=Buffer.concat([output.subarray(0,split),reasoning,output.subarray(split)]);
+    }
+    const marker=path.join(temp,'invoked');
+    const stub=path.join(temp,'synthetic-codex');
+    writeFileSync(stub,"#!/usr/bin/env node\nrequire('node:fs').writeFileSync("+JSON.stringify(marker)+",'started');\n"+
+      "process.stdout.write(Buffer.from("+JSON.stringify(output.toString('base64'))+",'base64'));\n"+
+      (label==='excess stderr'?"process.stderr.write('x'.repeat(1025));":"")+
+      (label==='nonzero exit'?"process.exitCode=7;":"")+
+      (label==='terminated by signal'?"process.kill(process.pid,'SIGTERM');":"")+
+      (label==='timeout'?"setInterval(()=>{},1000);":""),{mode:0o700});
+    const previous=process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN;
+    process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN=stub;
+    t.after(()=>{
+      if (previous===undefined) delete process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN;
+      else process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN=previous;
+    });
+    const {artifactDirectory,evidence}=await run();
+    assert.equal(existsSync(marker),label!=='prompt exceeds budget');
+    assert.equal(evidence.disposition,violation?'rejected':'proposal_candidate','unexpected proposal disposition: '+label);
+    assert.equal(existsSync(path.join(artifactDirectory,'proposal.json')),!violation);
+    if (violation) assert.match(evidence.violations.join('\n'),violation);
+    if (label==='usage metadata') assert.deepEqual(evidence.agent.usage,{output_tokens:23});
+    for (const name of ['events.ndjson','evidence.json']) {
+      assert.ok(!readFileSync(path.join(artifactDirectory,name),'utf8').includes('private-canary'),name);
+    }
+  });
+}
+
+test('Codex proposal launches outside the checkout with explicit read-only permissions', async t=>{
+  const {assignment,temp,cwd,run}=lowLevelFixture(t,root=>writeFileSync(path.join(root,'AGENTS.md'),'unoffered-prompt-canary'));
+  assignment.assignee={...assignment.assignee,provider:'codex',processing:'external_cloud',model_id:'gpt-5.6-sol'};
+  assignment.data.external_processing_allowed=true;
+  assignment.worker.adapter='codex';
+  const stub=path.join(temp,'probe-codex'), observed=path.join(temp,'observation');
+  const output=[nativeStart,nativeMessage,nativeFinish].map(e=>JSON.stringify(e)).join('\n');
+  writeFileSync(stub,"#!/usr/bin/env node\nconst fs=require('node:fs');\n"+
+    "fs.writeFileSync("+JSON.stringify(observed)+",JSON.stringify({args:process.argv.slice(2),cwd:process.cwd(),files:fs.readdirSync('.')}));\n"+
+    "console.log("+JSON.stringify(output)+");",{mode:0o700});
+  const previous=process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN;
+  process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN=stub;
+  t.after(()=>{
+    if (previous===undefined) delete process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN;
+    else process.env.UNIFIED_HARNESS_SUBAGENT_CODEX_BIN=previous;
+  });
+  const {evidence}=await run();
+  assert.equal(evidence.disposition,'proposal_candidate');
+  const obs=JSON.parse(readFileSync(observed));
+  assert.notEqual(obs.cwd,cwd);
+  assert.deepEqual(obs.files,[],'launch directory contains no repository files');
+  assert.ok(!obs.args.includes('--approve-for-me'));
+  assert.ok(obs.args.includes('approval_policy="never"'));
+  assert.ok(obs.args.includes('--skip-git-repo-check'));
+  assert.equal(obs.args[obs.args.indexOf('--sandbox')+1],'read-only');
+  assert.ok(obs.args.at(-1).includes('cobalt-otter-47') && !obs.args.at(-1).includes('unoffered-prompt-canary'));
+  for (const name of ['shell_tool','unified_exec','multi_agent','apps','plugins','hooks']) {
+    assert.ok(obs.args.some((arg,i)=>arg==='--disable' && obs.args[i+1]===name));
+  }
+  // Preserve the existing edit-worker launch policy.
+  const editArgs=buildCodexCommand({...assignment,authority:{...assignment.authority,mode:'candidate_edit'}},temp,'edit');
+  assert.equal(editArgs[editArgs.indexOf('--sandbox')+1],'workspace-write');
+  assert.ok(editArgs.includes('--approve-for-me'));
+});
+
+function syntheticEditor(t, {prepare, program, target='source.txt', defect=false}) {
+  const {assignment,cwd,temp,run} = lowLevelFixture(t,prepare);
+  assignment.authority = {mode:defect?'defect_reproduction':'candidate_edit',
+    allowed_paths:[target],allowed_read_paths:[target],allow_test_changes:defect};
+  assignment.worker.adapter = 'aider';
+  const stub = path.join(temp,'fake-editor'), marker=path.join(temp,'launch.json');
+  writeFileSync(stub,'#!/usr/bin/env node\n'+"const fs=require('node:fs');\n"+
+    'fs.writeFileSync('+JSON.stringify(marker)+',JSON.stringify(process.argv.slice(2)));\n'+program,{mode:0o700});
+  const previous = process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN;
+  process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN=stub;
+  t.after(()=>{
+    if (previous===undefined) delete process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN;
+    else process.env.UNIFIED_HARNESS_SUBAGENT_AIDER_BIN=previous;
+  });
+  return {assignment,cwd,marker,run};
+}
+
+for (const label of ['at source budget','over source budget','nested link','new target','forbidden test edit']) {
+  test('edit worker grants: '+label, async t=>{
+    const {assignment,marker,run}=syntheticEditor(t,{prepare(root){
+      mkdirSync(path.join(root,'docs'));
+      const n=4096-Buffer.byteLength('test input')+(label==='over source budget'?1:0);
+      writeFileSync(path.join(root,'docs','edit.txt'),Buffer.alloc(n,0x78));
+      writeFileSync(path.join(root,'docs','unit.test.mjs'),'test input');
+      if (label==='nested link') symlinkSync('../source.txt',path.join(root,'docs','shortcut'));
+    },program:"fs.writeFileSync('docs/"+(label==='new target'?'new':'edit')+".txt','revised');"});
+    assignment.authority.allowed_read_paths=['docs','docs/edit.txt'];
+    assignment.authority.allowed_paths=label==='new target'?['docs/new.txt']:label==='forbidden test edit'?['docs/unit.test.mjs']:['docs'];
+    assignment.worker.max_context_bytes=4096;
+    const result=run();
+    if (['over source budget','nested link','forbidden test edit'].includes(label)) {
+      const expected={'over source budget':/byte budget/,'nested link':/symbolic link/,'forbidden test edit':/test path/}[label];
+      await assert.rejects(result,e=>expected.test(e.cause?.message));
+      assert.equal(existsSync(marker),false);
+    } else {
+      const {evidence}=await result;
+      assert.equal(evidence.disposition,'candidate');
+      const args=JSON.parse(readFileSync(marker));
+      const values=flag=>args.flatMap((a,i)=>a===flag?[args[i+1]]:[]);
+      assert.deepEqual(values('--file'),[label==='new target'?'docs/new.txt':'docs/edit.txt']);
+      assert.deepEqual(values('--read'),label==='new target'?['docs/edit.txt','docs/unit.test.mjs']:['docs/unit.test.mjs']);
+    }
+  });
+}
+
+for (const label of ['exact stdout','excess stdout','excess stderr','binary output','nonzero exit','signal','timeout']) {
+  test('edit worker termination: '+label,async t=>{
+    const prefix="fs.writeFileSync('source.txt','revised');\n";
+    const actions={
+      'exact stdout':"process.stdout.write(Buffer.alloc(1024,0x61));",
+      'excess stdout':"process.stdout.write(Buffer.alloc(1025,0x61));",
+      'excess stderr':"process.stderr.write(Buffer.alloc(1025,0x61));",
+      'binary output':"process.stdout.write(Buffer.from([0xff,0x00,0xc3]));process.stderr.write(Buffer.from([0x80]));",
+      'nonzero exit':"process.exitCode=7;",signal:"process.kill(process.pid,'SIGTERM');",timeout:"setInterval(()=>{},1000);",
+    };
+    const {assignment,run}=syntheticEditor(t,{program:prefix+actions[label]});
+    assignment.resources.max_output_bytes=1024;
+    assignment.resources.timeout_seconds=10;
+    const {artifactDirectory,evidence}=await run();
+    const event=JSON.parse(readFileSync(path.join(artifactDirectory,'events.ndjson')));
+    const ok=['exact stdout','binary output'].includes(label);
+    assert.equal(evidence.disposition,ok?'candidate':'rejected','unexpected worker result: '+label);
+    assert.equal(evidence.acceptance.length,ok?1:0);
+    assert.equal(event.status,ok?'completed':'failed');
+    if (label.startsWith('excess')) {
+      assert.match(evidence.violations.join('\n'),/output budget/);
+      assert.equal(event.output_hash,null);
+    } else if (label==='binary output') {
+      const stdout=Buffer.from([0xff,0x00,0xc3]), stderr=Buffer.from([0x80]);
+      assert.equal(event.output_hash,sha256(Buffer.concat([stdout,Buffer.from('\n'),stderr])));
+      assert.equal(evidence.agent.stderr_hash,sha256(stderr));
+    } else if (label==='timeout') {
+      assert.equal(evidence.agent.timed_out,true);
+      assert.equal(event.output_hash,null);
+    }
+  });
+}
+
+for (const [label,defect,script,passed] of [
+  ['expected zero',false,"process.stdout.write(Buffer.from([0xff]));",true],
+  ['unexpected nonzero',false,"process.exitCode=9;",false],
+  ['expected nonzero',true,"process.exitCode=9;",true],
+  ['unexpected zero',true,"process.exitCode=0;",false],
+  ['signal is not a reproduced defect',true,"process.kill(process.pid,'SIGTERM');",false],
+  ['timeout is not a reproduced defect',true,"setInterval(()=>{},1000);",false],
+  ['excess output is not a reproduced defect',true,"process.stdout.write(Buffer.alloc(5242881));process.exitCode=9;",false],
+]) {
+  test('edit acceptance: '+label, async t=>{
+    const target=defect?'probe.test.mjs':'source.txt';
+    const {assignment,run}=syntheticEditor(t,{target,defect,program:`fs.writeFileSync('${target}','revised');`});
+    const check={command:'node',args:['-e',script],expected_result:defect?'nonzero':'zero',timeout_seconds:label.startsWith('timeout')?1:10};
+    assignment.acceptance.checks=[check,{...check,args:['-e',defect?'process.exitCode=1;':'process.exitCode=0;']}];
+    const {evidence}=await run();
+    assert.equal(evidence.disposition,passed?(defect?'reproduction_candidate':'candidate'):'rejected');
+    assert.equal(evidence.acceptance.length,passed?2:1);
+    const first=evidence.acceptance[0];
+    assert.equal(first.passed,passed);
+    if (label==='expected zero') assert.equal(first.stdout_hash,sha256(Buffer.from([0xff])));
+    if (label.startsWith('excess')) {
+      assert.equal(first.output_exceeded,true);
+      assert.equal(first.stdout_hash,null);
+    }
+    if (label.startsWith('timeout')) assert.equal(first.timed_out,true);
+    if (label.startsWith('signal')) assert.equal(first.signal,'SIGTERM');
+  });
+}
+
+for (const [label,action,unchanged] of [
+  ['unchanged edit',"fs.readFileSync('source.txt');",true],
+  ['mutated edit',"fs.writeFileSync('source.txt','independently rewritten');",false],
+  ['modified tracked input',"fs.writeFileSync('other.txt','changed by the check');",false],
+  ['moved revision',"cp.execFileSync('git',['commit','--allow-empty','-qm','moved by check']);",false],
+  ['untracked build output',"fs.writeFileSync('build.tmp','scratch');",true],
+]) {
+  test('acceptance patch binding: '+label,async t=>{
+    const {assignment,run}=syntheticEditor(t,{prepare(root){writeFileSync(path.join(root,'other.txt'),'original');},
+      program:"fs.writeFileSync('source.txt','worker candidate');"});
+    const check=code=>({command:'node',args:['-e',code],expected_result:'zero',timeout_seconds:10});
+    assignment.acceptance.checks=[check("const fs=require('node:fs'),cp=require('node:child_process');"+action),
+      check("process.exit(0);")];
+    const {evidence,artifactDirectory}=await run();
+    assert.equal(evidence.disposition,unchanged?'candidate':'rejected','check result must match the delivered patch');
+    assert.equal(evidence.acceptance.length,unchanged?2:1,'stop checking a different candidate');
+    assert.equal(evidence.acceptance[0].passed,unchanged);
+    assert.equal(evidence.acceptance[0].candidate_unchanged,unchanged);
+    const patch=readFileSync(path.join(artifactDirectory,'candidate.patch'),'utf8');
+    assert.equal(sha256(patch),evidence.candidate_patch_hash);
+    assert.ok(patch.includes('+worker candidate'));
+  });
+}
+
+for (const [label,mutate,reason] of [
+  ['missing test authority',a=>{a.authority.allow_test_changes=false;},/test-change authority/],
+  ['non-test target',a=>{a.authority.allowed_read_paths=a.authority.allowed_paths=['source.txt'];},/must identify test files/],
+  ['changes optional',a=>{a.acceptance.require_changes=false;},/must require changes/],
+  ['expects success',a=>{a.acceptance.checks[0].expected_result='zero';},/must expect nonzero/],
+  ['outside read grant',a=>{a.authority.allowed_read_paths=['source.txt'];},/inside an allowed read path/],
+  ['unapproved command',a=>{a.acceptance.checks[0].command='sh';},/command is not permitted/],
+  ['wrong adapter mode',a=>{a.authority.mode='read_only';},/aider adapter requires/],
+]) {
+  test('defect edit admission: '+label,async t=>{
+    const {assignment,run,marker}=syntheticEditor(t,{defect:true,target:'probe.test.mjs',program:"process.exit(0);"});
+    assignment.acceptance.checks[0].expected_result='nonzero';
+    mutate(assignment);
+    await assert.rejects(run(),reason);
+    assert.equal(existsSync(marker),false);
+  });
+}
+
+test('edit worker passes option-shaped files as literal arguments', async t=>{
+  const {assignment,run,marker}=syntheticEditor(t,{target:'--model',prepare(root){writeFileSync(path.join(root,'--config'),'context');},
+    program:"fs.writeFileSync('--model','revised');"});
+  assignment.authority.allowed_read_paths=['--config','--model'];
+  const {evidence}=await run();
+  assert.equal(evidence.disposition,'candidate');
+  const args=JSON.parse(readFileSync(marker));
+  assert.ok(args.some((a,i)=>a==='--file' && args[i+1]==='./--model'));
+  assert.ok(args.some((a,i)=>a==='--read' && args[i+1]==='./--config'));
+});
+
+test('v6 refuses a terminal receipt when its in-flight claim changes', async t=>{
+  let claim;
+  const routes=[];
+  const port=await listen(t,'127.0.0.1',(req,res)=>{
+    routes.push(req.url);
+    if(req.url==='/v1/models') writeFileSync(claim,'{}');
+    res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[{name:'synthetic:local'}],version:'test'}));
+  });
+  const {inputs,temp,accept}=fixture(t,'http://127.0.0.1:'+port+'/v1');
+  const packet=accept(buildPackageScope(inputs));
+  const digest=hypervisor.currentAssignment(packet).digest, ledger=inputs.invocationPolicy.directory;
+  claim=path.join(ledger,digest+'.claim.json');
+  const events=[{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:'cobalt-otter-47'}}},
+    {type:'text',part:{text:'cobalt-otter-47'}}];
+  const bin=path.join(temp,'bin');
+  mkdirSync(bin);
+  writeFileSync(path.join(bin,'opencode'),'#!/usr/bin/env node\nfor(const e of '+JSON.stringify(events)+')console.log(JSON.stringify(e));',{mode:0o700});
+  const previous=process.env.PATH;
+  process.env.PATH=bin+path.delimiter+previous;
+  t.after(()=>{process.env.PATH=previous;});
+  await assert.rejects(contractRoundtrip({...inputs,packet}),/reconcile without retrying/);
+  assert.deepEqual(readdirSync(ledger),[digest+'.claim.json']);
+  assert.equal(inspectInvocation(inputs.invocationPolicy,digest).requires_reconciliation,true);
+  // A result written before terminal persistence is an orphan, not a receipt.
+  assert.equal(readdirSync(inputs.resultPolicy.directory).length,1);
+  const first=[...routes];
+  await assert.rejects(contractRoundtrip({...inputs,packet}),/claim unavailable or already exists/);
+  assert.deepEqual(routes,first);
+});
+
+for (const [name,makeHold,expectedError] of [
+  ['direct v6 rework rejects the prior resume before discovery or claim',reworkFixture,/resume checkpoint/i],
+  ['direct v6 rejects erased clarification before discovery or claim',erasedHoldFixture,/clarification/i],
+]) {
+  test(name,async t=>{
+    const requests=[];
+    const port=await listen(t,'127.0.0.1',(req,res)=>{
+      requests.push(req.url);
+      res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[{name:'synthetic:local'}],version:'test'}));
+    });
+    const {inputs,accept,temp}=fixture(t,'http://127.0.0.1:'+port+'/v1');
+    const bin=path.join(temp,'bin');
+    mkdirSync(bin);
+    writeFileSync(path.join(bin,'opencode'),'#!/usr/bin/env node\nprocess.exit(1);',{mode:0o700});
+    const previous=process.env.PATH;
+    process.env.PATH=bin+path.delimiter+previous;
+    t.after(()=>{process.env.PATH=previous;});
+    const {stale}=makeHold(hypervisor,accept(buildPackageScope(inputs)));
+    await assert.rejects(contractRoundtrip({...inputs,packet:stale}),expectedError);
+    assert.deepEqual(requests,[]);
+    assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
+    assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
+  });
+}
+
+const discoveryLimit=1024*1024;
+const discoveryCases=[
+  ['model list at limit','models'],['model list one byte over','models',/discovery.*byte/i],
+  ['compressed list one byte over','models',/discovery.*byte/i],['tag list at limit','tags'],
+  ['tag list one byte over','tags',/discovery.*byte/i],['version one byte over','version',/discovery.*byte/i],
+  ['invalid required UTF-8','models',/UTF-8/i],['malformed required JSON','models',/JSON/i],
+  ['missing model','models',/does not advertise/i],['required HTTP failure','models',/HTTP 503/i],
+  ['required connection lost','models',/fetch|socket/i],['optional HTTP failure','version'],
+  ['optional connection lost','version'],['malformed optional JSON','version'],['unavailable tags','tags'],
+  ['model tag alternative key','tags'],['model tag absent','tags'],['tools explicitly denied','tags',/tool/i],
+  ['invalid tool declaration','tags',/tool/i],['v5 expires after model list','models',/expired/i],
+];
+for (const [label,target,expectedError] of discoveryCases) {
+  test('provider discovery: '+label,async t=>{
+    const routes=[];
+    let expire;
+    const port=await listen(t,'127.0.0.1',(req,res)=>{
+      routes.push(req.url);
+      const route=req.url.split('/').at(-1);
+      const tag={name:'synthetic:local',digest:'synthetic-digest',capabilities:['tools']};
+      if (route===target) {
+        if(label.includes('connection lost')) {req.socket.destroy();return;}
+        if(label.includes('HTTP failure') || label==='unavailable tags'){res.writeHead(503).end('unavailable');return;}
+        if(label.includes('malformed')){res.end('{broken');return;}
+        if(label==='invalid required UTF-8'){
+          res.end(Buffer.concat([Buffer.from('{"data":[{"id":"synthetic:local"}],"junk":"'),Buffer.from([255]),Buffer.from('"}')]));return;
+        }
+        if(label==='model tag alternative key'){tag.model=tag.name;delete tag.name;}
+        if(label==='model tag absent')tag.name='other';
+        if(label==='tools explicitly denied')tag.capabilities=['completion'];
+        if(label==='invalid tool declaration')tag.capabilities='completion';
+        if(label.startsWith('v5 expires'))expire();
+      }
+      let payload=JSON.stringify(route==='models'?{data:label==='missing model'?[]:[{id:'synthetic:local'}]}
+        :route==='version'?{version:'local-test'}:{models:[tag]});
+      if(route===target && /at limit|one byte over/.test(label)){
+        payload=payload.padEnd(discoveryLimit+(label.includes('one byte over')?1:0),' ');
+        if(label.startsWith('compressed')){res.setHeader('Content-Encoding','gzip');res.end(gzipSync(payload));return;}
+        // Omit Content-Length, cross the boundary in the final chunk.
+        res.write(payload.slice(0,-1));res.end(payload.slice(-1));return;
+      }
+      res.end(payload);
+    });
+    const {temp,inputs,accept}=fixture(t,'http://127.0.0.1:'+port+'/v1');
+    let scope;
+    if(label.startsWith('v5 expires')){
+      delete inputs.packagePolicy;
+      scope=buildBoundScope(inputs.bindingInputs,inputs.endpoint,inputs.resultPolicy,inputs.invocationPolicy,inputs.executionWindow);
+      expire=()=>t.mock.method(Date,'now',()=>Date.parse(inputs.executionWindow.expires_at));
+    }else scope=buildPackageScope(inputs);
+    const packet=accept(scope), digest=hypervisor.currentAssignment(packet).digest;
+    const marker=path.join(temp,'launched'), bin=path.join(temp,'bin');mkdirSync(bin);
+    writeFileSync(path.join(bin,'opencode'),`#!/usr/bin/env node
+const fs=require('node:fs'), token=fs.readFileSync('source.txt','utf8');
+fs.writeFileSync(${JSON.stringify(marker)},'ran');
+for(const e of [{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:token}}},{type:'text',part:{text:token}}])console.log(JSON.stringify(e));`,{mode:0o700});
+    const previous=process.env.PATH;
+    process.env.PATH=bin+path.delimiter+previous;
+    t.after(()=>{process.env.PATH=previous;});
+    const run=contractRoundtrip({...inputs,packet});
+    if(expectedError){
+      await assert.rejects(run,e=>expectedError.test([e.message,e.cause?.message].join(' ')),'discovery admitted: '+label);
+      assert.equal(existsSync(marker),false);
+      if(target==='models')assert.deepEqual(routes,['/v1/models'],'discovery continued after hold: '+label);
+      assert.equal(inspectInvocation(inputs.invocationPolicy,digest).state,'failed');
+      assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
+    }else{
+      const receipt=await run;
+      assert.equal(existsSync(marker),true);
+      assert.deepEqual(routes.sort(),['/api/tags','/api/version','/v1/models']);
+      assert.equal(receipt.executor_evidence.model.server_version,target==='version'?null:'local-test');
+      assert.equal(receipt.executor_evidence.model.model_digest,['unavailable tags','model tag absent'].includes(label)?null:'synthetic-digest');
+      assert.equal(inspectInvocation(inputs.invocationPolicy,digest).state,'completed');
+    }
+  });
+}
+
+for (const [label,change,message] of [
+  ['local provider',()=>{}],
+  ['unknown provider',a=>{a.assignee.provider='remote';},/assignee.provider/],
+  ['unsafe model ID',a=>{a.assignee.model_id='../bad model';},/safe model identifier/],
+  ['cloud model declared local',a=>{a.assignee.model_id='example:cloud';},/cloud-tagged/],
+  ['local model declared cloud',a=>{a.assignee.processing='external_cloud';},/cloud-tagged/],
+  ['cloud provider without consent',a=>{a.assignee.model_id='example:cloud';a.assignee.processing='external_cloud';},/external_processing_allowed=true/],
+  ['MLX outside local processing',a=>{Object.assign(a.assignee,{provider:'mlx',model_id:'team/model',processing:'external_cloud'});},/mlx assignments must declare local/],
+  ['unnamespaced MLX model',a=>{Object.assign(a.assignee,{provider:'mlx',model_id:'model'});},/must be namespaced/],
+  ['llamacpp outside local processing',a=>{Object.assign(a.assignee,{provider:'llamacpp',processing:'external_cloud'});},/llamacpp assignments must declare local/],
+  ['Codex without explicit adapter',a=>{a.assignee.provider='codex';},/explicit codex worker adapter/],
+  ['secret input',a=>{a.data.contains_secrets=true;},/contains_secrets must be false/],
+  ['sensitive personal input',a=>{a.data.contains_sensitive_personal_data=true;},/contains_sensitive_personal_data must be false/],
+  ['unknown data class',a=>{a.data.classification='restricted';},/classification must be/],
+  ['ambiguous external consent',a=>{a.data.external_processing_allowed='false';},/must be boolean/],
+  ['missing read grants',a=>{delete a.authority.allowed_read_paths;},/allowed_read_paths is required/],
+  ['too many read grants',a=>{a.authority.allowed_read_paths=Array(31).fill('source.txt');},/between 1 and 30/],
+  ['write grant escapes reads',a=>{a.authority.allowed_paths=['another.txt'];},/inside an allowed read path/],
+  ['executable check not allowed',a=>{a.acceptance.checks[0].command='sh';},/command is not permitted/],
+  ['invalid defect write grants',a=>{Object.assign(a.authority,{mode:'defect_reproduction',allowed_paths:{},allow_test_changes:true});},/allowed_paths must be an array/],
+  ['invalid check entry',a=>{a.acceptance.checks=[null];},/checks\[0\] must be an object/],
+  ['invalid check list',a=>{a.acceptance.checks={};},/between 1 and 12 checks/],
+  ['too much worker time',a=>{a.resources.timeout_seconds=999999;},/resources.timeout_seconds/],
+  ['excess output limit',a=>{a.resources.max_output_bytes=10485761;},/max_output_bytes/],
+  ['string token limit',a=>{a.resources.max_prompt_tokens='4096';},/max_prompt_tokens/],
+  ['worker cannot pause',a=>{a.supervision.may_pause=false;},/may_pause must be true/],
+]) {
+  test('provider assignment admission: '+label,t=>{
+    const {inputs}=fixture(t,'http://127.0.0.1:11434/v1');
+    const assignment=JSON.parse(inputs.bindingInputs.assignmentJson);
+    change(assignment);
+    inputs.bindingInputs.assignmentJson=JSON.stringify(assignment);
+    if(message){
+      assert.throws(()=>validateAssignment(assignment),e=>e.name==='AssignmentValidationError' && message.test(e.message),
+        'missing assignment refusal: '+label);
+      assert.throws(()=>buildPackageScope(inputs));
+      assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
+      assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
+    }else assert.equal(JSON.parse(buildPackageScope(inputs)).kind,'unified-harness-readonly-v6');
+  });
+}
+
+test('provider discovery: oversized stream closes before EOF',async t=>{
+  let finish;
+  const closed=new Promise(resolve=>{finish=resolve;});
+  const port=await listen(t,'127.0.0.1',(req,res)=>{
+    let ended=false;
+    const watchdog=setTimeout(()=>{ended=true;res.end();},3500);
+    res.on('close',()=>{clearTimeout(watchdog);finish(!ended);});
+    res.write(Buffer.alloc(discoveryLimit+1,32));
+  });
+  const {inputs,accept}=fixture(t,'http://127.0.0.1:'+port+'/v1');
+  const packet=accept(buildPackageScope(inputs));
+  await assert.rejects(contractRoundtrip({...inputs,packet}),/discovery.*byte/i);
+  assert.ok(await closed,'cancel oversized metadata before the server ends its response');
+  assert.equal(inspectInvocation(inputs.invocationPolicy,hypervisor.currentAssignment(packet).digest).state,'failed');
+});
+
+for(const label of ['ordinary edit','literal backslash','staged literal backslash','mixed-case test directory','mixed-case test suffix','test-like ordinary file']) {
+  test('candidate path evidence: '+label,async t=>{
+    const names={'ordinary edit':'docs/source.txt','literal backslash':'docs\\outside.txt','staged literal backslash':'docs\\outside.txt',
+      'mixed-case test directory':'docs/TeStS/source.txt','mixed-case test suffix':'docs/source.SpEc.mjs','test-like ordinary file':'docs/contest.txt'};
+    const name=names[label];
+    const program="fs.writeFileSync("+JSON.stringify(name)+",'candidate text');"
+      +(label.startsWith('staged')?"require('node:child_process').execFileSync('git',['add','--',"+JSON.stringify(name)+"]);":"");
+    const {run}=syntheticEditor(t,{target:'docs',program,prepare(root){
+      mkdirSync(path.join(root,'docs','TeStS'),{recursive:true});
+      for(const f of ['source.txt','TeStS/source.txt','source.SpEc.mjs','contest.txt'])writeFileSync(path.join(root,'docs',f),'initial');
+    }});
+    const {evidence,artifactDirectory}=await run();
+    const allowed=['ordinary edit','test-like ordinary file'].includes(label);
+    assert.equal(evidence.disposition,allowed?'candidate':'rejected','unapproved patch delivered: '+label);
+    assert.equal(existsSync(path.join(artifactDirectory,'candidate.patch')),allowed);
+    if(!allowed)assert.deepEqual(evidence.acceptance,[]);
+  });
+}
+
+for(const label of ['regular file','absolute file','directory then file','directory alone','missing child','backslash alias',
+  'absolute parent traversal','outside absolute path','transient file','case alias','missing path','object answer','numeric answer','empty answer']) {
+  test('v6 read evidence: '+label,async t=>{
+    const port=await listen(t,'127.0.0.1',(req,res)=>res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[]})));
+    const {inputs,temp,accept}=fixture(t,'http://127.0.0.1:'+port+'/v1','source.txt',30,root=>{
+      mkdirSync(path.join(root,'docs'));writeFileSync(path.join(root,'docs','file.txt'),'authorized');
+      writeFileSync(path.join(root,'docs\\file.txt'),'unoffered');
+    });
+    const a=JSON.parse(inputs.bindingInputs.assignmentJson);
+    a.authority.allowed_read_paths=['docs'];
+    inputs.bindingInputs.assignmentJson=JSON.stringify(a);writeFileSync(inputs.assignmentPath,inputs.bindingInputs.assignmentJson);
+    const bin=path.join(temp,'bin');mkdirSync(bin);
+    const program=label=>{
+      const cwd=process.cwd();
+      if(label==='transient file')require('node:fs').writeFileSync('docs/transient','untracked');
+      const paths={'regular file':['docs/file.txt'],'absolute file':[cwd+'/docs/file.txt'],'directory then file':['docs','docs/file.txt'],
+        'directory alone':['docs'],'missing child':['docs/missing'],'backslash alias':['docs\\file.txt'],
+        'absolute parent traversal':[cwd+'/other/../docs/file.txt'],'transient file':['docs/transient'],'case alias':['docs/FILE.txt'],'outside absolute path':[cwd+'/../outside'],'missing path':[null]};
+      for(const filePath of paths[label]??['docs/file.txt'])console.log(JSON.stringify({type:'tool_use',part:{tool:'read',state:{
+        status:'completed',input:{filePath},output:'synthetic read'}}}));
+      if(label==='transient file'){
+        // Leave it present for the supervisor to inspect the event.
+        setTimeout(()=>require('node:fs').unlinkSync('docs/transient'),500);
+      }
+      const answer={'object answer':{invented:true},'numeric answer':42,'empty answer':''};
+      console.log(JSON.stringify({type:'text',part:{text:answer[label]??'authorized'}}));
+    };
+    writeFileSync(path.join(bin,'opencode'),'#!/usr/bin/env node\n('+program+')('+JSON.stringify(label)+');',{mode:0o700});
+    const previous=process.env.PATH;process.env.PATH=bin+path.delimiter+previous;t.after(()=>{process.env.PATH=previous;});
+    const packet=accept(buildPackageScope(inputs)), digest=hypervisor.currentAssignment(packet).digest;
+    const run=contractRoundtrip({...inputs,packet});
+    if(['regular file','absolute file','directory then file'].includes(label)){
+      const receipt=await run;
+      assert.equal(receipt.executor_evidence.agent.read_calls,1,'only the regular file counts as source evidence');
+    }else{
+      await assert.rejects(run,/no completed source read|no response after source read|policy violation|outside the pinned Git tree/i,'unverified read accepted: '+label);
+      assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
+      assert.equal(inspectInvocation(inputs.invocationPolicy,digest).state,'failed');
+    }
+  });
+}
+
+for(const stage of ['before claim','after discovery','valid package']){
+  test('v6 package identity: '+stage,async t=>{
+    let substitute;
+    const requests=[];
+    const port=await listen(t,'127.0.0.1',(req,res)=>{
+      requests.push(req.url);
+      if(stage==='after discovery' && req.url==='/v1/models')substitute();
+      res.end(JSON.stringify({data:[{id:'synthetic:local'}],models:[]}));
+    });
+    const {inputs,temp,accept}=fixture(t,'http://127.0.0.1:'+port+'/v1');
+    const copy=path.join(temp,'installation');
+    cpSync(fileURLToPath(new URL('.',import.meta.url)),copy,{recursive:true});
+    const {contractRoundtrip:run}=await import(pathToFileURL(path.join(copy,'bundle.mjs')));
+    const {buildPackageScope:scope}=await import(pathToFileURL(path.join(copy,'integrated.mjs')));
+    const packet=accept(scope(inputs));
+    const member=path.join(copy,'methods.md');
+    substitute=()=>linkSync(member,path.join(temp,'external-copy'));
+    if(stage==='before claim')substitute();
+    const bin=path.join(temp,'bin');mkdirSync(bin);
+    writeFileSync(path.join(bin,'opencode'),`#!/usr/bin/env node
+const token=require('node:fs').readFileSync('source.txt','utf8');
+for(const e of [{type:'tool_use',part:{tool:'read',state:{status:'completed',input:{filePath:'source.txt'},output:token}}},{type:'text',part:{text:token}}])console.log(JSON.stringify(e));`,{mode:0o700});
+    const previous=process.env.PATH;process.env.PATH=bin+path.delimiter+previous;t.after(()=>{process.env.PATH=previous;});
+    const result=run({...inputs,packet});
+    if(stage==='valid package'){
+      const receipt=await result;assert.equal(receipt.review_status,'pending');assert.equal(requests.length,3);
+    }else{
+      await assert.rejects(result,/bounded regular file/,'linked package member remained eligible: '+stage);
+      assert.deepEqual(requests,stage==='before claim'?[]:['/v1/models']);
+      assert.deepEqual(readdirSync(inputs.resultPolicy.directory),[]);
+      if(stage==='before claim')assert.deepEqual(readdirSync(inputs.invocationPolicy.directory),[]);
+      else assert.equal(inspectInvocation(inputs.invocationPolicy,hypervisor.currentAssignment(packet).digest).state,'failed');
+    }
+  });
+}

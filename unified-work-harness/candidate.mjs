@@ -8,7 +8,7 @@ import { readFileSync, writeFileSync, realpathSync, mkdirSync, readdirSync, mkdt
 import path from "node:path";
 import {
   hypervisor, sha256, inspectBundledSource, inspectWorkIntake, inspectExecutionWindow, inspectInvocation,
-  assertProviderPort, pinTempParent, claimInvocation, validateInvocationPolicy, checkResultDirectory, normalizeAllowedPath,
+  assertProviderPort, pinTempParent, claimInvocation, validateInvocationPolicy, checkResultDirectory, readPrivateFileBytes, normalizeAllowedPath,
   isProtectedPath, isOllamaCloudModelId, assertSafeGitSource, contractGitEnvironment, contractGitArgs,
 } from "./bundle.mjs";
 
@@ -203,7 +203,7 @@ async function readReply(response, limit) {
   catch { throw new Error("Malformed candidate provider response"); }
 }
 
-async function propose(request,files,signal) {
+function prepareProviderBody(request,files) {
   const {provider,limits}=request;
   const messages=[
     {role:"system",content:request.mode==="candidate_edit"
@@ -211,7 +211,6 @@ async function propose(request,files,signal) {
       : 'Return JSON {"assertions":[...]} containing the supplied expected behavior to reproduce the observed text defect. Use no tools.'},
     {role:"user",content:JSON.stringify({outcome:request.intake.outcome,exclusions:request.intake.exclusions,files:Object.fromEntries(files),writes:request.writes,assertions:request.assertions})},
   ];
-  need(Buffer.byteLength(JSON.stringify(messages))<=limits.contextBytes,"Prompt exceeds context budget");
   const ollama=provider.adapter==="ollama_chat";
   // Native structured output narrows the generated shape. Validate the actual
   // reply independently, including paths, text, changes and accepted assertions.
@@ -222,9 +221,16 @@ async function propose(request,files,signal) {
   const format=request.mode==="candidate_edit"?editFormat:"json";
   const body=ollama ? {model:provider.model,messages,stream:false,format,options:{num_predict:limits.tokens,temperature:0}} :
     {model:provider.model,messages,stream:false,max_tokens:limits.tokens,temperature:0,response_format:{type:"json_object"}};
-  need(Buffer.byteLength(JSON.stringify(body))<=limits.contextBytes,"Provider request exceeds context budget");
+  const bytes=Buffer.from(JSON.stringify(body),"utf8");
+  need(bytes.length<=limits.contextBytes,"Provider request exceeds context budget");
+  return bytes;
+}
+
+async function propose(request,body,signal) {
+  const {provider,limits}=request;
+  const ollama=provider.adapter==="ollama_chat";
   const response=await fetch(provider.endpoint,{method:"POST",redirect:"error",headers:{"content-type":"application/json"},
-    body:JSON.stringify(body),signal});
+    body,signal});
   const reply=await readReply(response,limits.replyBytes);
   const message=ollama?reply?.message:reply?.choices?.[0]?.message;
   need(ollama ? reply?.done===true && reply.done_reason==="stop" : reply?.choices?.length===1 && reply.choices[0].finish_reason==="stop","Provider completion was incomplete");
@@ -304,13 +310,14 @@ export async function candidateRoundtrip({packet,request,signal}) {
   beforeLaunch();
   checkWorkspace(request.workspace);
   const files=readSnapshot(request);
+  const providerBody=prepareProviderBody(request,files);
   // A cancelled or expired request consumes no attempt until this claim.
   beforeLaunch();
   const invocation=claimInvocation(request.invocationPolicy,assignment.digest,root);
   let scratch;
   try {
     beforeLaunch();
-    const proposal=await propose(request,files,stop);
+    const proposal=await propose(request,providerBody,stop);
     checkBudget();
     scratch=mkdtempSync(path.join(getTempParent(),"unified-text-candidate-"));
     const candidate=materialize(request,files,proposal,scratch);
@@ -351,16 +358,13 @@ export function readCandidateForReview({packet,request,receipt}) {
     "Receipt differs from candidate assignment");
   const {receipt_sha256,...body}=receipt;
   const ledger=inspectInvocation(request.invocationPolicy,assignment.digest);
-  need(hash(body)===receipt_sha256 && ledger.state==="completed" && ledger.evidence_sha256===receipt_sha256,
+  need(hash(body)===receipt_sha256 && ledger.state==="completed" && ledger.evidence_sha256===receipt_sha256 && ledger.claim_sha256===receipt.claim_sha256,
     "Candidate receipt differs from completed attempt");
   checkResultDirectory(request.resultPolicy,request.workspace.root);
   const result=receipt.private_result;
   need(typeof result?.name==="string" && /^candidate-[0-9a-f-]{36}\.json$/.test(result.name),"Invalid candidate artifact name");
   const file=path.join(request.resultPolicy.directory,result.name);
-  const stat=lstatSync(file);
-  need(stat.isFile() && stat.uid===process.getuid() && (stat.mode & 0o777)===0o600
-    && stat.size===result.bytes && stat.size<=request.limits.replyBytes*6+131072,"Private artifact identity or access changed");
-  const bytes=readFileSync(file);
+  const bytes=readPrivateFileBytes(file,request.limits.replyBytes*6+131072,result.bytes);
   need(sha256(bytes)===result.sha256,"Private artifact differs from receipt");
   return JSON.parse(bytes.toString("utf8"));
 }

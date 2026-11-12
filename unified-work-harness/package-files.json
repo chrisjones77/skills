@@ -12,6 +12,7 @@
   "coordination.mjs",
   "coordination.test.mjs",
   "delivery-checklist.md",
+  "engineered-system.md",
   "examples/attended-review.mjs",
   "examples/check-review-finding.mjs",
   "examples/methods/card-r1.svg",
