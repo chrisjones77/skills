@@ -37,3 +37,10 @@ No autonomous physical work, chemical application, publishing of personal record
 
 ## Outputs
 Use compact field reports, harvest ledgers, crop/soil plans, risk registers, recipe provenance and change-control tables as needed. Keep recommendations achievable and uncertainty visible.
+
+## Resources
+
+- Field reports and overlays: [field evidence and measurement](references/field-evidence-and-measurement.md), [field report](templates/field-report.md) and [harvest ledger](templates/harvest-ledger.md).
+- Season and site planning: [northern Ontario growing](references/northern-ontario-growing.md), [soil, drainage and layout](references/soil-drainage-and-layout.md) and [seasonal plan](templates/seasonal-plan.md).
+- Inherited recipes and preservation: [recipe provenance](references/recipe-provenance.md), [preservation safety](references/food-preservation-safety.md) and [recipe delta register](templates/recipe-delta-register.md).
+- Review: [six synthetic acceptance cases](examples/victory-garden-2026.md).
