@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "source_repository": "chrisjones77/skills",
-  "source_revision": "d51472a0570a5b87cb366b09665f778f66d75d50",
+  "source_revision": "0b3c336afc515965c860890ac24ac3234226b108",
   "created": "2026-10-22",
   "generator": "OpenAI built-in image_gen",
   "asset_status": "AI-generated concept illustrations",
-  "scope": "Current fourteen-skill gallery. Each board records its source entrypoint and selected asset. Prior snapshots and artwork are retained.",
+  "scope": "Current sixteen-entrypoint gallery. Repository-local and portable dispatch skills have separate boards. Prior snapshots and artwork are retained.",
   "boards": [
     {
       "slug": "harnessed-dispatch",
@@ -83,7 +83,7 @@
       "slug": "creative-seed-development",
       "title": "Creative Seed Development",
       "source_path": "creative-seed-development/SKILL.md",
-      "source_blob_sha": "ee19a8738e0e5696af6a0f740e9e14d30cf5d76c",
+      "source_blob_sha": "9efa3d4f6736635d1f19c60d47cbdac4d211a741",
       "asset": "assets/creative-seed-development.png",
       "asset_sha256": "a9301a52ef106a390ad65781a38c1111baad9da46a709181465350c4c4648209",
       "transcript": [
@@ -94,13 +94,13 @@
         "05 Adapt across media — prose, screen, game and visual concept stay coherent.",
         "06 Review and revise — record provenance, unresolved concerns and draft status."
       ],
-      "limitation": "Creative development supports distinct expression; it is not legal clearance.",
+      "limitation": "Creative development supports distinct expression; it is not legal clearance. This retained illustration summarizes seed development; contextual interpretation of creative metaphors and the catalogue-audit/corrective-action workflow are not depicted. Consult the current skill.",
       "prompt": "Use case: ui-mockup. Render one polished six-panel storyboard image titled \"Creative Seed Development\". Subtitle \"Skill workflow · Illustrative storyboard\". Landscape board, exactly three columns and two rows with six numbered panels read left to right. Match the visual series: charcoal-black desktop interfaces, cream editorial typography, violet connectors and restrained amber highlights, fine pencil annotations and directional arrows, elegant generous gutters. Each panel shows a concrete screen or desk interaction that enacts its step, NOT just a text card. Use legible short headings and concise captions. Detailed yet uncluttered diagrams, source notes, workflow cards and evidence panels appropriate to this skill. These are illustrative interfaces for instructions, not existing products. Exact narrative steps: 01 Name the intended effect — tone, audience, stakes and dramatic function.\n02 Examine the premise — identify recognizable bundles of expression.\n03 Build independent choices — new causes, values, setting and visual logic.\n04 Write the seed — premise, conflict, motives and a fresh sample scene.\n05 Adapt across media — prose, screen, game and visual concept stay coherent.\n06 Review and revise — record provenance, unresolved concerns and draft status. Footer verbatim \"Creative development supports distinct expression; it is not legal clearance.\" Small series credit \"chrisjones77/skills · Concept illustration\". Do not include WRBG, personal details, actual project names, invented citations, regulator logos, official seals, compliance certification badges or claims of automated visual verification. Preserve distinctions and choices described in the steps. Strong visual storytelling and readable typography.",
       "review": {
         "method": "AI visual inspection against source and brief",
         "status": "reviewed-with-limits",
         "human_acceptance": "pending",
-        "notes": "Six panels and main workflow inspected. Sample UI content is illustrative. The linked skill and references remain authoritative."
+        "notes": "Six panels and main workflow inspected. Sample UI content is illustrative. The linked skill and references remain authoritative. Reconciliation 2026-11-20: compared previously bound source ee19a8738e0e5696af6a0f740e9e14d30cf5d76c with current entrypoint and inspected retained pixels. The source adds interpretation of creative metaphors from context before literal image generation. The depicted development workflow remains consistent; this detail is not illustrated. Artwork unchanged; human acceptance remains pending."
       }
     },
     {
@@ -179,7 +179,7 @@
       "slug": "image-card-coverage-harness",
       "title": "Image and Card Coverage Harness",
       "source_path": "image-card-coverage-harness/SKILL.md",
-      "source_blob_sha": "5e0b75a9f59156bef6143fad5a761d4278e08eb1",
+      "source_blob_sha": "0a9f4e344b11ba5a5c76299b9e7387a4d220a623",
       "asset": "assets/image-card-coverage-harness.png",
       "asset_sha256": "54feb1763d9346b8c03b5fae7d40024ec6c4da6738604208e20697ed4f21f781",
       "transcript": [
@@ -190,13 +190,13 @@
         "05 Validate the manifest — run structural and asset-binding checks; resolve blockers.",
         "06 Decide separately — assistant review stays HOLD until actual human acceptance evidence exists."
       ],
-      "limitation": "Hash checks establish byte identity. Assistant review is not human acceptance.",
+      "limitation": "Hash checks establish byte identity. Assistant review is not human acceptance. This retained illustration does not depict historical-manifest preservation, separate associated evidence records, or ordered before/after action evidence and separate source-art, edit-segment and visual-change counts. Consult the current skill.",
       "prompt": "Edit this six-panel storyboard preserving its charcoal/cream/violet/amber design, title, 3-column 2-row layout and panel01/02. Align it with current Image and Card Coverage Harness. Panel03 heading \"Inspect the pixels\", subtitle \"Declared reviewer compares candidate, brief and references.\" Panel04 heading \"Record the review\": explicitly show \"reviewer_kind: assistant\" and \"Human acceptance: pending\", and brief visible checklist \"Geometry · action · text · timing\" as review requirements, not automated detection. Panel05 retain \"Validate the manifest\", checks for schema, record completeness and SHA-256 only, clear annotation \"Records and byte identity only\". Replace human-attestation-only note with \"Checks do not inspect pixels or verify reviewer identity.\" Panel06 heading \"Decide separately\": show \"Validation: clear\", \"Reviewer decision: HOLD\", \"Release: HOLD\", \"Human acceptance evidence: missing\". No Approved or ready-for-release status anywhere. Footer \"Hash checks establish byte identity. Assistant review is not human acceptance.\" Keep legible short text; no actual private data, logos or certification claims. Preserve original other panel meanings; no automatic release implication.",
       "review": {
         "method": "AI visual inspection against source and brief",
         "status": "reviewed-with-limits",
         "human_acceptance": "pending",
-        "notes": "Assistant inspected updated panels: reviewer kind assistant, acceptance pending, validation clear distinct from reviewer/release HOLD. Geometry/action/text/timing are manual review requirements. Small sample UI text and metrics remain fictional; no human acceptance."
+        "notes": "Assistant inspected updated panels: reviewer kind assistant, acceptance pending, validation clear distinct from reviewer/release HOLD. Geometry/action/text/timing are manual review requirements. Small sample UI text and metrics remain fictional; no human acceptance. Reconciliation 2026-11-20: compared previously bound source 5e0b75a9f59156bef6143fad5a761d4278e08eb1 with current entrypoint and inspected retained pixels. The source now requires unchanged historical manifests and portable kits, separate release/preservation receipts and associated evidence, and ordered before/after evidence where action matters. The depicted brief, binding, inspection, recording, validation and separate decision workflow remains consistent. Artwork unchanged; human acceptance remains pending."
       }
     },
     {
@@ -251,7 +251,7 @@
       "slug": "build-music-video",
       "title": "Build Music Video",
       "source_path": "build-music-video/SKILL.md",
-      "source_blob_sha": "a881187680439bc1655d8ea8a9290bc074a12965",
+      "source_blob_sha": "fda8788eb2492fc77e3f2f489195ff05faf32920",
       "asset": "assets/build-music-video.png",
       "asset_sha256": "8efcc7f838c61571138e6ea6d72e956c878a1b2b1064d8f0b495f7714dbf6400",
       "transcript": [
@@ -262,13 +262,13 @@
         "05 Render and inspect — distinguish structural checks from watching, listening and final-frame review.",
         "06 Deliver editable kit — retain movie, captions, artwork, manifest and rebuild instructions."
       ],
-      "limitation": "Preserve the recording · Timing needs evidence · Publication needs authorization. Sample durations, file sizes and frame counts are fictional. The newer optional one-shot review method is not depicted; consult the current skill.",
+      "limitation": "Preserve the recording · Timing needs evidence · Publication needs authorization. Sample durations, file sizes and frame counts are fictional. This retained illustration summarizes the core production workflow; the one-shot and quick-render methods, ChatGPT publication adapter, detailed action-evidence and preservation requirements, and stand-down procedure are not depicted. Consult the current skill.",
       "prompt": "Create a polished six-panel landscape storyboard titled \"Build Music Video\" subtitle \"Skill workflow · Illustrative storyboard\". Exactly three columns and two rows, numbered01-06 left to right. Charcoal-black desktop interfaces, cream editorial typography, violet connectors, restrained amber highlights, fine pencil annotations and arrows, generous gutters. Concrete illustrative screens and desk interactions, not just text cards. Legible short headings: \"01 Anchor the recording\" show audio waveform and source identity record; \"02 Map the story\" show sections, lyric payoff and continuity shot cards; \"03 Create scene art\" show landscape scene images and framing guides; \"04 Align the performance\" show editable caption timeline with estimated timing clearly labeled; \"05 Render and inspect\" show assembled film strip and final-frame review, distinguish structural checks from watching/listening; \"06 Deliver editable kit\" show movie, captions, artwork, manifest and rebuild instructions. Preserve supplied soundtrack, lyric draft distinct from performed transcript, visual continuity, correct output geometry. Do not imply an estimated timeline has been listened to or human accepted. Footer \"Preserve the recording · Timing needs evidence · Publication needs authorization.\" Small credit \"chrisjones77/skills · Concept illustration\". No actual track names, personal material, WRBG lore, logos, seals, certification badges or automatic acceptance claims. Visually rich coherent UI-mockup series.",
       "review": {
         "method": "AI visual inspection against source and brief",
         "status": "reviewed-with-limits",
         "human_acceptance": "pending",
-        "notes": "Assistant inspected six panels and framing/timing/continuity distinctions. Source identity, lyric/performance separation, estimated captions, structural versus listening checks and editable deliverables are visible. Generated sample numeric metadata is illustrative, not internally verified; no listening or human acceptance."
+        "notes": "Assistant inspected six panels and framing/timing/continuity distinctions. Source identity, lyric/performance separation, estimated captions, structural versus listening checks and editable deliverables are visible. Generated sample numeric metadata is illustrative, not internally verified; no listening or human acceptance. Reconciliation 2026-11-20: compared previously bound source a881187680439bc1655d8ea8a9290bc074a12965 with current entrypoint and inspected retained pixels. New guidance covers ChatGPT publication preflight, quick-render source locking and pacing, ordered action evidence and separate counts, persistent treatment delivery, distinct listening/acceptance/release evidence, preservation receipts and stand-down. The six depicted production stages remain consistent. Sample interfaces and numeric metadata are fictional; no listening review or human acceptance is claimed. Artwork unchanged; human acceptance remains pending."
       }
     },
     {
@@ -342,7 +342,55 @@
         "human_acceptance": "pending",
         "notes": "All six panels inspected: source/scope, proposed ownership, approval gate, before-action timing, not-tested cases and separate evidence/decision roles are visible. Decorative checks and interface objects are illustrative, not acceptance or test results. No human acceptance or deployed integration is claimed. Source reconciliation 2026-11-05: independent recorder, Git adapter and reviewed-feedback guidance added; the existing six-panel obligation-to-control/evidence narrative remains applicable. PNG unchanged; this reconciliation is not a new human or pixel review."
       }
+    },
+    {
+      "slug": "qvch",
+      "title": "Qualified Verification and Control Harness (QVCH)",
+      "source_path": "qvch/SKILL.md",
+      "transcript": [
+        "01 Orient — identify the outcome, affected people and constraints.",
+        "02 Select a mode — choose one primary mode and up to two companion lenses.",
+        "03 Resolve guidance — check applicable skills, sources and revisions.",
+        "04 Check authority — governing instructions and user authorization define permissions.",
+        "05 Match the work — use a brief orientation for routine tasks.",
+        "06 Frame a handoff — carry purpose, scope, evidence and review ownership into UWH."
+      ],
+      "prompt": "Use case: ui-mockup. Create a polished 1536x1024 landscape six-panel concept storyboard, exactly 3 columns and 2 rows. Charcoal black desktop interfaces, cream editorial typography, violet connectors, restrained amber highlights, generous margins. Each panel illustrates a concrete desk/document/interface interaction, not just text. These are fictional instructional interfaces, not implemented products. Large legible exact headings and short captions. No real project data, no private names, no certification seals or compliance badges. Series credit: chrisjones77/skills · Concept illustration. Title verbatim \"Qualified Verification and Control Harness (QVCH)\". Subtitle \"Skill workflow · Illustrative storyboard\". Exact six panel texts: 01 Orient — identify the outcome, affected people and constraints.\n02 Select a mode — choose one primary mode and up to two companion lenses.\n03 Resolve guidance — check applicable skills, sources and revisions.\n04 Check authority — governing instructions and user authorization define permissions.\n05 Match the work — use a brief orientation for routine tasks.\n06 Frame a handoff — carry purpose, scope, evidence and review ownership into UWH.\nFooter verbatim \"QVCH frames the work; UWH coordinates formal assignments.\". Preserve the distinctions stated. Human acceptance and operating-system isolation are not established by this illustration.",
+      "source_blob_sha": "4ef23d00a671b329ec1ae8b361f1230af9910d26",
+      "asset": "assets/qvch.png",
+      "asset_sha256": "aae35420949a111b8434dd733a7d0d42a6e7c67423bbf22075a8af5bf4010701",
+      "limitation": "QVCH frames the work; UWH coordinates formal assignments. Concept illustration only: the screens, permissions, checkmarks and sample data are fictional, not an implemented interface or evidence of execution, qualification, authorization or isolation. The mode codes are illustrative selections; consult the canonical mode table for command words. Qualification depends on the revision, host and intended use. A formal handoff also carries outcome, workspace and permissions.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "Assistant inspected the initial and revised full-size PNGs against the skill and prompt. Six ordered captions and the title are legible; the interface is illustrative. Revision replaces invented mode names with illustrative codes; UWH remains coordinator. Human acceptance remains pending."
+      }
+    },
+    {
+      "slug": "portable-harnessed-dispatch",
+      "title": "Portable Harnessed Dispatch",
+      "source_path": "harnessed-dispatch/SKILL.md",
+      "transcript": [
+        "01 Verify the workspace — inspect repository, branch, revision and changes.",
+        "02 Bound the task — define objective, scope, permissions and stop condition.",
+        "03 Select the mode — Review, Research or authorized Implementation.",
+        "04 Check runtime support — use the exposed adapter and verify isolation for implementation.",
+        "05 Preserve ownership — one writer; a worker may pause; transfers need acknowledgement.",
+        "06 Verify the return — primary agent checks evidence and reports unresolved limits."
+      ],
+      "prompt": "Use case: ui-mockup. Create a polished 1536x1024 landscape six-panel concept storyboard, exactly 3 columns and 2 rows. Charcoal black desktop interfaces, cream editorial typography, violet connectors, restrained amber highlights, generous margins. Each panel illustrates a concrete desk/document/interface interaction, not just text. These are fictional instructional interfaces, not implemented products. Large legible exact headings and short captions. No real project data, no private names, no certification seals or compliance badges. Series credit: chrisjones77/skills · Concept illustration. Title verbatim \"Portable Harnessed Dispatch\". Subtitle \"Skill workflow · Illustrative storyboard\". Exact six panel texts: 01 Verify the workspace — inspect repository, branch, revision and changes.\n02 Bound the task — define objective, scope, permissions and stop condition.\n03 Select the mode — Review, Research or authorized Implementation.\n04 Check runtime support — use the exposed adapter and verify isolation for implementation.\n05 Preserve ownership — one writer; a worker may pause; transfers need acknowledgement.\n06 Verify the return — primary agent checks evidence and reports unresolved limits.\nFooter verbatim \"Delegation does not transfer authority or guarantee isolation.\". Preserve the distinctions stated. Human acceptance and operating-system isolation are not established by this illustration.",
+      "source_blob_sha": "b30f6e1276632d95ff74fd90624d0874ad0b745b",
+      "asset": "assets/portable-harnessed-dispatch.png",
+      "asset_sha256": "22f7c08adc38de26d663b2ebf6154f521adddbb0e54b1bae6d057aba50b98698",
+      "limitation": "Delegation does not transfer authority or guarantee isolation. Concept illustration only: the screens, permissions, checkmarks and sample data are fictional, not an implemented interface or evidence of execution, qualification, authorization or isolation. This portable entry is separate from the repository-local agent skill. The current local contract refuses writer transfers and has a reoffer gap after decline during pending reassessment; preserve the caller-owned checkpoint and consult the source before transfer.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "Assistant inspected the initial and revised full-size PNGs against the skill and prompt. Six ordered captions and the title are legible; the interface is illustrative. Revision removes checked isolation claims and marks writer transfer unavailable; adapter, isolation and access still need evidence. Human acceptance remains pending."
+      }
     }
   ],
-  "refreshed": "2026-11-05"
+  "refreshed": "2026-11-20"
 }

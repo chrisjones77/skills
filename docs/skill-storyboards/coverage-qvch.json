@@ -1,0 +1,156 @@
+{
+  "schema_version": "1.5.0",
+  "artifact_id": "CURRENT-GALLERY-qvch",
+  "artifact_type": "illustration",
+  "brief": {
+    "subject": "Qualified Verification and Control Harness (QVCH) six-panel illustrative workflow",
+    "canonical_constraints": [
+      {
+        "constraint_id": "WORKFLOW",
+        "statement": "Six ordered panels summarize the source workflow without granting authority or asserting an implemented UI.",
+        "source": "qvch/SKILL.md blob 4ef23d00a671b329ec1ae8b361f1230af9910d26",
+        "mutability": "immutable"
+      },
+      {
+        "constraint_id": "GEOMETRY",
+        "statement": "Landscape three-column, two-row illustration remains readable in the linked full-size gallery image.",
+        "source": "docs/skill-storyboards/README.md",
+        "mutability": "immutable"
+      }
+    ],
+    "forbidden_drift": [
+      "human acceptance or operating-system isolation claimed as established"
+    ],
+    "required_text": [
+      {
+        "text_id": "TITLE",
+        "exact": "Qualified Verification and Control Harness (QVCH)",
+        "case_sensitive": true
+      }
+    ],
+    "technical_claims": [
+      {
+        "claim_id": "SAMPLE-UI",
+        "text": "Pictured UI, filenames, progress and hashes are fictional examples, not verified execution.",
+        "status": "fictional_labelled",
+        "evidence_ref": "README.md"
+      }
+    ],
+    "creative_deviations_policy": "Generated sample interface details are illustrative; the skill and receipt format take precedence."
+  },
+  "generation": {
+    "id": "qvch-20261120-revision-1",
+    "parent_generation_id": "qvch-20261120-initial",
+    "requested_delta": [
+      "Edit only the fictional screen text in panel 02. Replace the three primary-mode options Execute, Analyze, Develop with '0x1 mode', '0x2 mode', '0x3 mode'. Replace companion-lens options Risk, Quality, People with '0x4 lens', '0x5 lens', '0x6 lens'. These are illustrative code choices, not a full mode table. Preserve all six headings, exact long title, footer, composition and other panels. Do not add approval or certification claims."
+    ],
+    "preservation_targets": [
+      "six-panel sequence",
+      "charcoal cream violet series"
+    ],
+    "regression_checks": [
+      {
+        "check_id": "BOUNDARY",
+        "requirement": "No actual human acceptance or OS isolation established by the image.",
+        "status": "pass",
+        "evidence_note": "Assistant inspected the initial and revised full-size PNGs against the skill and prompt. Six ordered captions and the title are legible; the interface is illustrative. Revision replaces invented mode names with illustrative codes; UWH remains coordinator. Human acceptance remains pending."
+      }
+    ]
+  },
+  "review": {
+    "artifact_type_fit": {
+      "status": "pass",
+      "note": "Landscape concept illustration for the linked full-size gallery, not a functioning UI."
+    },
+    "canonical_constraints": [
+      {
+        "constraint_id": "WORKFLOW",
+        "status": "pass",
+        "evidence_note": "Assistant inspected the initial and revised full-size PNGs against the skill and prompt. Six ordered captions and the title are legible; the interface is illustrative. Revision replaces invented mode names with illustrative codes; UWH remains coordinator. Human acceptance remains pending."
+      },
+      {
+        "constraint_id": "GEOMETRY",
+        "status": "pass",
+        "evidence_note": "Assistant inspected the 1536 by 1024 landscape output; headings and six captions are legible at full size. Use the HTML transcript on small screens."
+      }
+    ],
+    "forbidden_drift": [
+      {
+        "item": "human acceptance or operating-system isolation claimed as established",
+        "status": "pass",
+        "evidence_note": "Assistant inspected the initial and revised full-size PNGs against the skill and prompt. Six ordered captions and the title are legible; the interface is illustrative. Revision replaces invented mode names with illustrative codes; UWH remains coordinator. Human acceptance remains pending."
+      }
+    ],
+    "regression_review": {
+      "status": "pass",
+      "compared_to": [
+        "initial image",
+        "current skill"
+      ],
+      "note": "Assistant inspected the initial and revised full-size PNGs against the skill and prompt. Six ordered captions and the title are legible; the interface is illustrative. Revision replaces invented mode names with illustrative codes; UWH remains coordinator. Human acceptance remains pending."
+    },
+    "minimal_delta": {
+      "status": "pass",
+      "preserved_target_ids": [
+        "six-panel sequence",
+        "charcoal cream violet series"
+      ],
+      "note": "Compared initial and revised outputs: headings, six panels and palette retained; requested correction present."
+    },
+    "synthetic_familiarity": {
+      "status": "pass",
+      "unrequested_recurring_elements_checked": [
+        "private information",
+        "certification seals"
+      ],
+      "note": "No private names or certification seal observed."
+    },
+    "reference_fidelity": {
+      "status": "not_applicable",
+      "reference_ids": [],
+      "deidentification_review": "not_applicable"
+    },
+    "technical_evidence": {
+      "status": "pass",
+      "included_claim_ids": [],
+      "excluded_claim_ids": [],
+      "fictional_labelled_claim_ids": [
+        "SAMPLE-UI"
+      ]
+    },
+    "typography": {
+      "status": "pass",
+      "items": [
+        {
+          "text_id": "TITLE",
+          "status": "pass",
+          "observed_text": "Qualified Verification and Control Harness (QVCH)"
+        }
+      ]
+    },
+    "collection_consistency": {
+      "status": "pass",
+      "collection_id": "SKILL-STORYBOARDS",
+      "baseline_ref": "revisions/20261022/README.md",
+      "dimensions_checked": [
+        "palette",
+        "sequence",
+        "type hierarchy"
+      ]
+    },
+    "creative_deviations": {
+      "status": "not_applicable",
+      "items": []
+    },
+    "reviewer": "Codex assistant",
+    "reviewer_kind": "assistant",
+    "decision": "hold",
+    "acceptance_evidence": null
+  },
+  "provenance": {
+    "source_kind": "generated_image",
+    "created_for_archive": false,
+    "asset_ref": "assets/qvch.png",
+    "asset_sha256": "aae35420949a111b8434dd733a7d0d42a6e7c67423bbf22075a8af5bf4010701"
+  }
+}
