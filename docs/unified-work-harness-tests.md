@@ -1,4 +1,4 @@
-# Reviewing a change to the unified work harness
+# Reviewing a change to the Universal Work Harness
 
 From the repository root, run `node scripts/test_convergence.mjs suite`. The JSON report identifies the revision, package digest, Node and Git versions, observed filesystem case behaviour, and the named adverse cases and successful controls. The runner executes every package test and refuses missing, renamed or skipped required cases. Only the two opt-in model tests may skip. The [scenario table](../scripts/test_convergence.mjs) maps all 20 [public capabilities](../unified-work-harness/capabilities.md) to required evidence. For the seven methods, that evidence is availability, binding and the worked example; Christopher reviews the substantive advice and its suitability.
 

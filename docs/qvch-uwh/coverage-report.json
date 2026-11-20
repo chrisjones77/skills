@@ -1,0 +1,18 @@
+{
+  "harness": "Image and Card Coverage Harness",
+  "version": "1.5.0",
+  "artifact_id": "QVCH-UWH-ARCHITECTURE-20261120",
+  "generation_id": "qvch-uwh-overview-20261120-01",
+  "asset_binding": {
+    "status": "verified",
+    "asset_ref": "assets/workflow-storyboard.png",
+    "asset_sha256": "95dc81944b1781789ec22cabc6489856517339ce56c94254e2b13b3e7cb59cd5"
+  },
+  "validation_status": "clear",
+  "reviewer_decision": "accept",
+  "reviewer_kind": "human",
+  "release_outcome": "accepted",
+  "blocker_count": 0,
+  "findings": [],
+  "scope_note": "Validates declared coverage, lineage, local asset digest, and evidence-record completeness; does not inspect pixels or establish truth of human observations. A verified asset binding identifies bytes only; review judgments remain declarations; role and acceptance evidence are recorded, not authenticated."
+}

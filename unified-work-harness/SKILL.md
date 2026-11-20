@@ -3,7 +3,9 @@ name: unified-work-harness
 description: Coordinate engineering and advisory work using QVCH profiles, human and hybrid work contracts, reviewed intake, queued local review and scoped candidate changes.
 ---
 
-# Unified work harness
+# Universal Work Harness (UWH)
+
+The Universal Work Harness coordinates scoped human, agent and hybrid work. QVCH (Qualified Verification and Control Harness) supplies purpose and guidance; UWH remains the top-level coordinator for work using its contracts. The installation identifier remains `unified-work-harness` for compatibility.
 
 Start with the [package resolver](package-guide.md) and [capability crosswalk](capabilities.md). For a human-led task, use the [worked engineering and advisory methods](methods.md). For an assignment, record [intake review](intake.md) and follow the [attended lifecycle](coordination.md). For new package-bound read-only work use [the v6 contract](integrated.md). For execution, select [supervised sequential review](queue.md) or [scoped candidate changes](candidate.md). The operator and recipient must establish actual authority for the selected path.
 

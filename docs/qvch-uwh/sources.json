@@ -1,0 +1,26 @@
+{
+  "base_commit": "734a0b0189bb22e1829ea2c0cd31c6b844237ca1",
+  "source_state": "working tree with naming documentation updates",
+  "sources": [
+    {
+      "path": "qvch/SKILL.md",
+      "sha256": "497f66e1e11bb64b95fdd5c98d61ffe373930d18851219bfd58874206aaafe86",
+      "git_blob_sha": "4ef23d00a671b329ec1ae8b361f1230af9910d26"
+    },
+    {
+      "path": "unified-work-harness/SKILL.md",
+      "sha256": "e01f6a2d9fd146624623dc8a5c7badb129dbed00c0034bea65ad2fa8c09aa833",
+      "git_blob_sha": "c2be98583523d03159019f896fd02d901fe4edcc"
+    },
+    {
+      "path": "unified-work-harness/capabilities.md",
+      "sha256": "afd1d8c4cddaba70de16e5961b613ffc7d6f5e451e35ce4a9641e3cd1246eb4b",
+      "git_blob_sha": "13f06dba1863535788c505954ff3792ff7afa573"
+    },
+    {
+      "path": "docs/work-contract-interface.md",
+      "sha256": "d41dc9ed54cb315e56e555aff505a80953901fb0ee8c247147d4798ec0dc6a11",
+      "git_blob_sha": "a7e58644c95d08f65995353f41fb3f6f69cb5dfb"
+    }
+  ]
+}
