@@ -1,6 +1,6 @@
 # ChatGPT-native music-video production and publishing
 
-This is a **host adapter guide**, not a new router, executor, or automatic permission grant. Use the existing Unified Work Harness (UWH) for QVCH purpose selection, capability review and work boundaries, then invoke `build-music-video` for production. This workflow is conditional on tools exposed in the current ChatGPT conversation; it does **not** require launching Codex, ChatGPT Work, a paid video generator, or the UWH local executor. If a host tool is absent, report the missing capability rather than claiming parity.
+This is a **host adapter guide**, not a new router, executor, or automatic permission grant. Use the existing Universal Work Harness (UWH) for QVCH purpose selection, capability review and work boundaries, then invoke `build-music-video` for production. This workflow is conditional on tools exposed in the current ChatGPT conversation; it does **not** require launching Codex, ChatGPT Work, a paid video generator, or the UWH local executor. If a host tool is absent, report the missing capability rather than claiming parity.
 
 ## Intake — before rendering
 

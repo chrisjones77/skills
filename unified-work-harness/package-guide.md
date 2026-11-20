@@ -1,4 +1,6 @@
-# Select a packaged method
+# Universal Work Harness: select a packaged method
+
+The display name is Universal Work Harness (UWH). The skill identifier and directory remain `unified-work-harness`; existing commands and contract/schema identifiers are unchanged.
 
 For the system boundary, architecture, contract lifecycle, control limits and verification trace, read the [engineered system description](engineered-system.md).
 

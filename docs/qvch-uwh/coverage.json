@@ -1,0 +1,285 @@
+{
+  "schema_version": "1.5.0",
+  "artifact_id": "QVCH-UWH-ARCHITECTURE-20261120",
+  "artifact_type": "illustration",
+  "brief": {
+    "subject": "QVCH and UWH six-panel architectural storyboard for the repository README",
+    "canonical_constraints": [
+      {
+        "constraint_id": "WORKFLOW",
+        "statement": "Six panels show orientation, guidance, agreed scope, bounded work, evidence and human review.",
+        "source": "sources.json",
+        "mutability": "immutable",
+        "coverage_mode": "sequence"
+      },
+      {
+        "constraint_id": "GEOMETRY",
+        "statement": "Landscape 3 by 2 layout with legible full-size headings and complete panels; provide a text alternative for reduced displays.",
+        "source": "README.md",
+        "mutability": "immutable",
+        "coverage_mode": "state"
+      },
+      {
+        "constraint_id": "ROLES",
+        "statement": "QVCH frames work and UWH coordinates it; no autonomous acceptance or separate competing router.",
+        "source": "sources.json",
+        "mutability": "immutable",
+        "coverage_mode": "state"
+      }
+    ],
+    "forbidden_drift": [
+      "former expansions Quantum Vibe Coding Harness or Unified Work Harness in the new image",
+      "certification, proven sandbox isolation or automatic acceptance portrayed as established"
+    ],
+    "required_text": [
+      {
+        "text_id": "TITLE",
+        "exact": "QVCH + UWH",
+        "case_sensitive": true
+      },
+      {
+        "text_id": "QVCH",
+        "exact": "Qualified Verification and Control Harness",
+        "case_sensitive": true
+      },
+      {
+        "text_id": "UWH",
+        "exact": "Universal Work Harness",
+        "case_sensitive": true
+      },
+      {
+        "text_id": "ROLE",
+        "exact": "QVCH frames the work. UWH coordinates it.",
+        "case_sensitive": true
+      },
+      {
+        "text_id": "ONE",
+        "exact": "01 Orient",
+        "case_sensitive": true
+      },
+      {
+        "text_id": "TWO",
+        "exact": "02 Choose guidance",
+        "case_sensitive": true
+      },
+      {
+        "text_id": "THREE",
+        "exact": "03 Agree scope",
+        "case_sensitive": true
+      },
+      {
+        "text_id": "FOUR",
+        "exact": "04 Perform bounded work",
+        "case_sensitive": true
+      },
+      {
+        "text_id": "FIVE",
+        "exact": "05 Verify evidence",
+        "case_sensitive": true
+      },
+      {
+        "text_id": "SIX",
+        "exact": "06 Human review",
+        "case_sensitive": true
+      },
+      {
+        "text_id": "FOOTER",
+        "exact": "Concept storyboard • Authority and acceptance remain human-led",
+        "case_sensitive": true
+      }
+    ],
+    "technical_claims": [
+      {
+        "claim_id": "ROLES",
+        "text": "QVCH frames purpose and guidance; UWH coordinates scoped work and review.",
+        "status": "included",
+        "evidence_ref": "sources.json"
+      },
+      {
+        "claim_id": "SCENE",
+        "text": "Depicted people, software cards, checklist results and decision options are concept examples.",
+        "status": "fictional_labelled",
+        "evidence_ref": "README.md"
+      }
+    ],
+    "creative_deviations_policy": "Concrete fictional document-review scenes illustrate the sourced workflow without adding runtime or authority claims."
+  },
+  "generation": {
+    "id": "qvch-uwh-overview-20261120-01",
+    "parent_generation_id": null,
+    "requested_delta": [
+      "Create a new combined storyboard using the current QVCH and UWH expansions."
+    ],
+    "preservation_targets": [
+      "six ordered workflow steps",
+      "human decision boundary"
+    ],
+    "regression_checks": [
+      {
+        "check_id": "NAMES",
+        "requirement": "Use the current component names; preserve distinct purpose and coordination roles.",
+        "status": "pass",
+        "evidence_note": "Assistant read both complete expansions and the subtitle in the generated header; panels use QVCH, UWH, and the shared evidence label."
+      }
+    ]
+  },
+  "review": {
+    "artifact_type_fit": {
+      "status": "pass",
+      "note": "Six-panel landscape editorial illustration suitable for a linked README overview; transcript supplied for reduced display."
+    },
+    "canonical_constraints": [
+      {
+        "constraint_id": "WORKFLOW",
+        "status": "pass",
+        "evidence_note": "All six numbered headings and ordered connecting arrows are visible, including top-right to lower-left continuation. This checks the illustrated sequence, not actual performed work."
+      },
+      {
+        "constraint_id": "GEOMETRY",
+        "status": "pass",
+        "evidence_note": "Inspected generated 1536x1024 canvas: three columns, two rows, complete panels, full-size headings/captions legible. Mobile render unverified; linked master and transcript available."
+      },
+      {
+        "constraint_id": "ROLES",
+        "status": "pass",
+        "evidence_note": "Header states QVCH frames and UWH coordinates; final panel shows a person considering three unselected disposition cards."
+      }
+    ],
+    "forbidden_drift": [
+      {
+        "item": "former expansions Quantum Vibe Coding Harness or Unified Work Harness in the new image",
+        "status": "pass",
+        "evidence_note": "Full header reads Qualified Verification and Control Harness and Universal Work Harness; no former expansion observed."
+      },
+      {
+        "item": "certification, proven sandbox isolation or automatic acceptance portrayed as established",
+        "status": "pass",
+        "evidence_note": "No certification seal or isolation guarantee; amber unknown remains and no final decision is selected. Work boundary is described as scope in the transcript."
+      }
+    ],
+    "regression_review": {
+      "status": "pass",
+      "compared_to": [
+        "sources.json",
+        "generation.json"
+      ],
+      "note": "First candidate compared with brief and source role boundaries; no prior image is being replaced."
+    },
+    "minimal_delta": {
+      "status": "pass",
+      "preserved_target_ids": [
+        "six ordered workflow steps",
+        "human decision boundary"
+      ],
+      "note": "New image retains the requested source-derived workflow and human authority boundary."
+    },
+    "synthetic_familiarity": {
+      "status": "pass",
+      "unrequested_recurring_elements_checked": [
+        "private identities",
+        "certification seals",
+        "irrelevant generic robot imagery"
+      ],
+      "note": "Fictional people recur to establish narrative continuity; no identifying personal information or seals observed."
+    },
+    "reference_fidelity": {
+      "status": "not_applicable",
+      "reference_ids": [],
+      "deidentification_review": "not_applicable"
+    },
+    "technical_evidence": {
+      "status": "pass",
+      "included_claim_ids": [
+        "ROLES"
+      ],
+      "excluded_claim_ids": [],
+      "fictional_labelled_claim_ids": [
+        "SCENE"
+      ]
+    },
+    "typography": {
+      "status": "pass",
+      "items": [
+        {
+          "text_id": "TITLE",
+          "status": "pass",
+          "observed_text": "QVCH + UWH"
+        },
+        {
+          "text_id": "QVCH",
+          "status": "pass",
+          "observed_text": "Qualified Verification and Control Harness"
+        },
+        {
+          "text_id": "UWH",
+          "status": "pass",
+          "observed_text": "Universal Work Harness"
+        },
+        {
+          "text_id": "ROLE",
+          "status": "pass",
+          "observed_text": "QVCH frames the work. UWH coordinates it."
+        },
+        {
+          "text_id": "ONE",
+          "status": "pass",
+          "observed_text": "01 Orient"
+        },
+        {
+          "text_id": "TWO",
+          "status": "pass",
+          "observed_text": "02 Choose guidance"
+        },
+        {
+          "text_id": "THREE",
+          "status": "pass",
+          "observed_text": "03 Agree scope"
+        },
+        {
+          "text_id": "FOUR",
+          "status": "pass",
+          "observed_text": "04 Perform bounded work"
+        },
+        {
+          "text_id": "FIVE",
+          "status": "pass",
+          "observed_text": "05 Verify evidence"
+        },
+        {
+          "text_id": "SIX",
+          "status": "pass",
+          "observed_text": "06 Human review"
+        },
+        {
+          "text_id": "FOOTER",
+          "status": "pass",
+          "observed_text": "Concept storyboard • Authority and acceptance remain human-led"
+        }
+      ]
+    },
+    "collection_consistency": {
+      "status": "pass",
+      "collection_id": "QVCH-UWH-ARCHITECTURE",
+      "baseline_ref": "generation.json",
+      "dimensions_checked": [
+        "six-panel grid",
+        "ivory charcoal teal indigo palette",
+        "numbered heading hierarchy"
+      ]
+    },
+    "creative_deviations": {
+      "status": "not_applicable",
+      "items": []
+    },
+    "reviewer": "Christopher Jones",
+    "reviewer_kind": "human",
+    "decision": "accept",
+    "acceptance_evidence": "owner-acceptance.md: owner instruction to publish the displayed candidate and README; exact image hash and scope recorded."
+  },
+  "provenance": {
+    "source_kind": "generated_image",
+    "created_for_archive": false,
+    "asset_ref": "assets/workflow-storyboard.png",
+    "asset_sha256": "95dc81944b1781789ec22cabc6489856517339ce56c94254e2b13b3e7cb59cd5"
+  }
+}

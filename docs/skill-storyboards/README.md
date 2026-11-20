@@ -1,5 +1,7 @@
 # Skill workflow storyboards
 
+[QVCH and UWH architecture storyboard](../qvch-uwh/README.md): the current component names and their shared six-step workflow, also embedded in the repository README.
+
 Fourteen six-panel concept illustrations cover the current skill inventory. The manifest records the source and image for each board. The original ten-board manifest, prompts, lineage and prior coverage-board image remain in [revision history](revisions/20261022/README.md).
 
 These are AI-generated illustrations, not implemented products. All sample UI data, including file sizes, timing and frame counts, are fictional and are not technical calculations or evidence. Canonical skill sources and their references take precedence. Human acceptance remains pending.
@@ -20,15 +22,15 @@ These are AI-generated illustrations, not implemented products. All sample UI da
 - [Build Music Video](#build-music-video)
 
 - [Farmer Jones Victory Garden](#farmer-jones-victory-garden)
-- [Unified Work Harness](#unified-work-harness)
+- [Universal Work Harness](#unified-work-harness)
 
 <a id="unified-work-harness"></a>
 
-## Unified Work Harness
+## Universal Work Harness
 
 [Canonical skill](../../unified-work-harness/SKILL.md) · [Full PNG](assets/unified-work-harness.png)
 
-![Unified Work Harness: six-panel concept illustration](assets/unified-work-harness.png)
+![Universal Work Harness: six-panel concept illustration](assets/unified-work-harness.png)
 
 1. Orient and route — establish purpose, authority, people and bounded work.
 2. Bind assignment — review exact executor assignment and bind its hash to contract scope.
@@ -39,7 +41,7 @@ These are AI-generated illustrations, not implemented products. All sample UI da
 
 This board depicts the initial read-only workflow. Panel 4 requires a clean Git checkout, which can contain files. Panel 5 uses a temporary clone; process isolation requires separate controls. For newer package workflows, follow the canonical skill.
 
-Concept illustration only: the pictured UI, progress, files and hashes are fictional; it does not depict an implemented interface or prove OS isolation, authorization, model locality or human review.
+Concept illustration only: the pictured UI, progress, files and hashes are fictional; it does not depict an implemented interface or prove OS isolation, authorization, model locality or human review. The retained illustration uses the former name, Unified Work Harness; the current name is Universal Work Harness (UWH).
 
 Human acceptance: pending.
 

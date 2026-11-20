@@ -297,9 +297,9 @@
     },
     {
       "slug": "unified-work-harness",
-      "title": "Unified Work Harness",
+      "title": "Universal Work Harness",
       "source_path": "unified-work-harness/SKILL.md",
-      "source_blob_sha": "b97df0f665053c28d14384b265c7063baace093c",
+      "source_blob_sha": "c2be98583523d03159019f896fd02d901fe4edcc",
       "asset": "assets/unified-work-harness.png",
       "asset_sha256": "87db9e7f5fdda57ac95b2aeca8e1cdde4dcb2e623924aef238140169931cc2ec",
       "transcript": [
@@ -310,13 +310,13 @@
         "05 Execute in a temporary clone — run the approved local read-only agent within its declared scope.",
         "06 Preserve evidence — return hash-only evidence and leave substantive human review pending."
       ],
-      "limitation": "Concept illustration only: the pictured UI, progress, files and hashes are fictional; it does not depict an implemented interface or prove OS isolation, authorization, model locality or human review.",
+      "limitation": "Concept illustration only: the pictured UI, progress, files and hashes are fictional; it does not depict an implemented interface or prove OS isolation, authorization, model locality or human review. The retained illustration uses the former name, Unified Work Harness; the current name is Universal Work Harness (UWH).",
       "prompt": "Create a landscape six-panel storyboard for a software documentation gallery, 3 columns by 2 rows, charcoal desktop UI, cream type, violet accents and amber details. Title Unified Work Harness. Six numbered panels: 01 Orient and route; 02 Bind assignment; 03 Explicit acceptance; 04 Verify clean workspace; 05 Isolated read-only execution; 06 Evidence and human review pending. Show bounded input and file hashes, not actual personal data. No logos, false certifications, automatic approval, or claim of security. Visual examples are fictional; readable short headings, spacious composition.",
       "review": {
         "method": "AI visual inspection against source and brief",
         "status": "reviewed-with-limits",
         "human_acceptance": "pending",
-        "notes": "Assistant inspected six panels and a revision replacing a false read-only mount and invented limits. The UI, progress, archive names and hashes are illustrative; external sandboxing, actual authorization and human review are not established. Human review and browser display checks remain pending."
+        "notes": "Assistant inspected six panels and a revision replacing a false read-only mount and invented limits. The UI, progress, archive names and hashes are illustrative; external sandboxing, actual authorization and human review are not established. Human review and browser display checks remain pending. Terminology reconciliation 2026-11-20: current guidance uses Universal Work Harness and expands QVCH as Qualified Verification and Control Harness. Previous source blob b97df0f665053c28d14384b265c7063baace093c; source binding refreshed for the naming and introductory clarification only. Runtime, transcript, image bytes, original prompt and acceptance status are unchanged. This is not a new image review."
       }
     },
     {
