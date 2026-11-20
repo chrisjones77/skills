@@ -1,0 +1,156 @@
+{
+  "schema_version": "1.5.0",
+  "artifact_id": "CURRENT-GALLERY-portable-harnessed-dispatch",
+  "artifact_type": "illustration",
+  "brief": {
+    "subject": "Portable Harnessed Dispatch six-panel illustrative workflow",
+    "canonical_constraints": [
+      {
+        "constraint_id": "WORKFLOW",
+        "statement": "Six ordered panels summarize the source workflow without granting authority or asserting an implemented UI.",
+        "source": "harnessed-dispatch/SKILL.md blob b30f6e1276632d95ff74fd90624d0874ad0b745b",
+        "mutability": "immutable"
+      },
+      {
+        "constraint_id": "GEOMETRY",
+        "statement": "Landscape three-column, two-row illustration remains readable in the linked full-size gallery image.",
+        "source": "docs/skill-storyboards/README.md",
+        "mutability": "immutable"
+      }
+    ],
+    "forbidden_drift": [
+      "human acceptance or operating-system isolation claimed as established"
+    ],
+    "required_text": [
+      {
+        "text_id": "TITLE",
+        "exact": "Portable Harnessed Dispatch",
+        "case_sensitive": true
+      }
+    ],
+    "technical_claims": [
+      {
+        "claim_id": "SAMPLE-UI",
+        "text": "Pictured UI, filenames, progress and hashes are fictional examples, not verified execution.",
+        "status": "fictional_labelled",
+        "evidence_ref": "README.md"
+      }
+    ],
+    "creative_deviations_policy": "Generated sample interface details are illustrative; the skill and receipt format take precedence."
+  },
+  "generation": {
+    "id": "portable-harnessed-dispatch-20261120-revision-1",
+    "parent_generation_id": "portable-harnessed-dispatch-20261120-initial",
+    "requested_delta": [
+      "Correct invented runtime capabilities in the illustration, preserving title, six headings and captions, footer and layout. Panel 04 replace all three green checked rows with neutral unselected items reading 'Adapter: check availability', 'Isolation: verify separately', 'Access: confirm scope'. Replace button 'Verify & Continue' with 'Record evidence or stop'. Panel 05 change the Transfer button text 'Request transfer...' to 'Writer transfer unavailable'. Preserve the principle 'Transfers need acknowledgement' in the caption; it is a principle not an implemented transfer feature. No green isolation checks. Panel 01 add visible small label 'Illustrative workspace' near the file list. All other details unchanged."
+    ],
+    "preservation_targets": [
+      "six-panel sequence",
+      "charcoal cream violet series"
+    ],
+    "regression_checks": [
+      {
+        "check_id": "BOUNDARY",
+        "requirement": "No actual human acceptance or OS isolation established by the image.",
+        "status": "pass",
+        "evidence_note": "Assistant inspected the initial and revised full-size PNGs against the skill and prompt. Six ordered captions and the title are legible; the interface is illustrative. Revision removes checked isolation claims and marks writer transfer unavailable; adapter, isolation and access still need evidence. Human acceptance remains pending."
+      }
+    ]
+  },
+  "review": {
+    "artifact_type_fit": {
+      "status": "pass",
+      "note": "Landscape concept illustration for the linked full-size gallery, not a functioning UI."
+    },
+    "canonical_constraints": [
+      {
+        "constraint_id": "WORKFLOW",
+        "status": "pass",
+        "evidence_note": "Assistant inspected the initial and revised full-size PNGs against the skill and prompt. Six ordered captions and the title are legible; the interface is illustrative. Revision removes checked isolation claims and marks writer transfer unavailable; adapter, isolation and access still need evidence. Human acceptance remains pending."
+      },
+      {
+        "constraint_id": "GEOMETRY",
+        "status": "pass",
+        "evidence_note": "Assistant inspected the 1536 by 1024 landscape output; headings and six captions are legible at full size. Use the HTML transcript on small screens."
+      }
+    ],
+    "forbidden_drift": [
+      {
+        "item": "human acceptance or operating-system isolation claimed as established",
+        "status": "pass",
+        "evidence_note": "Assistant inspected the initial and revised full-size PNGs against the skill and prompt. Six ordered captions and the title are legible; the interface is illustrative. Revision removes checked isolation claims and marks writer transfer unavailable; adapter, isolation and access still need evidence. Human acceptance remains pending."
+      }
+    ],
+    "regression_review": {
+      "status": "pass",
+      "compared_to": [
+        "initial image",
+        "current skill"
+      ],
+      "note": "Assistant inspected the initial and revised full-size PNGs against the skill and prompt. Six ordered captions and the title are legible; the interface is illustrative. Revision removes checked isolation claims and marks writer transfer unavailable; adapter, isolation and access still need evidence. Human acceptance remains pending."
+    },
+    "minimal_delta": {
+      "status": "pass",
+      "preserved_target_ids": [
+        "six-panel sequence",
+        "charcoal cream violet series"
+      ],
+      "note": "Compared initial and revised outputs: headings, six panels and palette retained; requested correction present."
+    },
+    "synthetic_familiarity": {
+      "status": "pass",
+      "unrequested_recurring_elements_checked": [
+        "private information",
+        "certification seals"
+      ],
+      "note": "No private names or certification seal observed."
+    },
+    "reference_fidelity": {
+      "status": "not_applicable",
+      "reference_ids": [],
+      "deidentification_review": "not_applicable"
+    },
+    "technical_evidence": {
+      "status": "pass",
+      "included_claim_ids": [],
+      "excluded_claim_ids": [],
+      "fictional_labelled_claim_ids": [
+        "SAMPLE-UI"
+      ]
+    },
+    "typography": {
+      "status": "pass",
+      "items": [
+        {
+          "text_id": "TITLE",
+          "status": "pass",
+          "observed_text": "Portable Harnessed Dispatch"
+        }
+      ]
+    },
+    "collection_consistency": {
+      "status": "pass",
+      "collection_id": "SKILL-STORYBOARDS",
+      "baseline_ref": "revisions/20261022/README.md",
+      "dimensions_checked": [
+        "palette",
+        "sequence",
+        "type hierarchy"
+      ]
+    },
+    "creative_deviations": {
+      "status": "not_applicable",
+      "items": []
+    },
+    "reviewer": "Codex assistant",
+    "reviewer_kind": "assistant",
+    "decision": "hold",
+    "acceptance_evidence": null
+  },
+  "provenance": {
+    "source_kind": "generated_image",
+    "created_for_archive": false,
+    "asset_ref": "assets/portable-harnessed-dispatch.png",
+    "asset_sha256": "22f7c08adc38de26d663b2ebf6154f521adddbb0e54b1bae6d057aba50b98698"
+  }
+}

@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "record_date": "2026-11-05",
+  "record_date": "2026-11-20",
   "provenance": "Initial prompt strings and edit prompt strings transcribed from this authoring session; hashes recomputed from retained candidate files.",
-  "scope": "Current fourteen-skill gallery. Each board records its source entrypoint and selected asset. Prior snapshots and artwork are retained.",
-  "generation_count": 14,
-  "revision_count": 7,
+  "scope": "Current sixteen-entrypoint gallery. Repository-local and portable dispatch skills have separate boards. Prior snapshots and artwork are retained.",
+  "generation_count": 16,
+  "revision_count": 9,
   "reproducibility": "Prompts and byte lineage are retained; generator outputs are not guaranteed deterministic. Intermediate image bytes are not included in this repository.",
   "human_acceptance": "pending",
   "boards": [
@@ -244,6 +244,48 @@
       ],
       "selected_asset": "assets/ai-operational-governance.png",
       "selected_asset_sha256": "3ea544c440dabc91538b766cfff8dc904c7349ef910c776b0bd457092ca321b0"
+    },
+    {
+      "slug": "qvch",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "89b267b4654fa9750334e5017cb2da4b3581bde4cc6eb0dee42ca7a75f683eea",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        },
+        {
+          "stage": "revision-1",
+          "parent_sha256": "89b267b4654fa9750334e5017cb2da4b3581bde4cc6eb0dee42ca7a75f683eea",
+          "asset_sha256": "aae35420949a111b8434dd733a7d0d42a6e7c67423bbf22075a8af5bf4010701",
+          "edit_prompt": "Edit only the fictional screen text in panel 02. Replace the three primary-mode options Execute, Analyze, Develop with '0x1 mode', '0x2 mode', '0x3 mode'. Replace companion-lens options Risk, Quality, People with '0x4 lens', '0x5 lens', '0x6 lens'. These are illustrative code choices, not a full mode table. Preserve all six headings, exact long title, footer, composition and other panels. Do not add approval or certification claims.",
+          "generator": "OpenAI built-in image_gen",
+          "transparent_background": false
+        }
+      ],
+      "selected_asset": "assets/qvch.png",
+      "selected_asset_sha256": "aae35420949a111b8434dd733a7d0d42a6e7c67423bbf22075a8af5bf4010701"
+    },
+    {
+      "slug": "portable-harnessed-dispatch",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "31a87bdcd67073dfb0faed946b86a1c185c8e4a841a92c1f29aad98aa2fb5812",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        },
+        {
+          "stage": "revision-1",
+          "parent_sha256": "31a87bdcd67073dfb0faed946b86a1c185c8e4a841a92c1f29aad98aa2fb5812",
+          "asset_sha256": "22f7c08adc38de26d663b2ebf6154f521adddbb0e54b1bae6d057aba50b98698",
+          "edit_prompt": "Correct invented runtime capabilities in the illustration, preserving title, six headings and captions, footer and layout. Panel 04 replace all three green checked rows with neutral unselected items reading 'Adapter: check availability', 'Isolation: verify separately', 'Access: confirm scope'. Replace button 'Verify & Continue' with 'Record evidence or stop'. Panel 05 change the Transfer button text 'Request transfer...' to 'Writer transfer unavailable'. Preserve the principle 'Transfers need acknowledgement' in the caption; it is a principle not an implemented transfer feature. No green isolation checks. Panel 01 add visible small label 'Illustrative workspace' near the file list. All other details unchanged.",
+          "generator": "OpenAI built-in image_gen",
+          "transparent_background": false
+        }
+      ],
+      "selected_asset": "assets/portable-harnessed-dispatch.png",
+      "selected_asset_sha256": "22f7c08adc38de26d663b2ebf6154f521adddbb0e54b1bae6d057aba50b98698"
     }
   ]
 }

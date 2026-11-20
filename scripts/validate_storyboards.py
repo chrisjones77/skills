@@ -73,7 +73,8 @@ class GalleryParser(HTMLParser):
 
 # These boards ship independent image review records alongside the gallery.
 REVIEWED_BOARDS = {'build-music-video', 'farmer-jones-victory-garden',
-                   'image-card-coverage-harness', 'unified-work-harness'}
+                   'image-card-coverage-harness', 'unified-work-harness',
+                   'qvch', 'portable-harnessed-dispatch'}
 harness_path = Path(__file__).resolve().parents[1] / 'image-card-coverage-harness/scripts/harness.py'
 validate_coverage = runpy.run_path(str(harness_path))['validate']
 

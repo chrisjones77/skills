@@ -2,12 +2,14 @@
 
 [QVCH and UWH architecture storyboard](../qvch-uwh/README.md): the current component names and their shared six-step workflow, also embedded in the repository README.
 
-Fourteen six-panel concept illustrations cover the current skill inventory. The manifest records the source and image for each board. The original ten-board manifest, prompts, lineage and prior coverage-board image remain in [revision history](revisions/20261022/README.md).
+Sixteen six-panel concept illustrations cover the current skill-entrypoint inventory. The manifest records the source and image for each board. The original ten-board manifest, prompts, lineage and prior coverage-board image remain in [revision history](revisions/20261022/README.md).
 
 These are AI-generated illustrations, not implemented products. All sample UI data, including file sizes, timing and frame counts, are fictional and are not technical calculations or evidence. Canonical skill sources and their references take precedence. Human acceptance remains pending.
 
-[Local HTML gallery](index.html) · [Source and asset manifest](manifest.json) · [Generation record](generation.json) · [Asset lineage](asset-lineage.json) · [Feature specification](../../specs/001-skill-storyboards/spec.md) · [Work and safety record](../../specs/001-skill-storyboards/work-and-safety.md)
+[2026-11-20 source reconciliation](reconciliation-20261120.md) · [Local HTML gallery](index.html) · [Source and asset manifest](manifest.json) · [Generation record](generation.json) · [Asset lineage](asset-lineage.json) · [Feature specification](../../specs/001-skill-storyboards/spec.md) · [Work and safety record](../../specs/001-skill-storyboards/work-and-safety.md)
 
+- [Qualified Verification and Control Harness (QVCH)](#qvch)
+- [Portable Harnessed Dispatch](#portable-harnessed-dispatch)
 - [AI Operational Governance](#ai-operational-governance)
 - [Harnessed Dispatch](#harnessed-dispatch)
 - [Project Vault Operator](#project-vault-operator)
@@ -117,7 +119,7 @@ Human acceptance: pending.
 5. Adapt across media — prose, screen, game and visual concept stay coherent.
 6. Review and revise — record provenance, unresolved concerns and draft status.
 
-Creative development supports distinct expression; it is not legal clearance.
+Creative development supports distinct expression; it is not legal clearance. This retained illustration summarizes seed development; contextual interpretation of creative metaphors and the catalogue-audit/corrective-action workflow are not depicted. Consult the current skill.
 
 Human acceptance: pending.
 
@@ -193,7 +195,7 @@ Human acceptance: pending.
 5. Validate the manifest — run structural and asset-binding checks; resolve blockers.
 6. Decide separately — assistant review stays HOLD until actual human acceptance evidence exists.
 
-Hash checks establish byte identity. Assistant review is not human acceptance.
+Hash checks establish byte identity. Assistant review is not human acceptance. This retained illustration does not depict historical-manifest preservation, separate associated evidence records, or ordered before/after action evidence and separate source-art, edit-segment and visual-change counts. Consult the current skill.
 
 Human acceptance: pending.
 
@@ -250,7 +252,7 @@ Human acceptance: pending.
 5. Render and inspect — distinguish structural checks from watching, listening and final-frame review.
 6. Deliver editable kit — retain movie, captions, artwork, manifest and rebuild instructions.
 
-Preserve the recording · Timing needs evidence · Publication needs authorization. Sample durations, file sizes and frame counts in the image are fictional and must not be used as calculations. The newer optional one-shot review method is not depicted; consult the current skill.
+Preserve the recording · Timing needs evidence · Publication needs authorization. Sample durations, file sizes and frame counts are fictional. This retained illustration summarizes the core production workflow; the one-shot and quick-render methods, ChatGPT publication adapter, detailed action-evidence and preservation requirements, and stand-down procedure are not depicted. Consult the current skill.
 
 Human acceptance: pending.
 
@@ -289,5 +291,43 @@ Human acceptance: pending.
 6. Record and revisit — preserve evidence separately from decisions and reconsider changed policy.
 
 Records support assurance. Controls must act. Human acceptance remains separate. This is a concept illustration, not an implemented QVCH/UWH adapter or proof of control effectiveness.
+
+Human acceptance: pending.
+
+<a id="qvch"></a>
+
+## Qualified Verification and Control Harness (QVCH)
+
+[Canonical skill](../../qvch/SKILL.md) · [Full PNG](assets/qvch.png)
+
+![Qualified Verification and Control Harness (QVCH): six-panel concept illustration](assets/qvch.png)
+
+1. Orient — identify the outcome, affected people and constraints.
+2. Select a mode — choose one primary mode and up to two companion lenses.
+3. Resolve guidance — check applicable skills, sources and revisions.
+4. Check authority — governing instructions and user authorization define permissions.
+5. Match the work — use a brief orientation for routine tasks.
+6. Frame a handoff — carry purpose, scope, evidence and review ownership into UWH.
+
+QVCH frames the work; UWH coordinates formal assignments. Concept illustration only: the screens, permissions, checkmarks and sample data are fictional, not an implemented interface or evidence of execution, qualification, authorization or isolation. The mode codes are illustrative selections; consult the canonical mode table for command words. Qualification depends on the revision, host and intended use. A formal handoff also carries outcome, workspace and permissions.
+
+Human acceptance: pending.
+
+<a id="portable-harnessed-dispatch"></a>
+
+## Portable Harnessed Dispatch
+
+[Canonical skill](../../harnessed-dispatch/SKILL.md) · [Full PNG](assets/portable-harnessed-dispatch.png)
+
+![Portable Harnessed Dispatch: six-panel concept illustration](assets/portable-harnessed-dispatch.png)
+
+1. Verify the workspace — inspect repository, branch, revision and changes.
+2. Bound the task — define objective, scope, permissions and stop condition.
+3. Select the mode — Review, Research or authorized Implementation.
+4. Check runtime support — use the exposed adapter and verify isolation for implementation.
+5. Preserve ownership — one writer; a worker may pause; transfers need acknowledgement.
+6. Verify the return — primary agent checks evidence and reports unresolved limits.
+
+Delegation does not transfer authority or guarantee isolation. Concept illustration only: the screens, permissions, checkmarks and sample data are fictional, not an implemented interface or evidence of execution, qualification, authorization or isolation. This portable entry is separate from the repository-local agent skill. The current local contract refuses writer transfers and has a reoffer gap after decline during pending reassessment; preserve the caller-owned checkpoint and consult the source before transfer.
 
 Human acceptance: pending.
