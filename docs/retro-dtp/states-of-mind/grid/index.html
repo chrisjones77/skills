@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>States of Mind · Retro-DTP design grid</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eeece5;color:#203029;font:17px/1.45 system-ui,sans-serif}main{display:grid;grid-template-columns:minmax(230px,320px) minmax(0,820px);gap:32px;max-width:1230px;margin:auto;padding:clamp(16px,4vw,48px)}h1{font:normal clamp(32px,4vw,48px)/1.05 Georgia,serif;margin:0 0 12px}p{margin:0 0 20px}label{display:block;font-weight:600;margin:15px 0 5px}select,input{width:100%;font:inherit;accent-color:#215140}select{padding:6px}img{display:block;width:100%;height:auto;background:white}a{color:#174c39}small{font-size:14px}a:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #1264a3}#current{font-weight:600;margin:16px 0 4px}figure{margin:0}figcaption{padding-top:8px}@media(max-width:720px){main{grid-template-columns:1fr;gap:16px}aside>p{margin-bottom:8px}h1{font-size:29px}}
+</style>
+</head>
+<body>
+<main>
+<aside>
+<h1>States of Mind</h1><p>Wasi River Bluegrass<br><small>Raster 0 · Clean output</small></p>
+<label for="style">Authoring style</label><select id="style"><option value="selectric">IBM Selectric</option><option value="wordstar">WordStar 3.3</option><option value="macpaint">MacPaint</option><option value="print-shop">The New Print Shop for DOS</option><option value="deskmate">Tandy DeskMate Draw</option><option value="geoworks">GeoWorks Ensemble</option><option value="pagemaker">PageMaker / LaserWriter PostScript</option><option value="windows-truetype">Windows 3.1 TrueType</option></select>
+<label for="strength">Design strength <output id="number" for="strength">0/8</output></label><input id="strength" type="range" min="0" max="8" step="1" value="0">
+<p id="current" aria-live="polite"></p><p id="description"></p>
+<a href="all-72.jpg">View the whole grid</a>
+</aside>
+<figure><a id="full" href="../level-0.jpeg"><img id="cover" width="1254" height="1254" alt="Original States of Mind cover" src="../level-0.jpeg"></a><figcaption>Open the cover for its full-size image.</figcaption></figure>
+</main>
+<script>
+const styles = {"selectric": {"name": "IBM Selectric", "files": ["../level-0.jpeg", "selectric/1.webp", "selectric/2.webp", "selectric/3.webp", "selectric/4.webp", "selectric/5.webp", "selectric/6.webp", "selectric/7.webp", "../eight-styles/selectric.png"]}, "wordstar": {"name": "WordStar 3.3", "files": ["../level-0.jpeg", "wordstar/1.webp", "wordstar/2.webp", "wordstar/3.webp", "wordstar/4.webp", "wordstar/5.webp", "wordstar/6.webp", "wordstar/7.webp", "../eight-styles/wordstar.png"]}, "macpaint": {"name": "MacPaint", "files": ["../level-0.jpeg", "macpaint/1.webp", "macpaint/2.webp", "macpaint/3.webp", "macpaint/4.webp", "macpaint/5.webp", "macpaint/6.webp", "macpaint/7.webp", "../eight-styles/macpaint.png"]}, "print-shop": {"name": "The New Print Shop for DOS", "files": ["../level-0.jpeg", "../level-1.png", "../level-2.png", "../level-3.png", "../level-4.png", "../level-5.png", "../level-6.png", "../level-7.png", "../level-8.png"]}, "deskmate": {"name": "Tandy DeskMate Draw", "files": ["../level-0.jpeg", "deskmate/1.webp", "deskmate/2.webp", "deskmate/3.webp", "deskmate/4.webp", "deskmate/5.webp", "deskmate/6.webp", "deskmate/7.webp", "../eight-styles/deskmate.png"]}, "geoworks": {"name": "GeoWorks Ensemble", "files": ["../level-0.jpeg", "geoworks/1.webp", "geoworks/2.webp", "geoworks/3.webp", "geoworks/4.webp", "geoworks/5.webp", "geoworks/6.webp", "geoworks/7.webp", "../eight-styles/geoworks.png"]}, "pagemaker": {"name": "PageMaker / LaserWriter PostScript", "files": ["../level-0.jpeg", "pagemaker/1.webp", "pagemaker/2.webp", "pagemaker/3.webp", "pagemaker/4.webp", "pagemaker/5.webp", "pagemaker/6.webp", "pagemaker/7.webp", "../eight-styles/pagemaker.png"]}, "windows-truetype": {"name": "Windows 3.1 TrueType", "files": ["../level-0.jpeg", "windows-truetype/1.webp", "windows-truetype/2.webp", "windows-truetype/3.webp", "windows-truetype/4.webp", "windows-truetype/5.webp", "windows-truetype/6.webp", "windows-truetype/7.webp", "../eight-styles/windows-truetype.png"]}};
+const descriptions = ["The shared catalogue cover.", "Change one typographic or placement decision.", "Reset the titles and simplify one ornament.", "Redraw or translate the focal motif while retaining the reading order.", "Recompose the main regions and group the required words.", "Let the toolset determine hierarchy and alignment across the page.", "Build from a blank page using the selected tools throughout.", "Reduce the picture objects and consolidate decoration.", "Use the simplest credible construction that carries the required identity and copy."];
+const byId = id => document.getElementById(id);
+const mode = byId('style'), level = byId('strength');
+const initial = new URLSearchParams(location.hash.slice(1));
+if(Object.hasOwn(styles, initial.get('style'))) mode.value = initial.get('style');
+if(/^[0-8]$/.test(initial.get('design'))) level.value = initial.get('design');
+function show() {
+  const strength = Number(level.value);
+  const chosen = styles[mode.value];
+  const title = chosen.name + ' · ' + strength + '/8';
+  const cover = byId('cover');
+  cover.alt = strength === 0 ? 'Original Wasi River Bluegrass States of Mind cover' : title + '. ' + descriptions[strength];
+  cover.src = chosen.files[strength];
+  byId('full').href = chosen.files[strength];
+  byId('number').textContent = strength + '/8';
+  byId('current').textContent = title;
+  byId('description').textContent = descriptions[strength];
+}
+mode.addEventListener('change',show);
+level.addEventListener('input',show);
+show();
+</script>
+</body>
+</html>

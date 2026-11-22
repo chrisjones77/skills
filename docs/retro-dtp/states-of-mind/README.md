@@ -1,5 +1,7 @@
 # States of Mind · nine Print Shop design settings
 
+[Browse all eight styles at every design strength](grid/)
+
 Read left to right, top to bottom. Level 0 is the original Wasi River Bluegrass cover. Levels 1–8 reinterpret it with the lettering, stamps and repeated borders of The New Print Shop for DOS. Every version keeps the band name, album title, seven state names and bridge. Raster strength stays at 0 and the printer finish stays clean throughout.
 
 [![Nine covers in three rows show the bridge landscape becoming a flat illustration, a separate picture and list, and finally a single bridge stamp inside a repeated border.](all-nine.jpg)](all-nine.jpg)
