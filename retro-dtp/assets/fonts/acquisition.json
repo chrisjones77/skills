@@ -1,0 +1,6 @@
+{
+  "bungee_revision": "6ce172f74aa355ea43eb964fa4a91570a4d3064d",
+  "liberation_acquisition": "Unmodified font files bundled with local LibreOffice; internal version recorded by font inspection",
+  "liberation_license_source": "https://raw.githubusercontent.com/liberationfonts/liberation-fonts/2.1.5/LICENSE",
+  "paper_grid_serif_build": "scripts/build-print-lettering.py in the repository. One-bit FreeType 2.13.2 strike traced with skia-pathops 0.9.2 and packed with FontTools 4.68.0. Source faces are the bundled Liberation Serif 2.1.5 Regular and Bold."
+}

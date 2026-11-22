@@ -1,0 +1,9 @@
+.drawing { padding: 6%; display: flex; flex-direction: column; justify-content: center; }
+.drawing-copy { display: flow-root; }
+.spot { float: left; width: 25%; margin: 0 5mm 4mm 0; }
+.drawing [data-role="title"] { overflow: hidden; border-bottom: 3px double currentColor; padding-bottom: 2mm; font-size: 45pt; line-height: 1.08; margin: 0 0 5mm; }
+.drawing [data-role="heading"] { font-size: 18pt; margin: 3mm 0; }
+.drawing [data-role="date"] { font-size: 15pt; margin-bottom: 3mm; }
+.drawing [data-role="body"] { clear: both; font-size: 15pt; line-height: 1.45; margin: 3mm 0; }
+.drawing [data-role="footer"] { border-top: 1px solid currentColor; margin-top: 7mm; padding-top: 2mm; }
+.accent .drawing [data-role="title"] { color: #154e35; }

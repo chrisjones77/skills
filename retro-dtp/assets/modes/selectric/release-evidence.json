@@ -1,0 +1,15 @@
+{
+  "status": "verified",
+  "preview_sha256": "ab37b4c925fbe333e7b8806b591b86e1823ee640c72ad204765c860a8a3777bb",
+  "examples": [
+    {
+      "id": "selectric-flyer",
+      "status": "verified",
+      "pdf_sha256": "b9a499d4e443cade05ccc536b79b4826949eaea2adb5271e6eb5bfa77a3c3394",
+      "revision": "validation/archetypes/selectric/revision-001"
+    }
+  ],
+  "reviewer": "Codex page proof inspection",
+  "physical_print": "not-tested",
+  "creative_acceptance": "not-requested"
+}

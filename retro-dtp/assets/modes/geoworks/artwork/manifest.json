@@ -1,0 +1,11 @@
+{
+  "files": [
+    {
+      "path": "mark.svg",
+      "sha256": "9e5a7e5a104205090e6427b19a7d7317f66d8bb8fe296ffcded2d4899a3f3e96",
+      "license": "CC0-1.0",
+      "notice": "NOTICE.txt",
+      "origin": "Original vector drawing created for this package"
+    }
+  ]
+}

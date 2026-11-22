@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "id": "print-shop",
+  "display_name": "The New Print Shop for DOS",
+  "aliases": [
+    "New Print Shop"
+  ],
+  "reference_baseline": "Br\u00f8derbund catalogue, The New Print Shop for IBM PC/Tandy, printed pp. 3\u20135",
+  "fidelity": "period-inspired",
+  "supported_types": [
+    "flyer",
+    "notice",
+    "card",
+    "banner"
+  ],
+  "templates": {
+    "flyer": {
+      "html": "templates/flyer.html",
+      "css": "templates/flyer.css",
+      "kind": "sheets"
+    },
+    "notice": {
+      "html": "templates/flyer.html",
+      "css": "templates/flyer.css",
+      "kind": "sheets"
+    },
+    "card": {
+      "html": "templates/card.html",
+      "css": "templates/card.css",
+      "kind": "quarter-fold"
+    },
+    "banner": {
+      "html": "templates/banner.html",
+      "css": "templates/banner.css",
+      "kind": "banner"
+    }
+  },
+  "primitives": [
+    "sheets",
+    "quarter-fold",
+    "banner"
+  ],
+  "typography": {
+    "title": {
+      "family": "Paper Grid Serif",
+      "file": "assets/fonts/PaperGridSerif-Bold.ttf",
+      "weight": 700
+    },
+    "heading": {
+      "family": "Paper Grid Serif",
+      "file": "assets/fonts/PaperGridSerif-Bold.ttf",
+      "weight": 700
+    },
+    "body": {
+      "family": "Paper Grid Serif",
+      "file": "assets/fonts/PaperGridSerif-Regular.ttf",
+      "weight": 400
+    },
+    "label": {
+      "family": "Paper Grid Serif",
+      "file": "assets/fonts/PaperGridSerif-Bold.ttf",
+      "weight": 700
+    },
+    "date": {
+      "family": "Paper Grid Serif",
+      "file": "assets/fonts/PaperGridSerif-Bold.ttf",
+      "weight": 700
+    },
+    "caption": {
+      "family": "Paper Grid Serif",
+      "file": "assets/fonts/PaperGridSerif-Regular.ttf",
+      "weight": 400
+    },
+    "footer": {
+      "family": "Paper Grid Serif",
+      "file": "assets/fonts/PaperGridSerif-Regular.ttf",
+      "weight": 400
+    }
+  },
+  "palette": {
+    "monochrome": [
+      "#111",
+      "#fff"
+    ],
+    "accent": "#154e35"
+  },
+  "print_defaults": {
+    "safe_margin_mm": 12.7,
+    "minimum_body_pt": 10
+  },
+  "signatures": [
+    "Independently sized message lines built from proportional bitmap lettering",
+    "Repeated border units around a sign",
+    "One or more independently placed spot illustrations"
+  ],
+  "artwork_rules": "Build a sign from separately sized message lines, replaceable graphic stamps and a repeat border. Specify any printer treatment independently.",
+  "overflow_policy": "Reflow or request content/page decision",
+  "fallbacks": [],
+  "reference_path": "mode.md",
+  "asset_manifest": "artwork/manifest.json",
+  "example_ids": [
+    "print-shop-flyer",
+    "print-shop-card",
+    "print-shop-banner"
+  ],
+  "readiness": "supported",
+  "representative_preview": "preview.png",
+  "release_evidence": "release-evidence.json"
+}

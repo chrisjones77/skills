@@ -1,0 +1,15 @@
+{
+  "status": "verified",
+  "preview_sha256": "ecf3310dea2a233b1cb17791ffccf879a96d32ebf1b3a343cfff1b37d1247084",
+  "examples": [
+    {
+      "id": "wordstar-flyer",
+      "status": "verified",
+      "pdf_sha256": "1438db2c41a707fafffe6252399c7a7d99705583c776c45012866a2e28cb7e3c",
+      "revision": "validation/archetypes/wordstar/revision-001"
+    }
+  ],
+  "reviewer": "Codex page proof inspection",
+  "physical_print": "not-tested",
+  "creative_acceptance": "not-requested"
+}

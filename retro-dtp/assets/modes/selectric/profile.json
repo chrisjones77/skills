@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "id": "selectric",
+  "display_name": "IBM Selectric",
+  "aliases": [
+    "IBM electric typewriter",
+    "Selectric typewriter"
+  ],
+  "reference_baseline": "IBM Selectric electric typewriter, introduced 1961",
+  "fidelity": "period-inspired",
+  "supported_types": [
+    "flyer",
+    "notice",
+    "letter",
+    "memo"
+  ],
+  "templates": {
+    "flyer": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    },
+    "notice": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    },
+    "letter": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    },
+    "memo": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    }
+  },
+  "primitives": [
+    "sheets"
+  ],
+  "typography": {
+    "title": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "heading": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "body": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "label": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "date": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "caption": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "footer": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    }
+  },
+  "palette": {
+    "monochrome": [
+      "#111",
+      "#fff"
+    ]
+  },
+  "print_defaults": {
+    "safe_margin_mm": 12.7,
+    "minimum_body_pt": 10
+  },
+  "signatures": [
+    "One fixed-pitch element",
+    "Typewriter underlining",
+    "Whole-line spacing"
+  ],
+  "artwork_rules": "Set the page entirely in type.",
+  "overflow_policy": "Reflow the copy or agree a different sheet count.",
+  "fallbacks": [],
+  "reference_path": "mode.md",
+  "asset_manifest": "artwork/manifest.json",
+  "example_ids": [
+    "selectric-flyer"
+  ],
+  "readiness": "supported",
+  "representative_preview": "preview.png",
+  "release_evidence": "release-evidence.json",
+  "text_only": true
+}

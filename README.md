@@ -50,3 +50,9 @@ The package needs Node 22.13 or later on POSIX. Run `node examples/attended-revi
 ## Independent work recorder
 
 The [Git-first recorder and read-only bus monitor](work-recorder/README.md) provide a standalone event contract, QVCH/UWH observation adapters, synthetic examples and replay. Recording evidence remains distinct from accepting work or authorizing execution.
+
+## Retro desktop publishing
+
+Retro-DTP 0.5.1 composes editable print documents and redesigns images using eight period toolsets, from the IBM Selectric to PostScript and early TrueType. Design strength controls how much of the composition to rebuild. Raster strength and simulated printer marks can be selected separately. [Skill and presets](retro-dtp/SKILL.md) · [Print setup](retro-dtp/references/production.md)
+
+For ChatGPT Images, download the design card and attach it with the original image. Try “Redesign this for The New Print Shop for DOS at design 6/8. Keep the title exact, raster 0, clean output.” The optional raster attachment runs with Python and Pillow. [Design card](docs/retro-dtp/retro-design-filter.txt) · [Raster attachment](docs/retro-dtp/retro-filter.txt)

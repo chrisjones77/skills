@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "id": "windows-truetype",
+  "display_name": "Windows 3.1 TrueType",
+  "aliases": [
+    "TrueType",
+    "TTF",
+    "Windows 3.1",
+    "early TrueType"
+  ],
+  "reference_baseline": "First Windows TrueType release in Windows 3.1, April 1992",
+  "fidelity": "period-inspired",
+  "supported_types": [
+    "flyer",
+    "notice",
+    "memo",
+    "letterhead"
+  ],
+  "templates": {
+    "flyer": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    },
+    "notice": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    },
+    "memo": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    },
+    "letterhead": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    }
+  },
+  "primitives": [
+    "sheets"
+  ],
+  "typography": {
+    "title": {
+      "family": "Liberation Sans",
+      "file": "assets/fonts/LiberationSans-Bold.ttf",
+      "weight": 700,
+      "style": "normal"
+    },
+    "heading": {
+      "family": "Liberation Sans",
+      "file": "assets/fonts/LiberationSans-Bold.ttf",
+      "weight": 700,
+      "style": "normal"
+    },
+    "body": {
+      "family": "Liberation Serif",
+      "file": "assets/fonts/LiberationSerif-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "label": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "date": {
+      "family": "Liberation Sans",
+      "file": "assets/fonts/LiberationSans-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "caption": {
+      "family": "Liberation Serif",
+      "file": "assets/fonts/LiberationSerif-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "footer": {
+      "family": "Liberation Sans",
+      "file": "assets/fonts/LiberationSans-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    }
+  },
+  "palette": {
+    "monochrome": [
+      "#111",
+      "#fff"
+    ]
+  },
+  "print_defaults": {
+    "safe_margin_mm": 12.7,
+    "minimum_body_pt": 10
+  },
+  "signatures": [
+    "Quadratic TrueType outlines",
+    "Large sans heading and proportional serif paragraphs",
+    "Fixed-pitch identifier line"
+  ],
+  "artwork_rules": "Use a type-led office composition.",
+  "overflow_policy": "Reflow the copy or agree a different sheet count.",
+  "fallbacks": [],
+  "reference_path": "mode.md",
+  "asset_manifest": "artwork/manifest.json",
+  "example_ids": [
+    "windows-truetype-flyer"
+  ],
+  "readiness": "supported",
+  "representative_preview": "preview.png",
+  "release_evidence": "release-evidence.json",
+  "text_only": true
+}

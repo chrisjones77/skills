@@ -1,0 +1,26 @@
+{
+  "files": [
+    {
+      "id": "sprout",
+      "kind": "svg",
+      "path": "sprout.svg",
+      "source": "Original Retro-DTP artwork",
+      "source_revision": "1",
+      "copyright": "Retro-DTP contributors",
+      "license": "CC0-1.0",
+      "notice": "NOTICE.txt",
+      "sha256": "ec55c6953d30ec0fc23f7dbe4b81451acdc3a9df0e25bb47f45e79e5ec707944"
+    },
+    {
+      "id": "tulip",
+      "kind": "svg",
+      "path": "tulip.svg",
+      "source": "Original Retro-DTP artwork",
+      "source_revision": "1",
+      "copyright": "Retro-DTP contributors",
+      "license": "CC0-1.0",
+      "notice": "NOTICE.txt",
+      "sha256": "bbb55f4cc2dc21dddd19b0647eacccf73e1b8b35f3d8e7b59f48ba21a05c01b6"
+    }
+  ]
+}

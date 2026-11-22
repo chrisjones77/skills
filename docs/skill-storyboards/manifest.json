@@ -5,7 +5,7 @@
   "created": "2026-10-22",
   "generator": "OpenAI built-in image_gen",
   "asset_status": "AI-generated concept illustrations",
-  "scope": "Current sixteen-entrypoint gallery. Repository-local and portable dispatch skills have separate boards. Prior snapshots and artwork are retained.",
+  "scope": "Current seventeen-entrypoint gallery. Repository-local and portable dispatch skills have separate boards. Prior snapshots and artwork are retained.",
   "boards": [
     {
       "slug": "harnessed-dispatch",
@@ -390,7 +390,31 @@
         "human_acceptance": "pending",
         "notes": "Assistant inspected the initial and revised full-size PNGs against the skill and prompt. Six ordered captions and the title are legible; the interface is illustrative. Revision removes checked isolation claims and marks writer transfer unavailable; adapter, isolation and access still need evidence. Human acceptance remains pending."
       }
+    },
+    {
+      "slug": "retro-dtp",
+      "title": "Retro-DTP",
+      "source_path": "retro-dtp/SKILL.md",
+      "transcript": [
+        "01 Keep the copy. Preserve the words “River Fair” and the bridge motif across revisions.",
+        "02 Choose the toolset. The typewriter sets characters on a fixed grid. Print Shop can place bitmap lettering and graphic stamps.",
+        "03 Set design strength. Move from the original scene toward a composition the chosen tools can build.",
+        "04 Rebuild the page. Give the title and bridge stamp their own positions on the sheet.",
+        "05 Choose the finish. Keep the page clean or add a raster or printer treatment to the composed image.",
+        "06 Inspect the result. Compare spelling, placement and legibility with the brief. Inspect the PDF previews for a print job."
+      ],
+      "prompt": "Use case: infographic-diagram. Generate one landscape six-panel concept storyboard in a 3-column, 2-row grid, sized 1536x1024, for the skills gallery. Title: Retro-DTP. Six bold numbered headings exactly: 01 Keep the copy, 02 Choose the toolset, 03 Set design strength, 04 Rebuild the page, 05 Choose the finish, 06 Inspect the result. Draw six vivid desk vignettes in charcoal, cream, muted amber and violet. Use the same fictional River Fair flyer and a small bridge throughout. Show the note with its words in panel 1; a typewriter page and bitmap stamp catalogue in 2; three compositions from full scenery to one bridge motif in 3; independently placed straight lettering and a chunky bridge stamp with open paper in 4; the same layout as clean paper and a magnified sample of coloured pin strikes in 5; a magnifying glass over title and print edges in 6. Make illustrations dominant and lettering large. Keep text to the title, six headings and the two example words River Fair. No logos, authorization seals or checkmarks.",
+      "source_blob_sha": "e387ab0c51dfe92299999d8e82fbcd7ca0cd449e",
+      "asset": "assets/retro-dtp.png",
+      "asset_sha256": "9503b41ca1aba787d79a5118033b04395a3e456551973fbb8024acdeeb9c6ba8",
+      "limitation": "The dot detail illustrates a simulated ribbon finish. Physical printer output requires a device test.",
+      "review": {
+        "method": "AI visual inspection against source and brief",
+        "status": "reviewed-with-limits",
+        "human_acceptance": "pending",
+        "notes": "The six headings appear in order. River Fair stays legible as the scene becomes a bridge stamp. The lettering in the illustration is stylized and the enlarged dots illustrate the finish."
+      }
     }
   ],
-  "refreshed": "2026-11-20"
+  "refreshed": "2026-11-22"
 }

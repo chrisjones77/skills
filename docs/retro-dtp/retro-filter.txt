@@ -1,0 +1,297 @@
+#!/usr/bin/env python3
+# Retro-DTP design filter for ChatGPT Images
+#
+# Use this card when asked to generate or redesign an image. Name a preset and a design strength from 0 to 8. Default to Print Shop at 4/8 if unspecified. Run the ordinary image generator with the composed brief. This card requires no code execution.
+#
+# Example request: “Redesign the attached cover for Print Shop, design 6/8. Keep the band name, album title and seven state names. Turn the bridge into a stamp.”
+#
+# Use the normal image generator to make a new composition at the requested aspect ratio. For an existing image, use its original as the content reference for every revision. For a new image, use the user's subject brief directly. Identify the subject, exact required words in reading order, essential identifiers, optional motifs and incidental decoration. Preserve all required words and relationships. When text will not fit, simplify the art or reflow the text. Use only supplied wording. Give the generator a concrete page plan naming the type, image objects, positions, replacements and omissions. Generate the image, then compare the actual result to that plan. If it retains an excluded scene, uses unavailable tools or misspells required copy, correct that specific fault before delivery. Apply a separate paper, ink, dot or pixel treatment only when requested.
+#
+# Design strength controls which objects, type and layout to rebuild. Default the finish to raster strength 0 and clean output. Apply an explicit raster strength (0–8) to the finished composition. A separate printer request such as nine-pin colour adds visible pin strikes in nine-row sweeps and slight registration differences between ribbon passes. Preserve the arrangement and words of the composed image during finishing.
+#
+# Choose the strength
+#
+# 0/8 — Bypass the design treatment. Return the supplied original for an existing image. For a new image, generate directly from the user's brief.
+#
+# 1/8 — Keep the original hierarchy, layout and motifs. Replace one typographic or placement decision with the preset's convention.
+#
+# 2/8 — Keep the major regions. Reset the headline and supporting type with the preset's alignments and size choices. Simplify one ornamental element.
+#
+# 3/8 — Keep the focal subject and reading order. Redraw its main motif with the preset's tools or translate it into words for a text-only preset. Group secondary detail.
+#
+# 4/8 — Recompose the page. Establish a fresh type area and a distinct image or information area. Rebuild two or three essential motifs; collapse incidental objects into labels, simple marks or open space.
+#
+# 5/8 — Let the preset determine hierarchy and alignment across the whole page. Merge secondary scenes into one supporting group. Use a single consistent visual vocabulary.
+#
+# 6/8 — Rebuild from a blank sheet. Restrict each visible object, type treatment and alignment to the preset's tools. Replace unsupported motifs. Remove incidental set dressing.
+#
+# 7/8 — Use the strict capability recipe throughout. Keep only the smallest set of image objects that communicates the subject. Consolidate recurring decorations into a single repeatable device.
+#
+# 8/8 — Use the simplest credible native construction from a blank sheet. Every visible element must have a specific creation method in the selected toolset. Prioritize exact required words, one organizing device and the essential identifier. At most one pictorial motif for a graphic preset; use character placement for a text preset.
+#
+# Choose the tools
+#
+# IBM Selectric (selectric)
+# Tools: One fixed-pitch type element, one character size, ribbon strikes, tab stops, carriage returns, spaces and underscore overstrikes.
+# Composition: Build a typed title sheet. Use vertical position, underlining and blank lines to distinguish the title. Put a sequence into aligned typed rows. Translate a pictorial identifier into its supplied name or a tiny arrangement of keyboard characters when needed.
+# At strict settings, exclude: Photographs, pasted pictures, drawn borders, proportional or oversized display faces and decorative stamp art.
+# Check: Point to the key, carriage movement or overstrike that could have made every mark.
+#
+# WordStar 3.3 (wordstar)
+# Tools: A fixed character measure, margins, paragraph indent, tabs, centring, repeated keyboard characters and printer emphasis.
+# Composition: Make a formatted index or bulletin. Centre a heading, align a recurring label to a common tab stop, then allow text to flow in its measure. Set apart sections with a typed rule or one blank line.
+# At strict settings, exclude: Free-positioned illustrations, stretched headlines, arbitrary rotation and visible editor commands.
+# Check: Read each line on a common character grid. Emphasis and paragraph structure should carry the hierarchy.
+#
+# MacPaint (macpaint)
+# Tools: A single black-and-white picture plane, pencil and brush marks, selections, patterns and bitmap text.
+# Composition: Redraw the subject as an original high-contrast silhouette. Separate near and far shapes with two distinct repeat patterns or open white. Reserve a clear zone in the bitmap for straight lettering.
+# At strict settings, exclude: Full-colour photos, smooth tonal modelling, independent vector shadows and translucent layers.
+# Check: The subject should read from its silhouette; intermediate tone should resolve into black marks and white space.
+#
+# The New Print Shop for DOS (print-shop)
+# Tools: Independently sized straight lines of proportional bitmap lettering, positionable graphic stamps, paper and a border made from a repeated unit.
+# Composition: Build a sign or card. Set title lines separately, remake the subject as a small replaceable stepped stamp, and allow paper around it. Convert repeated scene elements into short lines or a repeating border. Use a limited set of spot inks.
+# At strict settings, exclude: Photographic collages, dimensional signboards, wood textures, perspective typography, embossing and atmospheric lighting.
+# Check: Count the distinct message lines, stamp objects and border unit. Confirm they explain the entire design at the strict settings.
+#
+# Tandy DeskMate Draw (deskmate)
+# Tools: Thin brush, ellipse, rectangle, connected polyline, enclosed flat or patterned fill, independently placed Roman lettering.
+# Composition: Construct a recognizable diagram or outline drawing with a few shapes. Centre short lines separately, or flank a text column with simple drawings. On an office form, use aligned labels and writing fields.
+# At strict settings, exclude: A detailed raster landscape, an office-window screenshot, complex shading and automatic scenic textures.
+# Check: Identify the drawing primitive and fill that produce each prominent object.
+#
+# GeoWorks Ensemble (geoworks)
+# Tools: Scalable type, text columns, a ruled masthead and separately positioned or rotated text and drawing objects.
+# Composition: Use GeoDraw for a poster: assemble the subject from a few clean objects and give the title its own space. Use GeoWrite for reading copy: group it in a deliberate column measure. Keep graphic labels optically aligned.
+# At strict settings, exclude: Depth-of-field effects, cinematic grading and a mandatory sidebar on short copy.
+# Check: Separate the independent text and drawing objects by eye and trace the intended reading order.
+#
+# PageMaker / LaserWriter PostScript (pagemaker)
+# Tools: Pasteboard blocks, placed monochrome art, column measures, cubic outline lettering, rules and printable black ink.
+# Composition: Recompose as an editorial title page: one placed illustration, a prominent roman title, a secondary italic line if useful, and an aligned block of small type. Reserve open paper and use measured spacing.
+# At strict settings, exclude: Continuous atmospheric effects across the whole sheet, bevels, ambient glows and full-colour scene composites.
+# Check: Identify the text blocks, rule and placed illustration that a page compositor would assemble.
+#
+# Windows 3.1 TrueType (windows-truetype)
+# Tools: Scalable quadratic outline fonts in a small office type family, paragraph alignment, tab stops, paragraph spacing and simple rules.
+# Composition: Build a type-led announcement. Set an emphatic sans heading, proportional serif reading copy and a fixed-pitch identifier when the brief supplies one. Use point-size changes and paragraph positions for hierarchy.
+# At strict settings, exclude: Dimensional logotypes, textured text fills, scenic letter interiors and modern interface chrome.
+# Check: The heading, body and labels should be reproducible with a face, point size, alignment and paragraph spacing.
+#
+# For levels 1–5, apply the native recipe to the parts being redesigned. At 6–8, apply the exclusions across the entire page. For a revision, reuse the original subject and locked copy, then generate a fresh composition at the new setting. Preserve the original aspect ratio unless the user requests another format.
+"""Retro-DTP raster finishing helper for ChatGPT. Python 3.9+ and Pillow 9.2+.
+
+For raster finishing, use the finished image as the source. For a design-strength
+request, use the retro-design-filter.txt card with the ordinary image generator.
+This attachment is executable Python whether saved as .py or .txt.
+Run it with the actual source path. For example:
+
+    python retro-filter.txt image.png --mode print-shop --strength 4 --out filtered.png
+    python retro-filter.txt image.png --mode print-shop --strength 4 --out dial.html
+
+Return the PNG and, when requested, the downloadable HTML dial. Open the HTML
+in a browser to compare settings and save a full-size PNG. Always start from the
+original when changing strength. If the generator output is unavailable as a
+file, ask the user to attach its downloaded version.
+"""
+import argparse
+import base64
+import io
+import json
+import sys
+from pathlib import Path
+from typing import NamedTuple
+
+from PIL import Image, ImageEnhance, ImageOps
+
+
+class Profile(NamedTuple):
+    edge: int               # Long edge of the working raster at maximum reduction
+    colors: int             # Maximum ink colours at maximum reduction
+    grayscale: bool
+    diffuse: bool
+
+
+# Artistic raster treatments. These are separate from the publishing templates.
+PROFILES = {
+    "selectric": Profile(128, 2, True, False),
+    "wordstar": Profile(192, 4, True, True),
+    "macpaint": Profile(384, 2, True, True),
+    "print-shop": Profile(256, 8, False, True),
+    "deskmate": Profile(320, 16, False, False),
+    "geoworks": Profile(512, 32, False, True),
+    "pagemaker": Profile(768, 64, True, True),
+    "windows-truetype": Profile(896, 128, False, False),
+}
+
+
+def read_image(path):
+    with Image.open(path) as image:
+        if getattr(image, "n_frames", 1) != 1:
+            raise ValueError("Select a single still frame for filtering.")
+        upright = ImageOps.exif_transpose(image)
+        rgba = upright.convert("RGBA")
+        if profile := upright.info.get("icc_profile"):
+            from PIL import ImageCms
+            # RGB and CMYK input profiles need their corresponding input channels.
+            color = upright if upright.mode in ("RGB", "CMYK", "L", "LAB") else rgba.convert("RGB")
+            srgb = ImageCms.profileToProfile(color, ImageCms.ImageCmsProfile(io.BytesIO(profile)),
+                                             ImageCms.createProfile("sRGB"), outputMode="RGB")
+            srgb.putalpha(rgba.getchannel("A"))
+            rgba = srgb
+        # The working pixels are oriented sRGB; original EXIF/ICC no longer apply.
+        rgba.info.clear()
+        return rgba
+
+
+def palette_for(grid, count, neutral):
+    if neutral:
+        inks = [(v, v, v) for v in (round(i * 255 / (count - 1)) for i in range(count))]
+    else:
+        sample = grid.copy()
+        sample.thumbnail((256, 256), Image.Resampling.BOX)
+        pixels = sample.get_flattened_data() if hasattr(sample, "get_flattened_data") else sample.getdata()
+        visible = [rgb[:3] for rgb in pixels if rgb[3]]
+        strip = Image.new("RGB", (max(1, len(visible)), 1))
+        if visible:
+            strip.putdata(visible)
+        table = strip.quantize(colors=count, method=Image.Quantize.MEDIANCUT).getpalette()
+        inks = [tuple(table[i:i + 3]) for i in range(0, min(count * 3, len(table)), 3)]
+    # Pillow accepts 256 slots. Duplicate an allowed ink in all unused slots.
+    palette = Image.new("P", (1, 1))
+    palette.putpalette([c for rgb in (inks + [inks[-1]] * (256 - len(inks))) for c in rgb])
+    return palette
+
+
+def apply_filter(original, mode, strength, dither="auto"):
+    if mode not in PROFILES or strength not in range(9) or dither not in ("auto", "on", "off"):
+        raise ValueError("Choose a listed mode, strength 0–8 and dither auto, on or off.")
+    if strength == 0:
+        return original.copy(), original.size, "Original colours"
+    p = PROFILES[mode]
+    amount = strength / 8
+    longest = max(original.size)
+    edge = max(1, round(longest * (min(p.edge, longest) / longest) ** amount))
+    size = tuple(max(1, round(v * edge / longest)) for v in original.size)
+    grid = original.resize(size, Image.Resampling.BOX)
+    rgb = grid.convert("RGB")
+    if p.grayscale:
+        rgb = ImageEnhance.Color(rgb).enhance(1 - amount)
+    if strength <= 2:
+        # A gentler transition from full RGB than jumping immediately to 256 colours.
+        channel_steps = 128 if strength == 1 else 32
+        lut = [round(round(v * (channel_steps - 1) / 255) * 255 / (channel_steps - 1))
+               for v in range(256)]
+        reduced = rgb.point(lut * 3)
+        detail = f"{channel_steps} steps/channel"
+    else:
+        count = round(256 * (p.colors / 256) ** ((strength - 3) / 5))
+        grid = Image.merge("RGBA", (*rgb.split(), grid.getchannel("A")))
+        palette = palette_for(grid, count, p.grayscale and strength == 8)
+        diffuse = p.diffuse if dither == "auto" else dither == "on"
+        reduced = rgb.quantize(palette=palette, dither=Image.Dither.FLOYDSTEINBERG
+                               if diffuse else Image.Dither.NONE).convert("RGB")
+        detail = f"Up to {count} ink colours"
+    output = reduced.resize(original.size, Image.Resampling.NEAREST)
+    output.putalpha(original.getchannel("A"))
+    return output, size, detail
+
+
+def png_bytes(image):
+    buf = io.BytesIO()
+    if image.getchannel("A").getextrema() == (255, 255):
+        image = image.convert("RGB")
+    image.save(buf, "PNG")
+    return buf.getvalue()
+
+
+def exclusive_write(path, writer):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("xb") as file:
+        try:
+            writer(file)
+        except BaseException:
+            file.close()
+            path.unlink()
+            raise
+
+
+DIAL = """<!doctype html><html lang="en"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Retro-DTP image dial</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#efece4;color:#201e1a;font:16px/1.4 system-ui,sans-serif}
+main{width:min(1180px,100%);margin:auto;padding:clamp(14px,3vw,42px);display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,290px);gap:24px}
+figure{margin:0;background:#d4d1c9;align-self:start}img{width:100%;height:auto;display:block}
+aside{align-self:start;position:sticky;top:1em}h1{font:normal clamp(1.7rem,3vw,2.6rem)/1.1 Georgia,serif;margin:0 0 1.2rem;overflow-wrap:anywhere}
+label{display:block;font-weight:650}input{width:100%;margin:14px 0;accent-color:#365b51}.ends{display:flex;justify-content:space-between;font-size:.8em}
+button,a{display:inline-block;padding:9px 12px;margin:4px 0;font:inherit;border:1px solid #615c4f;border-radius:3px;background:white;color:inherit;cursor:pointer;text-decoration:none}
+a{background:#28483f;color:white}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #0077bb}
+@media(max-width:690px){main{grid-template-columns:1fr;gap:14px}aside{position:static;grid-row:1}h1{margin-bottom:.6rem}}
+</style><main><figure><img id="art" alt="Image at the selected quantization strength"></figure>
+<aside><h1 id="title"></h1><label for="strength">Quantization <output id="value"></output></label>
+<input id="strength" type="range" min="0" max="8" step="1" value="4"><div class="ends"><span>Original</span><span>Strongest</span></div>
+<p id="details" aria-live="polite"></p><button id="compare" aria-pressed="false">Show original</button><br>
+<a id="download" download>Save displayed PNG</a></aside></main><script>
+const job=JOB_DATA;
+const $=id=>document.getElementById(id);
+let comparing=false;
+$('title').textContent=job.title;
+$('strength').value=job.initial;
+function show(){
+  const n=comparing?0:Number($('strength').value), frame=job.frames[n];
+  $('value').textContent=n+' / 8';
+  $('details').textContent=job.mode+' · '+frame.grid.join(' × ')+' · '+frame.detail;
+  $('art').src=frame.png; $('download').href=frame.png;
+  $('download').download=job.file+'-'+job.mode+'-'+n+'.png';
+  $('compare').setAttribute('aria-pressed',String(comparing));
+  $('compare').textContent=comparing?'Back to setting':'Show original';
+}
+$('strength').oninput=()=>{comparing=false;show()};
+$('compare').onclick=()=>{comparing=!comparing;show()};
+show();</script></html>"""
+
+
+def make_dial(file, original, source, mode, initial, dither):
+    # Stream the data URLs so peak memory is one PNG, independent of level count.
+    before, after = DIAL.split("JOB_DATA")
+    def json_safe(value):
+        return json.dumps(value, ensure_ascii=True).replace("<", "\\u003c")
+    job = {"title": source.stem.replace("-", " "), "file": source.stem, "mode": mode, "initial": initial}
+    file.write((before + json_safe(job)[:-1] + ',"frames":[').encode())
+    for level in range(9):
+        frame, size, detail = apply_filter(original, mode, level, dither)
+        meta = {"grid": size, "detail": detail}
+        file.write((("," if level else "") + json_safe(meta)[:-1] + ',"png":"data:image/png;base64,').encode())
+        file.write(base64.b64encode(png_bytes(frame)))
+        file.write(b'"}')
+    file.write(("]}" + after).encode())
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Filter a finished image or build an offline nine-position image dial.")
+    parser.add_argument("source", type=Path, help="Original single-frame image")
+    parser.add_argument("--mode", choices=PROFILES, default="print-shop")
+    parser.add_argument("--strength", type=int, choices=range(9), default=4, help="0 = original, 8 = strongest")
+    parser.add_argument("--dither", choices=("auto", "on", "off"), default="auto")
+    parser.add_argument("--out", type=Path, required=True, help="New .png or interactive .html dial")
+    args = parser.parse_args()
+    suffix = args.out.suffix.lower()
+    if suffix not in (".html", ".png"):
+        parser.error("Output must end in .png or .html")
+    try:
+        original = read_image(args.source)
+        if suffix == ".html":
+            exclusive_write(args.out, lambda f: make_dial(f, original, args.source, args.mode,
+                                                           args.strength, args.dither))
+        else:
+            image, _, _ = apply_filter(original, args.mode, args.strength, args.dither)
+            exclusive_write(args.out, lambda f: f.write(png_bytes(image)))
+    except (ValueError, OSError) as exc:
+        parser.exit(1, f"Filter failed: {exc}\n")
+    print(args.out)
+
+
+if __name__ == "__main__":
+    main()

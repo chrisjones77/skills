@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "record_date": "2026-11-20",
+  "record_date": "2026-11-22",
   "provenance": "Initial prompt strings and edit prompt strings transcribed from this authoring session; hashes recomputed from retained candidate files.",
-  "scope": "Current sixteen-entrypoint gallery. Repository-local and portable dispatch skills have separate boards. Prior snapshots and artwork are retained.",
-  "generation_count": 16,
+  "scope": "Current seventeen-entrypoint gallery. Repository-local and portable dispatch skills have separate boards. Prior snapshots and artwork are retained.",
+  "generation_count": 17,
   "revision_count": 9,
   "reproducibility": "Prompts and byte lineage are retained; generator outputs are not guaranteed deterministic. Intermediate image bytes are not included in this repository.",
   "human_acceptance": "pending",
@@ -286,6 +286,19 @@
       ],
       "selected_asset": "assets/portable-harnessed-dispatch.png",
       "selected_asset_sha256": "22f7c08adc38de26d663b2ebf6154f521adddbb0e54b1bae6d057aba50b98698"
+    },
+    {
+      "slug": "retro-dtp",
+      "stages": [
+        {
+          "stage": "initial",
+          "asset_sha256": "9503b41ca1aba787d79a5118033b04395a3e456551973fbb8024acdeeb9c6ba8",
+          "prompt_record": "generation.json: initial_prompts entry with matching slug",
+          "generator": "OpenAI built-in image_gen"
+        }
+      ],
+      "selected_asset": "assets/retro-dtp.png",
+      "selected_asset_sha256": "9503b41ca1aba787d79a5118033b04395a3e456551973fbb8024acdeeb9c6ba8"
     }
   ]
 }

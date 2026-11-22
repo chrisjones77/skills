@@ -1,0 +1,27 @@
+{
+  "status": "verified",
+  "preview_sha256": "bfd8f635f8383cbd0b562654939c22b9e032a60b46277f075a47e2c0b6c08306",
+  "examples": [
+    {
+      "id": "print-shop-flyer",
+      "status": "verified",
+      "pdf_sha256": "d3da63df188afba1eaa0dea175b28cbe3936a799724f674e3c4905d777e0deef",
+      "revision": "validation/examples/print-shop-flyer/revision-003"
+    },
+    {
+      "id": "print-shop-card",
+      "status": "verified",
+      "pdf_sha256": "2c7fd2698a2f0d4c75b28f6941173c39503987b6ccf84e1f6a17d3c315bf9000",
+      "revision": "validation/examples/print-shop-card/revision-003"
+    },
+    {
+      "id": "print-shop-banner",
+      "status": "verified",
+      "pdf_sha256": "092de64bc0c10d61d0f4ab08181c83d763c7bcbaea787f1397b5dd19e903e147",
+      "revision": "validation/examples/print-shop-banner/revision-003"
+    }
+  ],
+  "reviewer": "Codex structural and visual inspection",
+  "physical_print": "not-tested",
+  "creative_acceptance": "not-requested"
+}
