@@ -1,6 +1,6 @@
 # States of Mind · eight styles at design 8/8
 
-[Browse all eight styles at every design strength](../grid/)
+[Browse all eight styles at every design strength](../grid/) · [See these eight covers at every raster strength](../raster-grid/)
 
 Each cover starts with the same Wasi River Bluegrass artwork and the same nine pieces of copy: the band name, the album title and the seven state names in order. At 8/8, the chosen toolset determines how to build the whole page. Raster strength is 0, with a clean finish throughout.
 

@@ -1,0 +1,848 @@
+{
+  "design": 8,
+  "printer": "clean",
+  "dither_setting": "auto",
+  "renderer": "../../../../retro-dtp/scripts/retro_filter.py",
+  "styles": [
+    {
+      "mode": "selectric",
+      "name": "IBM Selectric",
+      "frames": [
+        {
+          "strength": 0,
+          "file": "../eight-styles/selectric.png",
+          "grid": [
+            1254,
+            1254
+          ],
+          "palette": "Original colours",
+          "dither": false,
+          "sha256": "3ba1ef14474b37dbc64832c8282524640a63d4ac7b1e17783354c82804cbc56f"
+        },
+        {
+          "strength": 1,
+          "file": "selectric/1.png",
+          "grid": [
+            943,
+            943
+          ],
+          "palette": "128 steps/channel",
+          "dither": false,
+          "sha256": "1335be14c8efa6a5bbf45fd6346f7cd2c779f9be8e65e1c10a941f6e9b3a6176"
+        },
+        {
+          "strength": 2,
+          "file": "selectric/2.png",
+          "grid": [
+            709,
+            709
+          ],
+          "palette": "32 steps/channel",
+          "dither": false,
+          "sha256": "1725448a48aa3f8c1b3d71db5cfe5571e7515d820f51b4707075bc19d46e1f58"
+        },
+        {
+          "strength": 3,
+          "file": "selectric/3.png",
+          "grid": [
+            533,
+            533
+          ],
+          "palette": "Up to 256 ink colours",
+          "dither": false,
+          "sha256": "7200fddc673e476ed8103775ae5f64cf056920f0dccc7b09d430addb1d28c31f"
+        },
+        {
+          "strength": 4,
+          "file": "selectric/4.png",
+          "grid": [
+            401,
+            401
+          ],
+          "palette": "Up to 97 ink colours",
+          "dither": false,
+          "sha256": "bcf98a8bf4bac9113a102d3b7b32242f5a8ebbc8ce5dc37b2577a0eb0aab4bc5"
+        },
+        {
+          "strength": 5,
+          "file": "selectric/5.png",
+          "grid": [
+            301,
+            301
+          ],
+          "palette": "Up to 37 ink colours",
+          "dither": false,
+          "sha256": "93e7a63719b005b618efd832edcf340e8c9d389ccf6619d093d2c91aebe1829e"
+        },
+        {
+          "strength": 6,
+          "file": "selectric/6.png",
+          "grid": [
+            226,
+            226
+          ],
+          "palette": "Up to 14 ink colours",
+          "dither": false,
+          "sha256": "20fd3f5cdbc558980278e0a9ce7840d4439bc101f9c42723b159ff4dea5c4816"
+        },
+        {
+          "strength": 7,
+          "file": "selectric/7.png",
+          "grid": [
+            170,
+            170
+          ],
+          "palette": "Up to 5 ink colours",
+          "dither": false,
+          "sha256": "fabee0ac5414d1a224b66f329e4855b7307e4cdd5ec849e94600afb35bcbaec5"
+        },
+        {
+          "strength": 8,
+          "file": "selectric/8.png",
+          "grid": [
+            128,
+            128
+          ],
+          "palette": "Up to 2 ink colours",
+          "dither": false,
+          "sha256": "b7f466fe0be862a5627c69c83614327983f15bbd102072d298c3e1f1d28319d1"
+        }
+      ]
+    },
+    {
+      "mode": "wordstar",
+      "name": "WordStar 3.3",
+      "frames": [
+        {
+          "strength": 0,
+          "file": "../eight-styles/wordstar.png",
+          "grid": [
+            1254,
+            1254
+          ],
+          "palette": "Original colours",
+          "dither": false,
+          "sha256": "3adf984cf33582a150073ec3bfad085d28c17829d65e7e0c51c347d32d6cdc78"
+        },
+        {
+          "strength": 1,
+          "file": "wordstar/1.png",
+          "grid": [
+            992,
+            992
+          ],
+          "palette": "128 steps/channel",
+          "dither": false,
+          "sha256": "4e2808ad422bdbd7898cfb1a3e6f8deca4bd12911f34a42638ca2a6096fcccd6"
+        },
+        {
+          "strength": 2,
+          "file": "wordstar/2.png",
+          "grid": [
+            784,
+            784
+          ],
+          "palette": "32 steps/channel",
+          "dither": false,
+          "sha256": "1c13ecaf196c9be7421de7c91816945483af5fb321a58aad3be93572c75fcd4c"
+        },
+        {
+          "strength": 3,
+          "file": "wordstar/3.png",
+          "grid": [
+            620,
+            620
+          ],
+          "palette": "Up to 256 ink colours",
+          "dither": true,
+          "sha256": "b18811b5336751b5c270bd2f6156af39f866d9610a9ed4aae063b20f474e1c3a"
+        },
+        {
+          "strength": 4,
+          "file": "wordstar/4.png",
+          "grid": [
+            491,
+            491
+          ],
+          "palette": "Up to 111 ink colours",
+          "dither": true,
+          "sha256": "3ebbdf358f280f92ceb80db7e6c65f7034ce05b3b921d53ac6301a2009c6df37"
+        },
+        {
+          "strength": 5,
+          "file": "wordstar/5.png",
+          "grid": [
+            388,
+            388
+          ],
+          "palette": "Up to 49 ink colours",
+          "dither": true,
+          "sha256": "67da62f8e8c1ff9ec95e35c9d43ed738c42ca97f9ee689ac48c4a56f0d0a3f53"
+        },
+        {
+          "strength": 6,
+          "file": "wordstar/6.png",
+          "grid": [
+            307,
+            307
+          ],
+          "palette": "Up to 21 ink colours",
+          "dither": true,
+          "sha256": "35bc93e73732c24740ca59ba261999585de6e11ae9cf65d0bfc3b7e347fc2156"
+        },
+        {
+          "strength": 7,
+          "file": "wordstar/7.png",
+          "grid": [
+            243,
+            243
+          ],
+          "palette": "Up to 9 ink colours",
+          "dither": true,
+          "sha256": "3e60e5aba4d7e620495e096d7faf051950631e339ff5b0f7d7535fdd71a74f6a"
+        },
+        {
+          "strength": 8,
+          "file": "wordstar/8.png",
+          "grid": [
+            192,
+            192
+          ],
+          "palette": "Up to 4 ink colours",
+          "dither": true,
+          "sha256": "f0bbb7d44c0f244a3bd296cc96e234c63d98061d132c789ce46648355541b161"
+        }
+      ]
+    },
+    {
+      "mode": "macpaint",
+      "name": "MacPaint",
+      "frames": [
+        {
+          "strength": 0,
+          "file": "../eight-styles/macpaint.png",
+          "grid": [
+            1254,
+            1254
+          ],
+          "palette": "Original colours",
+          "dither": false,
+          "sha256": "82c81eba4f37faffb84fdbc5c050f9e4bcfaaf1ae26c1efc7cb1a1e8a427939e"
+        },
+        {
+          "strength": 1,
+          "file": "macpaint/1.png",
+          "grid": [
+            1082,
+            1082
+          ],
+          "palette": "128 steps/channel",
+          "dither": false,
+          "sha256": "99646641a3ab143d7482089d210b6b9547978174bb8842b51c18a3f5ab8dd3dc"
+        },
+        {
+          "strength": 2,
+          "file": "macpaint/2.png",
+          "grid": [
+            933,
+            933
+          ],
+          "palette": "32 steps/channel",
+          "dither": false,
+          "sha256": "882c7459997537252c9ece6e93d9022379f9febb8b66b22f26a238d548c83318"
+        },
+        {
+          "strength": 3,
+          "file": "macpaint/3.png",
+          "grid": [
+            805,
+            805
+          ],
+          "palette": "Up to 256 ink colours",
+          "dither": true,
+          "sha256": "9843b61a879f50b0d8292947ba2aaa345aa5468261f2db83bb072c288eb5a7fd"
+        },
+        {
+          "strength": 4,
+          "file": "macpaint/4.png",
+          "grid": [
+            694,
+            694
+          ],
+          "palette": "Up to 97 ink colours",
+          "dither": true,
+          "sha256": "f466b89a5d22e991392895dd5424cd249b42b66f9eccf80c6969a5646804b7c5"
+        },
+        {
+          "strength": 5,
+          "file": "macpaint/5.png",
+          "grid": [
+            599,
+            599
+          ],
+          "palette": "Up to 37 ink colours",
+          "dither": true,
+          "sha256": "5c43da7e15046d63b39205a7c758b0852954e7e3bb57e233a5fa221571ff9815"
+        },
+        {
+          "strength": 6,
+          "file": "macpaint/6.png",
+          "grid": [
+            516,
+            516
+          ],
+          "palette": "Up to 14 ink colours",
+          "dither": true,
+          "sha256": "b96e7b719407e7699b123d9e831f56bc6a3c36f354bf966506183395c3a5afc7"
+        },
+        {
+          "strength": 7,
+          "file": "macpaint/7.png",
+          "grid": [
+            445,
+            445
+          ],
+          "palette": "Up to 5 ink colours",
+          "dither": true,
+          "sha256": "d482c636915d4772092eb59089f9f8fe396335d3e8ce8dde1aedb35c4d3596dc"
+        },
+        {
+          "strength": 8,
+          "file": "macpaint/8.png",
+          "grid": [
+            384,
+            384
+          ],
+          "palette": "Up to 2 ink colours",
+          "dither": true,
+          "sha256": "72e8f2be47f3a8109f62e24a1cec6b2a0da4711fb51a427ad1da8b904cd28478"
+        }
+      ]
+    },
+    {
+      "mode": "print-shop",
+      "name": "The New Print Shop for DOS",
+      "frames": [
+        {
+          "strength": 0,
+          "file": "../level-8.png",
+          "grid": [
+            1254,
+            1254
+          ],
+          "palette": "Original colours",
+          "dither": false,
+          "sha256": "53b02ee28bc80c886224a18fdbd588f603a956d523c1f0333b9bb80eaeec6aec"
+        },
+        {
+          "strength": 1,
+          "file": "print-shop/1.png",
+          "grid": [
+            1028,
+            1028
+          ],
+          "palette": "128 steps/channel",
+          "dither": false,
+          "sha256": "be7d1397fe8339f9ced12da36c20b27e3bd845bafb187b3d259c6c4d8587ec13"
+        },
+        {
+          "strength": 2,
+          "file": "print-shop/2.png",
+          "grid": [
+            843,
+            843
+          ],
+          "palette": "32 steps/channel",
+          "dither": false,
+          "sha256": "f21acca7e1ec1efd04af6c50ced25fd62a30885f0f39d232eaeed7f9c748c335"
+        },
+        {
+          "strength": 3,
+          "file": "print-shop/3.png",
+          "grid": [
+            691,
+            691
+          ],
+          "palette": "Up to 256 ink colours",
+          "dither": true,
+          "sha256": "a0ccf3a16e5941ca088d4e1c81a41160b4c183f4caebe8a1577a3deb85af25fa"
+        },
+        {
+          "strength": 4,
+          "file": "print-shop/4.png",
+          "grid": [
+            567,
+            567
+          ],
+          "palette": "Up to 128 ink colours",
+          "dither": true,
+          "sha256": "b89b4927e6bdc150f0f7551bbfae5e2c9e4b79458f973f6b275f16f57b720739"
+        },
+        {
+          "strength": 5,
+          "file": "print-shop/5.png",
+          "grid": [
+            465,
+            465
+          ],
+          "palette": "Up to 64 ink colours",
+          "dither": true,
+          "sha256": "cff0daf8aa4e8a4788fd07a052758a4d93fd4bf98e455db918624c246fb6016e"
+        },
+        {
+          "strength": 6,
+          "file": "print-shop/6.png",
+          "grid": [
+            381,
+            381
+          ],
+          "palette": "Up to 32 ink colours",
+          "dither": true,
+          "sha256": "079684f36d21e06254fbf67a79434d28c899a7d37d170040c59cec48ecde621d"
+        },
+        {
+          "strength": 7,
+          "file": "print-shop/7.png",
+          "grid": [
+            312,
+            312
+          ],
+          "palette": "Up to 16 ink colours",
+          "dither": true,
+          "sha256": "f2d0b3109ba683276d1fd17b3827b7b3a8e3e2df83a35d7a1d86fd39ec87e6e6"
+        },
+        {
+          "strength": 8,
+          "file": "print-shop/8.png",
+          "grid": [
+            256,
+            256
+          ],
+          "palette": "Up to 8 ink colours",
+          "dither": true,
+          "sha256": "b7f1406cb0fb44174397c964f923060a5572401cc257a2c46bcbe72a7fb7f576"
+        }
+      ]
+    },
+    {
+      "mode": "deskmate",
+      "name": "Tandy DeskMate Draw",
+      "frames": [
+        {
+          "strength": 0,
+          "file": "../eight-styles/deskmate.png",
+          "grid": [
+            1254,
+            1254
+          ],
+          "palette": "Original colours",
+          "dither": false,
+          "sha256": "4d880f609e7c755fbab8272223b5685b39e175faf22b949c2f17ed7f5d6ed39f"
+        },
+        {
+          "strength": 1,
+          "file": "deskmate/1.png",
+          "grid": [
+            1057,
+            1057
+          ],
+          "palette": "128 steps/channel",
+          "dither": false,
+          "sha256": "9506a627d7c121ca2d74a07bf9df1a5f24df40de3470b06379654bd8f5d6a977"
+        },
+        {
+          "strength": 2,
+          "file": "deskmate/2.png",
+          "grid": [
+            891,
+            891
+          ],
+          "palette": "32 steps/channel",
+          "dither": false,
+          "sha256": "01bc4a28878ab16b76d515074830b928ef2d921a21411b1c5af534c9df1a7e1c"
+        },
+        {
+          "strength": 3,
+          "file": "deskmate/3.png",
+          "grid": [
+            751,
+            751
+          ],
+          "palette": "Up to 256 ink colours",
+          "dither": false,
+          "sha256": "e4501dc725f3b71c496656d5af68bc3a61640f2e082cb6b63e1954e488aea08c"
+        },
+        {
+          "strength": 4,
+          "file": "deskmate/4.png",
+          "grid": [
+            633,
+            633
+          ],
+          "palette": "Up to 147 ink colours",
+          "dither": false,
+          "sha256": "f7a21e4727bc57bd859539fd00e8d06a06878a5931600fc241fcf2a65e9f78ef"
+        },
+        {
+          "strength": 5,
+          "file": "deskmate/5.png",
+          "grid": [
+            534,
+            534
+          ],
+          "palette": "Up to 84 ink colours",
+          "dither": false,
+          "sha256": "167822011a6885ad8e458905e894e37563fb46d89a869d1598e447533463bedf"
+        },
+        {
+          "strength": 6,
+          "file": "deskmate/6.png",
+          "grid": [
+            450,
+            450
+          ],
+          "palette": "Up to 49 ink colours",
+          "dither": false,
+          "sha256": "8dd785a61c9a5234ab223268b5fe600ffccb7c4b03a93915d93500fe1906cc8b"
+        },
+        {
+          "strength": 7,
+          "file": "deskmate/7.png",
+          "grid": [
+            380,
+            380
+          ],
+          "palette": "Up to 28 ink colours",
+          "dither": false,
+          "sha256": "c630ef4fb76bddb8a2c5d38cebc85d7239e357320f54d54b72d5d2aa8e077757"
+        },
+        {
+          "strength": 8,
+          "file": "deskmate/8.png",
+          "grid": [
+            320,
+            320
+          ],
+          "palette": "Up to 16 ink colours",
+          "dither": false,
+          "sha256": "f2cb93a85cf1a7a2996b9f960617c35fba8b656aeb3ceedf9bbfd60545759707"
+        }
+      ]
+    },
+    {
+      "mode": "geoworks",
+      "name": "GeoWorks Ensemble",
+      "frames": [
+        {
+          "strength": 0,
+          "file": "../eight-styles/geoworks.png",
+          "grid": [
+            1254,
+            1254
+          ],
+          "palette": "Original colours",
+          "dither": false,
+          "sha256": "a0cc5d24c8ec2b1bcce2d02d0260c858f8f5aeb5e54e667c3b4746a9e4f5bd76"
+        },
+        {
+          "strength": 1,
+          "file": "geoworks/1.png",
+          "grid": [
+            1121,
+            1121
+          ],
+          "palette": "128 steps/channel",
+          "dither": false,
+          "sha256": "31550cdd082a53528ae8905cc06833f7703d61bf6f67a99c5b1a4e7525117fef"
+        },
+        {
+          "strength": 2,
+          "file": "geoworks/2.png",
+          "grid": [
+            1002,
+            1002
+          ],
+          "palette": "32 steps/channel",
+          "dither": false,
+          "sha256": "07cf060f414d6d8490ba68004a50bf559d6511fda1113d209e1f65ba5d18f8e9"
+        },
+        {
+          "strength": 3,
+          "file": "geoworks/3.png",
+          "grid": [
+            896,
+            896
+          ],
+          "palette": "Up to 256 ink colours",
+          "dither": true,
+          "sha256": "b0e51aa3fb73171b453a34073c87285b51100a874dd4bc770fa3d056d3f60eb1"
+        },
+        {
+          "strength": 4,
+          "file": "geoworks/4.png",
+          "grid": [
+            801,
+            801
+          ],
+          "palette": "Up to 169 ink colours",
+          "dither": true,
+          "sha256": "f6e09b16f463f12a88c48610e278e2ae8d30ff647e64e72ea5ad939ec0a00ea7"
+        },
+        {
+          "strength": 5,
+          "file": "geoworks/5.png",
+          "grid": [
+            716,
+            716
+          ],
+          "palette": "Up to 111 ink colours",
+          "dither": true,
+          "sha256": "55997e7e0e74076ebdd493f66bd6296d25892f97264cc53b2dadb338f3478940"
+        },
+        {
+          "strength": 6,
+          "file": "geoworks/6.png",
+          "grid": [
+            641,
+            641
+          ],
+          "palette": "Up to 74 ink colours",
+          "dither": true,
+          "sha256": "479b2a17689d60e7c7c3efe15b57aad04397f6e284152b7c911d1b9c14696cfe"
+        },
+        {
+          "strength": 7,
+          "file": "geoworks/7.png",
+          "grid": [
+            573,
+            573
+          ],
+          "palette": "Up to 49 ink colours",
+          "dither": true,
+          "sha256": "ce75914b88d5cd7e81e155dc5f5ad0c80eed2274b76ef89e4204e71fbe89b6e9"
+        },
+        {
+          "strength": 8,
+          "file": "geoworks/8.png",
+          "grid": [
+            512,
+            512
+          ],
+          "palette": "Up to 32 ink colours",
+          "dither": true,
+          "sha256": "5eec5c1a6212294c560d4e62b9fbd68e4d282ee2df4389718b685b0c21f85333"
+        }
+      ]
+    },
+    {
+      "mode": "pagemaker",
+      "name": "PageMaker / LaserWriter PostScript",
+      "frames": [
+        {
+          "strength": 0,
+          "file": "../eight-styles/pagemaker.png",
+          "grid": [
+            1254,
+            1254
+          ],
+          "palette": "Original colours",
+          "dither": false,
+          "sha256": "1ecc05763534c1539501bfe190d35e44031ddcf146a15e7336f09df8fec0e29a"
+        },
+        {
+          "strength": 1,
+          "file": "pagemaker/1.png",
+          "grid": [
+            1179,
+            1179
+          ],
+          "palette": "128 steps/channel",
+          "dither": false,
+          "sha256": "5aa0054febd72fcf49d59c6a174b6641b8c648147d92f136520317ebe3f07eea"
+        },
+        {
+          "strength": 2,
+          "file": "pagemaker/2.png",
+          "grid": [
+            1109,
+            1109
+          ],
+          "palette": "32 steps/channel",
+          "dither": false,
+          "sha256": "6b6f1a51eef4aa8059adf8ddb3e65cd033ea435e037082b3d9de42fde4022346"
+        },
+        {
+          "strength": 3,
+          "file": "pagemaker/3.png",
+          "grid": [
+            1043,
+            1043
+          ],
+          "palette": "Up to 256 ink colours",
+          "dither": true,
+          "sha256": "616cc20442db0dceebd5ef7aed37ef2ed81a0924c3ecaebaba88be7401de3f07"
+        },
+        {
+          "strength": 4,
+          "file": "pagemaker/4.png",
+          "grid": [
+            981,
+            981
+          ],
+          "palette": "Up to 194 ink colours",
+          "dither": true,
+          "sha256": "f60109d81906ecdac0997d81cb9da83c7007df4696dc446c20d876b760816aaf"
+        },
+        {
+          "strength": 5,
+          "file": "pagemaker/5.png",
+          "grid": [
+            923,
+            923
+          ],
+          "palette": "Up to 147 ink colours",
+          "dither": true,
+          "sha256": "133e3ea903f206e3d248d26fee84188c8771a45f1c6e5bfe2a45ee48d7feb138"
+        },
+        {
+          "strength": 6,
+          "file": "pagemaker/6.png",
+          "grid": [
+            868,
+            868
+          ],
+          "palette": "Up to 111 ink colours",
+          "dither": true,
+          "sha256": "b2b6fb7d672fef6871adf230a8b329cb08f130b55a6783c87044fa9e41f06a0e"
+        },
+        {
+          "strength": 7,
+          "file": "pagemaker/7.png",
+          "grid": [
+            817,
+            817
+          ],
+          "palette": "Up to 84 ink colours",
+          "dither": true,
+          "sha256": "0f2e64202bd5d0a3960db92bc28d7e078c6a37f65d3ad0305345393b3d772335"
+        },
+        {
+          "strength": 8,
+          "file": "pagemaker/8.png",
+          "grid": [
+            768,
+            768
+          ],
+          "palette": "Up to 64 ink colours",
+          "dither": true,
+          "sha256": "4204e36afde4b52b32ca8676c86de247b23b97c027eaa43cfb6829126c347ec9"
+        }
+      ]
+    },
+    {
+      "mode": "windows-truetype",
+      "name": "Windows 3.1 TrueType",
+      "frames": [
+        {
+          "strength": 0,
+          "file": "../eight-styles/windows-truetype.png",
+          "grid": [
+            1254,
+            1254
+          ],
+          "palette": "Original colours",
+          "dither": false,
+          "sha256": "b8ddd3a00ef4d52f091086b4b6de30250fbb32a9021b5f7a40bc2bef116ea80f"
+        },
+        {
+          "strength": 1,
+          "file": "windows-truetype/1.png",
+          "grid": [
+            1202,
+            1202
+          ],
+          "palette": "128 steps/channel",
+          "dither": false,
+          "sha256": "f66abeda36718fac5ea30651bd6281f4dfc15d209c5688be4eacf20576e5d832"
+        },
+        {
+          "strength": 2,
+          "file": "windows-truetype/2.png",
+          "grid": [
+            1153,
+            1153
+          ],
+          "palette": "32 steps/channel",
+          "dither": false,
+          "sha256": "de1d588ba7e9b615812ca6369fc60911074bbe7af0a67a21d5d58052d1affd9f"
+        },
+        {
+          "strength": 3,
+          "file": "windows-truetype/3.png",
+          "grid": [
+            1105,
+            1105
+          ],
+          "palette": "Up to 256 ink colours",
+          "dither": false,
+          "sha256": "5d87595edd99265f66df2bcd1ed8f30f0d121c3ff648801955ac4b54aebbf0cb"
+        },
+        {
+          "strength": 4,
+          "file": "windows-truetype/4.png",
+          "grid": [
+            1060,
+            1060
+          ],
+          "palette": "Up to 223 ink colours",
+          "dither": false,
+          "sha256": "87cfe189a0cecb9244cd7937d06780c90af251f0d4233138219f3fa5baa0a63c"
+        },
+        {
+          "strength": 5,
+          "file": "windows-truetype/5.png",
+          "grid": [
+            1016,
+            1016
+          ],
+          "palette": "Up to 194 ink colours",
+          "dither": false,
+          "sha256": "3c96693bbe3378c8095af6068ee920de6ea19a63e9652986009b556606e1adfe"
+        },
+        {
+          "strength": 6,
+          "file": "windows-truetype/6.png",
+          "grid": [
+            975,
+            975
+          ],
+          "palette": "Up to 169 ink colours",
+          "dither": false,
+          "sha256": "f0d22a4daca9c059279ff7c725200ffc10face211481d31a389f29131cd65aa3"
+        },
+        {
+          "strength": 7,
+          "file": "windows-truetype/7.png",
+          "grid": [
+            934,
+            934
+          ],
+          "palette": "Up to 147 ink colours",
+          "dither": false,
+          "sha256": "cafb15f5499bb69f70b1798779d5dc12e3a2e65d774f5161700c7c5874e5e661"
+        },
+        {
+          "strength": 8,
+          "file": "windows-truetype/8.png",
+          "grid": [
+            896,
+            896
+          ],
+          "palette": "Up to 128 ink colours",
+          "dither": false,
+          "sha256": "4e3c22e092b2ad2c84fd9a2e539dbbedde84e4b1087c7aa2b3a4bd50c4808530"
+        }
+      ]
+    }
+  ]
+}
