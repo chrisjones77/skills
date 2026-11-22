@@ -1,0 +1,57 @@
+{
+  "mode": "print-shop",
+  "raster_strength": 0,
+  "printer": "clean",
+  "brief": "brief.txt",
+  "reference": "Wasi River Bluegrass catalogue, music-site/assets/catalogue/states-of-mind.jpeg",
+  "visual_review": "Compared the nine covers for title wording, the seven state names and sequence, the bridge motif, and the change in page construction. Capitalization and line breaks vary. Incidental inscriptions are optional in this brief. Fine illustrated details vary even at low strength.",
+  "creative_acceptance": "not recorded",
+  "physical_print": "not tested",
+  "frames": [
+    {
+      "strength": 0,
+      "file": "level-0.jpeg",
+      "sha256": "fa026dc42e05e291c1d496a940db52885cab04b1233ff1854b23af1565e24f57"
+    },
+    {
+      "strength": 1,
+      "file": "level-1.png",
+      "sha256": "82e43f719617c2117f00f0071159d0e55d8e36bbcb71e5ec960fda13089047a7"
+    },
+    {
+      "strength": 2,
+      "file": "level-2.png",
+      "sha256": "ac55eb4798eb1fabd1d8579a87d54c4c48ea2927b92456ccbdf45375935b36c6"
+    },
+    {
+      "strength": 3,
+      "file": "level-3.png",
+      "sha256": "600e8056bf7add2f48cd7a9e9f5f3e89d3a22d830b20b6d2305ad52952697376"
+    },
+    {
+      "strength": 4,
+      "file": "level-4.png",
+      "sha256": "4255c0e57203de27a20831dc4c062901ec0eb64782785e25b3d8a90e5e5a65a2"
+    },
+    {
+      "strength": 5,
+      "file": "level-5.png",
+      "sha256": "70285754b65c0401c016a5066ae6b0f059cd6f73fda60d27aca660014b8f47ae"
+    },
+    {
+      "strength": 6,
+      "file": "level-6.png",
+      "sha256": "3cb5dada6db324a1cb8a75186893b917435c12829ad9bdd10edd98b74d62303a"
+    },
+    {
+      "strength": 7,
+      "file": "level-7.png",
+      "sha256": "7aa4a3c2dd79d17ab6de6372201b941d3cb97b5355c049fada83f87fac185475"
+    },
+    {
+      "strength": 8,
+      "file": "level-8.png",
+      "sha256": "53b02ee28bc80c886224a18fdbd588f603a956d523c1f0333b9bb80eaeec6aec"
+    }
+  ]
+}
