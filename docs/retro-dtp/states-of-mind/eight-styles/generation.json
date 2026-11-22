@@ -1,0 +1,90 @@
+{
+  "generator": "OpenAI built-in image generator",
+  "source": "../level-0.jpeg",
+  "source_sha256": "fa026dc42e05e291c1d496a940db52885cab04b1233ff1854b23af1565e24f57",
+  "design_strength": 8,
+  "raster_strength": 0,
+  "printer": "clean",
+  "covers": [
+    {
+      "preset": "selectric",
+      "file": "selectric.png",
+      "sha256": "3ba1ef14474b37dbc64832c8282524640a63d4ac7b1e17783354c82804cbc56f",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "prompt": "Design preset: IBM Selectric. Design strength: 8/8.\n\nUse the simplest credible native construction from a blank sheet. Every visible element must have a specific creation method in the selected toolset. Prioritize exact required words, one organizing device and the essential identifier. At most one pictorial motif for a graphic preset; use character placement for a text preset.\n\nUse the normal image generator to make a new composition at the requested aspect ratio. For an existing image, use its original as the content reference for every revision. For a new image, use the user's subject brief directly. Identify the subject, exact required words in reading order, essential identifiers, optional motifs and incidental decoration. Preserve all required words and relationships. When text will not fit, simplify the art or reflow the text. Use only supplied wording. Give the generator a concrete page plan naming the type, image objects, positions, replacements and omissions. Generate the image, then compare the actual result to that plan. If it retains an excluded scene, uses unavailable tools or misspells required copy, correct that specific fault before delivery. Apply a separate paper, ink, dot or pixel treatment only when requested.\n\nAvailable tools: One fixed-pitch type element, one character size, ribbon strikes, tab stops, carriage returns, spaces and underscore overstrikes.\n\nNative composition: Build a typed title sheet. Use vertical position, underlining and blank lines to distinguish the title. Put a sequence into aligned typed rows. Translate a pictorial identifier into its supplied name or a tiny arrangement of keyboard characters when needed.\n\nExclude: Photographs, pasted pictures, drawn borders, proportional or oversized display faces and decorative stamp art.\n\nInspect the rebuilt elements: Point to the key, carriage movement or overstrike that could have made every mark.\n\nSubject and required content:\nRemake the attached square Wasi River Bluegrass record cover as a clean typed track index, strictly feasible on an IBM Selectric with one fixed-pitch pica element. Make a full square of clean off-white paper, photographed perfectly square-on and flat, with a single black ribbon. The whole design consists of the following nine exact text lines in mixed case:\nWasi River Bluegrass\nStates of Mind\nRage\nRest\nGrief\nAbsurdity\nCompliance\nMachinery Memory\nTranscendence\n\nUse a single element at exactly the same size throughout and generously spaced character cells. Left-align all nine lines at a tab stop about one fifth of the sheet in from the left. Band name and album title occupy the upper left quadrant, two typewriter lines apart. Underline the album title by overstriking underscores. Leave three blank lines, then type the seven names as a list at a five-character indent. Let the list fill the middle third vertically and leave the remaining paper empty. Use real, readable typewriter proportions; every capital of the same letter occupies the same-sized impression everywhere. No drawn objects, pictures, border, labels, numbering, sheet shadow, mockup, distressing or fake typewriter sitting in the scene. The original bridge and instruments are incidental scenery and are omitted in this text-only version. Output one printable cover."
+    },
+    {
+      "preset": "wordstar",
+      "file": "wordstar.png",
+      "sha256": "3adf984cf33582a150073ec3bfad085d28c17829d65e7e0c51c347d32d6cdc78",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "prompt": "Use the reference exclusively for the original words of a square album cover. Rebuild from blank white paper as plain fixed-pitch ASCII typescript from WordStar 3.3 at design 8/8. Every glyph on the page is the SAME height and width, heading and body ALIKE. Use Courier type throughout, 12-pitch, 60 characters of horizontal space. Make the TEXT BLOCK comfortably inset and modest, with space at all margins. Horizontal lines consist only of typed hyphens. Upper and lower case exactly as supplied. Layout the following lines on a fixed character grid, respecting the relative indentation, two empty lines before the list. All lines from one daisywheel face, regular black, with only a slightly heavier album title.\n \n               Wasi River Bluegrass\n                 States of Mind\n          ----------------------------\n\n          Rage\n          Rest\n          Grief\n          Absurdity\n          Compliance\n          Machinery Memory\n          Transcendence\n\nWhite clean background, square, front cover only. Print exactly this formatted text. Do not add a display heading, logo, picture, shadow, wooden signs, ageing, border, numbers or genre label. Identical character scale on every line is the priority. Design hierarchy comes from centring and indentation alone."
+    },
+    {
+      "preset": "macpaint",
+      "file": "macpaint.png",
+      "sha256": "82c81eba4f37faffb84fdbc5c050f9e4bcfaaf1ae26c1efc7cb1a1e8a427939e",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "prompt": "Redesign the attached Wasi River Bluegrass album cover from a blank square sheet, design strength 8/8, raster strength 0, clean output. It is the CONTENT reference, not a layout to preserve. Emit only the square front cover, edge to edge, viewed flat, without environment or mockup. The complete required words, in reading order and exactly once per item, are:\nWasi River Bluegrass\nStates of Mind\nRage\nRest\nGrief\nAbsurdity\nCompliance\nMachinery Memory\nTranscendence\nOmit every other word, number, slogan and inscription including any software or style label. Keep the seven state names in the given order. Rebuild according to this native toolset:\nOriginal Macintosh MacPaint. ONE-BIT black and white pixel drawing, a single large black, heavily stairstepped bridge silhouette over a compact patch of regular bitmap water pattern. No shades of grey apart from mark density. Asymmetric left-justified composition: two lines of big Chicago-like bitmap display type at the upper left, the single bridge picture spreading across the middle of the page, then the seven names in one clearly readable compact left column. Big, deliberate pixels and open white; zero faux paper, zero app UI."
+    },
+    {
+      "preset": "print-shop",
+      "file": "../level-8.png",
+      "sha256": "53b02ee28bc80c886224a18fdbd588f603a956d523c1f0333b9bb80eaeec6aec",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "prompt": "Remake the supplied “Wasi River Bluegrass States of Mind” album cover from a blank page as a square sign that a home user could compose in The New Print Shop for DOS, at maximum design constraint (8/8). Return one finished, front-on, edge-to-edge square page, suitable for an album cover. No surroundings.\n\nContent to carry over: the band name, the album title, all seven state names in order, and one single-span through-truss bridge over a river as the sole pictorial motif. All other incidental inscriptions, slogans, objects, landscape, wooden signboards, lighting, gold flourishes and oversized instruments are excluded from this version.\n\nConstruction: warm white paper, charcoal black lettering, one dark teal spot ink on the small original bridge stamp. A thin repeat of a tiny stepped square-and-diamond unit frames four sides with generous inset. Top quarter: the words “Wasi River Bluegrass” set on a flat baseline in compact proportional bitmap capitals and lowercase, with evident stairsteps in diagonals. Just below: “States of Mind” larger in a second independently centred line, a stout bitmap slab serif, also on a straight baseline. Middle: a modest WIDTH single bitmapped rubber-stamp graphic of the bridge and three short river ripples, in a low wide rectangle, with ample unprinted paper around it. Bottom: in a single neat centred column, seven separately set, readable small lines in precisely this order: Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. The slashes denote line breaks; omit them on the page. No extra words, icons, numbers, plaques or captions. No camera image, optical shadows, curved type, embossed ink, paper distress, antialiased modern script or atmospheric effects. Keep the drawing and lettering a deliberately finite set of printable objects, and the finished output crisp and high-resolution."
+    },
+    {
+      "preset": "deskmate",
+      "file": "deskmate.png",
+      "sha256": "4d880f609e7c755fbab8272223b5685b39e175faf22b949c2f17ed7f5d6ed39f",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "prompt": "Redesign the attached Wasi River Bluegrass album cover from a blank square sheet, design strength 8/8, raster strength 0, clean output. It is the CONTENT reference, not a layout to preserve. Emit only the square front cover, edge to edge, viewed flat, without environment or mockup. The complete required words, in reading order and exactly once per item, are:\nWasi River Bluegrass\nStates of Mind\nRage\nRest\nGrief\nAbsurdity\nCompliance\nMachinery Memory\nTranscendence\nOmit every other word, number, slogan and inscription including any software or style label. Keep the seven state names in the given order. Rebuild according to this native toolset:\nTandy DeskMate Draw for DOS. Use its plain outlined drawing primitives to construct a side elevation of ONE simple through-truss bridge above the titles: thin dark-blue open polylines, rectangles for piers and one region of pale cyan patterned fill for water on white. Home-computer drawing, flat unshaded geometric fills, precise simple edges. Independently position ONE centred line of upright Roman lettering per line, title and names, generous margin. Keep the line drawing visibly hollow and wiry with a little dark rusty-red detail, not a solid stamp. Seven short separate names below the headings."
+    },
+    {
+      "preset": "geoworks",
+      "file": "geoworks.png",
+      "sha256": "a0cc5d24c8ec2b1bcce2d02d0260c858f8f5aeb5e54e667c3b4746a9e4f5bd76",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "prompt": "Redesign the attached Wasi River Bluegrass album cover from a blank square sheet, design strength 8/8, raster strength 0, clean output. It is the CONTENT reference, not a layout to preserve. Emit only the square front cover, edge to edge, viewed flat, without environment or mockup. The complete required words, in reading order and exactly once per item, are:\nWasi River Bluegrass\nStates of Mind\nRage\nRest\nGrief\nAbsurdity\nCompliance\nMachinery Memory\nTranscendence\nOmit every other word, number, slogan and inscription including any software or style label. Keep the seven state names in the given order. Rebuild according to this native toolset:\nGeoWorks Ensemble GeoDraw / GeoWrite. Early PC GEOS vector graphics poster. Build a narrow LEFT-hand column of text, with the artist in modest scalable sans then a much larger two-line serif album title above the seven clearly aligned short name lines. Place ONE large independently positioned geometric truss bridge graphic across the RIGHT half, substantially diagonally up the page, built from flat teal and black vector objects. White page, deliberate masthead and single fine horizontal rule. Optical alignment and clean typography. A striking asymmetric editorial page with ample paper. No pixel font, fake ribbon, gradients or simulated desktop."
+    },
+    {
+      "preset": "pagemaker",
+      "file": "pagemaker.png",
+      "sha256": "1ecc05763534c1539501bfe190d35e44031ddcf146a15e7336f09df8fec0e29a",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "prompt": "Redesign the attached Wasi River Bluegrass album cover from a blank square sheet, design strength 8/8, raster strength 0, clean output. It is the CONTENT reference, not a layout to preserve. Emit only the square front cover, edge to edge, viewed flat, without environment or mockup. The complete required words, in reading order and exactly once per item, are:\nWasi River Bluegrass\nStates of Mind\nRage\nRest\nGrief\nAbsurdity\nCompliance\nMachinery Memory\nTranscendence\nOmit every other word, number, slogan and inscription including any software or style label. Keep the seven state names in the given order. Rebuild according to this native toolset:\nEarly Aldus PageMaker and Apple LaserWriter Level 1 PostScript, pure black ink on white. A literary press title page on a measured centred axis with a broad white margin. Set the band modestly in Times-like italic, then album title prominently on ONE line in a classic refined roman serif. Below, ONE small placed monochrome finely engraved bridge vignette, physically separate from the type, then a short fine hairline and the seven state names each on its own centred line in readable book roman. Elegant optical spacing, contrasting thick and hairline curves, a laser-crisp page. No border, no color or weathering."
+    },
+    {
+      "preset": "windows-truetype",
+      "file": "windows-truetype.png",
+      "sha256": "b8ddd3a00ef4d52f091086b4b6de30250fbb32a9021b5f7a40bc2bef116ea80f",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "prompt": "Redesign the attached Wasi River Bluegrass album cover from a blank square sheet, design strength 8/8, raster strength 0, clean output. It is the CONTENT reference, not a layout to preserve. Emit only the square front cover, edge to edge, viewed flat, without environment or mockup. The complete required words, in reading order and exactly once per item, are:\nWasi River Bluegrass\nStates of Mind\nRage\nRest\nGrief\nAbsurdity\nCompliance\nMachinery Memory\nTranscendence\nOmit every other word, number, slogan and inscription including any software or style label. Keep the seven state names in the given order. Rebuild according to this native toolset:\nFirst-generation Windows 3.1 TrueType. Type-led square sleeve from an office word processor. Start a bold flush-left Arial-like sans masthead with the band name on two lines, arrange the album title beneath in large Times New Roman-like italic. One simple horizontal rule, followed by seven prominent left-aligned mixed-case names in a single consistent serif paragraph style on separate lines. Only black and one restrained deep navy heading, paper white. Deliberately type-only. No pictures, no wooden objects, no effects, no desktop, no extra labels. Simple word-processing alignment, scale and paragraph spacing should explain every mark."
+    }
+  ]
+}
