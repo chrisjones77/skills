@@ -1,0 +1,532 @@
+{
+  "design_strengths": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "raster_strength": 0,
+  "printer": "clean",
+  "original": "../level-0.jpeg",
+  "generator": "OpenAI built-in image generator",
+  "brief": "../brief.txt",
+  "existing_print_shop": "../review.json",
+  "existing_endpoints": "../eight-styles/generation.json",
+  "new_compositions": 49,
+  "new_image_storage": "Lossless WebP; decoded pixels checked against the generated PNGs.",
+  "styles": [
+    {
+      "mode": "selectric",
+      "covers": [
+        {
+          "strength": 0,
+          "file": "../level-0.jpeg",
+          "sha256": "fa026dc42e05e291c1d496a940db52885cab04b1233ff1854b23af1565e24f57"
+        },
+        {
+          "strength": 1,
+          "file": "selectric/1.webp",
+          "sha256": "d3c7f6a2b3bb11fec94eb48a1f8d610cebf884c4943e53c4785f0f8a429a5bee",
+          "page_plan": "Replace just the small arched album subtitle with a straight narrow slip typed in fixed-pitch Courier. Keep the huge ornate band name, wooden sign stack, instruments and river scene.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: IBM Selectric. Design strength 1/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the original hierarchy, layout and motifs. Replace one typographic or placement decision with the preset's convention.\nSpecific page plan: Replace just the small arched album subtitle with a straight narrow slip typed in fixed-pitch Courier. Keep the huge ornate band name, wooden sign stack, instruments and river scene.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 2,
+          "file": "selectric/2.webp",
+          "sha256": "593decb048a427494f184628fac10c8047e8e2e415dd327845389dfdbdca8501",
+          "page_plan": "Replace both title regions with one cream typed letterhead area, band on one line, album beneath with underscore overstrikes. Keep the dimensional colour scene and wooden signs below it.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: IBM Selectric. Design strength 2/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the major regions. Reset the headline and supporting type with the preset's alignments and size choices. Simplify one ornamental element.\nSpecific page plan: Replace both title regions with one cream typed letterhead area, band on one line, album beneath with underscore overstrikes. Keep the dimensional colour scene and wooden signs below it.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 3,
+          "file": "selectric/3.webp",
+          "sha256": "a91dc886daa5ba4b542d393a9be2ba50a0dd54931b7f65a347bbabb254ddba18",
+          "page_plan": "Keep a small area of river scenery and the stacked wooden signs, but replace the focal bridge with an unmistakably typewritten bridge made of repeated /, backslash, underscore and vertical strokes on a slip. Type the titles flat above.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: IBM Selectric. Design strength 3/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the focal subject and reading order. Redraw its main motif with the preset's tools or translate it into words for a text-only preset. Group secondary detail.\nSpecific page plan: Keep a small area of river scenery and the stacked wooden signs, but replace the focal bridge with an unmistakably typewritten bridge made of repeated /, backslash, underscore and vertical strokes on a slip. Type the titles flat above.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 4,
+          "file": "selectric/4.webp",
+          "sha256": "a64f1f0873e1a8b1188adc3700e4281f655263e2ee881b917039bfa32889b9de",
+          "page_plan": "Recompose as a typed title sheet with one small photographic river-and-bridge clipping in the upper right. Reflow the seven wooden signs into seven typed rows down the left. Only the clipping is pictorial.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: IBM Selectric. Design strength 4/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Recompose the page. Establish a fresh type area and a distinct image or information area. Rebuild two or three essential motifs; collapse incidental objects into labels, simple marks or open space.\nSpecific page plan: Recompose as a typed title sheet with one small photographic river-and-bridge clipping in the upper right. Reflow the seven wooden signs into seven typed rows down the left. Only the clipping is pictorial.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 5,
+          "file": "selectric/5.webp",
+          "sha256": "522a8c1d7f8d8e2307987b2943d312085f6cc8479f85f19f5630343066210dcf",
+          "page_plan": "Give over the entire composition to one fixed-pitch element. Two typed lines at top left, then a wide keyboard-character bridge drawing over a river line, then an indented column of seven names. All marks come from a keyboard.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: IBM Selectric. Design strength 5/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Let the preset determine hierarchy and alignment across the whole page. Merge secondary scenes into one supporting group. Use a single consistent visual vocabulary.\nSpecific page plan: Give over the entire composition to one fixed-pitch element. Two typed lines at top left, then a wide keyboard-character bridge drawing over a river line, then an indented column of seven names. All marks come from a keyboard.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 6,
+          "file": "selectric/6.webp",
+          "sha256": "64c8ff9fb59e2eadd87ecd85073f3fb4b041a163dc5269acddbec2e15fe94832",
+          "page_plan": "Type the title and artist at one size, align a neat tabbed list, reduce the bridge to three short lines of typewriter character art. Single black ink on plain paper, no pasted scenery.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: IBM Selectric. Design strength 6/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Rebuild from a blank sheet. Restrict each visible object, type treatment and alignment to the preset's tools. Replace unsupported motifs. Remove incidental set dressing.\nSpecific page plan: Type the title and artist at one size, align a neat tabbed list, reduce the bridge to three short lines of typewriter character art. Single black ink on plain paper, no pasted scenery.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 7,
+          "file": "selectric/7.webp",
+          "sha256": "a345be64b5f1fa5a6272d241914ff0ff746412c728982cf6a18b023ca3b69d6b",
+          "page_plan": "Leave a tiny one-line /\\/\\ bridge gesture between the typed title and the seven-name list. One fixed-pitch type element, left margin and tab stops, ample blank paper. No other pictures.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: IBM Selectric. Design strength 7/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Use the strict capability recipe throughout. Keep only the smallest set of image objects that communicates the subject. Consolidate recurring decorations into a single repeatable device.\nSpecific page plan: Leave a tiny one-line /\\/\\ bridge gesture between the typed title and the seven-name list. One fixed-pitch type element, left margin and tab stops, ample blank paper. No other pictures.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 8,
+          "file": "../eight-styles/selectric.png",
+          "sha256": "3ba1ef14474b37dbc64832c8282524640a63d4ac7b1e17783354c82804cbc56f"
+        }
+      ]
+    },
+    {
+      "mode": "wordstar",
+      "covers": [
+        {
+          "strength": 0,
+          "file": "../level-0.jpeg",
+          "sha256": "fa026dc42e05e291c1d496a940db52885cab04b1233ff1854b23af1565e24f57"
+        },
+        {
+          "strength": 1,
+          "file": "wordstar/1.webp",
+          "sha256": "96c452a480e5fa24f5c6c916826a0cb97716b745c7a52e6ba3990f6d48c22a4e",
+          "page_plan": "Reset only the album subtitle as a centred fixed-pitch WordStar heading on a plain narrow strip. Preserve the ornate band lettering and virtually the entire original scene with stacked signs.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: WordStar 3.3. Design strength 1/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the original hierarchy, layout and motifs. Replace one typographic or placement decision with the preset's convention.\nSpecific page plan: Reset only the album subtitle as a centred fixed-pitch WordStar heading on a plain narrow strip. Preserve the ornate band lettering and virtually the entire original scene with stacked signs.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 2,
+          "file": "wordstar/2.webp",
+          "sha256": "081ac0911ca85bf42589ad4c457d056c47229a35963c0843bb00229c2695d4a1",
+          "page_plan": "Replace the large ornate band and curved album lettering with a centred fixed-pitch bulletin masthead bounded by typed hyphens; preserve the colour river scene and seven wooden signs.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: WordStar 3.3. Design strength 2/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the major regions. Reset the headline and supporting type with the preset's alignments and size choices. Simplify one ornamental element.\nSpecific page plan: Replace the large ornate band and curved album lettering with a centred fixed-pitch bulletin masthead bounded by typed hyphens; preserve the colour river scene and seven wooden signs.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 3,
+          "file": "wordstar/3.webp",
+          "sha256": "5402ac1e023809229a4c69925101370044cff38c07b499a1c2d75f0044a44102",
+          "page_plan": "Keep the source's scenic layout, but translate the focal bridge into a monospaced character drawing inside a rectangular inset. Put the title in a centred fixed-pitch text header. Keep state names on simplified signs in scene.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: WordStar 3.3. Design strength 3/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the focal subject and reading order. Redraw its main motif with the preset's tools or translate it into words for a text-only preset. Group secondary detail.\nSpecific page plan: Keep the source's scenic layout, but translate the focal bridge into a monospaced character drawing inside a rectangular inset. Put the title in a centred fixed-pitch text header. Keep state names on simplified signs in scene.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet.",
+          "revision_prompt": "Produce one square States of Mind cover at Retro-DTP wordstar design strength 3/8. First reference fixes the subject and copy, second shows the 8/8 style endpoint. Compose a NEW intermediate layout at 3/8. For this partial 3/8 use the photo-realistic scenic arrangement of the FIRST reference, rich colour instruments, water and banks and a vertical stack of simplified wood plaques. Precisely replace the bridge region ONLY with a small paper rectangle holding a clearly typewritten 3-line character-art bridge. Use a cream typed masthead with black fixed-pitch titles; keep the rest of the photographic scene in colour. This is a paste-up halfway toward a printed bulletin, never a blue screen. Source two supplies the desired type, not its final minimal division of space.\nExact required words, in order and once each: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Slashes are line breaks. No added words. Flat cover only. Raster 0, no separate printer or surface distress effect."
+        },
+        {
+          "strength": 4,
+          "file": "wordstar/4.webp",
+          "sha256": "57b6252e23fff824c2bbaa7d68dbf8776fd78bee712c404881d4457ad789f2f9",
+          "page_plan": "Recompose as a word-processed bulletin in a fixed text measure. Centre two title lines; indent the seven names under a repeated-hyphen rule. One separate photographic river bridge clipping sits beneath this list.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: WordStar 3.3. Design strength 4/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Recompose the page. Establish a fresh type area and a distinct image or information area. Rebuild two or three essential motifs; collapse incidental objects into labels, simple marks or open space.\nSpecific page plan: Recompose as a word-processed bulletin in a fixed text measure. Centre two title lines; indent the seven names under a repeated-hyphen rule. One separate photographic river bridge clipping sits beneath this list.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 5,
+          "file": "wordstar/5.webp",
+          "sha256": "c1da8428da5360de9463217d2b5d5079fdbf59e257ad01fac3fb53fa3189157b",
+          "page_plan": "Set all text within one fixed character measure, centred header and printer-bold title. A wide margin-to-margin typewritten bridge replaces the photo. Follow with the indented word-processed state list.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: WordStar 3.3. Design strength 5/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Let the preset determine hierarchy and alignment across the whole page. Merge secondary scenes into one supporting group. Use a single consistent visual vocabulary.\nSpecific page plan: Set all text within one fixed character measure, centred header and printer-bold title. A wide margin-to-margin typewritten bridge replaces the photo. Follow with the indented word-processed state list.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet.",
+          "revision_prompt": "Image one fixes album identity. Image two is the plain white paper print endpoint. Produce the intermediate 5/8 as an appealing WordStar typed black-on-WHITE-PAPER concert programme. Centred band and title in fixed-pitch typography with printer emphasis. Below the heading build a substantial, immediately recognisable side view of the river bridge with 5 lines of typewriter ASCII characters: long continuous deck, diagonal triangular trusses, one pier at either end, small river ripples. Place all seven state names as one indented list below it. Cover text exactly: Wasi River Bluegrass; States of Mind; Rage; Rest; Grief; Absurdity; Compliance; Machinery Memory; Transcendence. Semicolons mark line breaks, not printed characters. Literal black ink on a broad sheet of white, generous white margins. No reverse video, no computer screen, no solid coloured background, no modern proportional type and no extra words. Square front cover, plain clean output, raster strength zero."
+        },
+        {
+          "strength": 6,
+          "file": "wordstar/6.webp",
+          "sha256": "5567641f4dcd387571435fa2f7ec2eea9873be1a6f39f248719b6c76b4f8f414",
+          "page_plan": "One rectangular body of monospaced text. A slim two-line ASCII truss across the measure divides a centred masthead from left-aligned names. Use only fixed characters and printer emphasis.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: WordStar 3.3. Design strength 6/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Rebuild from a blank sheet. Restrict each visible object, type treatment and alignment to the preset's tools. Replace unsupported motifs. Remove incidental set dressing.\nSpecific page plan: One rectangular body of monospaced text. A slim two-line ASCII truss across the measure divides a centred masthead from left-aligned names. Use only fixed characters and printer emphasis.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet.",
+          "revision_prompt": "Make a square WordStar 3.3 PAPER PRINTOUT for this album, design 6/8. First image is the original content reference. Second image shows the 8/8 paper endpoint: match its WHITE PAPER, one black fixed-pitch font, text size and single-scale letter proportions, no simulated computer screen. Begin from the paper endpoint's same nine required text items and add exactly this feature: a two-line recognisable open ASCII truss between title and names, using slashes, bars and underscores across about 28 characters. White space around every margin, off-white/white PAPER, BLACK typed letters. Band and title each on one centred line, one font size on all lines, seven equally spaced indented names. Typeset ONLY these in sequence: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. No typography effects, colours, illustrations, background scenery or other words. No raster finishing and clean simulated output. Single square front cover."
+        },
+        {
+          "strength": 7,
+          "file": "wordstar/7.webp",
+          "sha256": "cd23273b058ab6e397728b95593fb5ca993430e41d3df3b6a2714b8dd75dfc11",
+          "page_plan": "Simplify to a centred bold word-processed heading, thinner subtitle, an indented index of all seven names, one typed hyphen separator and a very short single-line truss of slash characters. Single character size, aligned text.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: WordStar 3.3. Design strength 7/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Use the strict capability recipe throughout. Keep only the smallest set of image objects that communicates the subject. Consolidate recurring decorations into a single repeatable device.\nSpecific page plan: Simplify to a centred bold word-processed heading, thinner subtitle, an indented index of all seven names, one typed hyphen separator and a very short single-line truss of slash characters. Single character size, aligned text.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet.",
+          "revision_prompt": "Make a square WordStar 3.3 PAPER PRINTOUT for this album, design 7/8. First image is the original content reference. Second image shows the 8/8 paper endpoint: match its WHITE PAPER, one black fixed-pitch font, text size and single-scale letter proportions, no simulated computer screen. Begin from the paper endpoint's same nine required text items and add exactly this feature: a small single line of about eight slash and backslash characters suggesting the truss, over a left-aligned list. White space around every margin, off-white/white PAPER, BLACK typed letters. Band and title each on one centred line, one font size on all lines, seven equally spaced indented names. Typeset ONLY these in sequence: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. No typography effects, colours, illustrations, background scenery or other words. No raster finishing and clean simulated output. Single square front cover."
+        },
+        {
+          "strength": 8,
+          "file": "../eight-styles/wordstar.png",
+          "sha256": "3adf984cf33582a150073ec3bfad085d28c17829d65e7e0c51c347d32d6cdc78"
+        }
+      ]
+    },
+    {
+      "mode": "macpaint",
+      "covers": [
+        {
+          "strength": 0,
+          "file": "../level-0.jpeg",
+          "sha256": "fa026dc42e05e291c1d496a940db52885cab04b1233ff1854b23af1565e24f57"
+        },
+        {
+          "strength": 1,
+          "file": "macpaint/1.webp",
+          "sha256": "fbe7c6251d6394e356b8955b8293d46aa5c9857de9daef5b944671b31e424bb6",
+          "page_plan": "Change only the album subtitle into a straight Macintosh bitmap lettering strip. Preserve the ornate artist heading, complete dimensional colour scene and state signs.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: MacPaint. Design strength 1/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the original hierarchy, layout and motifs. Replace one typographic or placement decision with the preset's convention.\nSpecific page plan: Change only the album subtitle into a straight Macintosh bitmap lettering strip. Preserve the ornate artist heading, complete dimensional colour scene and state signs.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 2,
+          "file": "macpaint/2.webp",
+          "sha256": "39fcd333a14324fa3e4876955fb5e7d9d604d9efb56947d1b487c846e39ae20f",
+          "page_plan": "Reset both title lines as blocky black bitmap lettering on a white picture-plane header. Below this header keep the detailed coloured river scene, props and seven named signboards.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: MacPaint. Design strength 2/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the major regions. Reset the headline and supporting type with the preset's alignments and size choices. Simplify one ornamental element.\nSpecific page plan: Reset both title lines as blocky black bitmap lettering on a white picture-plane header. Below this header keep the detailed coloured river scene, props and seven named signboards.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 3,
+          "file": "macpaint/3.webp",
+          "sha256": "e922316799792baaa91ebcd93f0a74a433b8e38c57a030091a683f2aea7180af",
+          "page_plan": "Replace the central bridge, water and instruments with a black-and-white stepped picture using 1-bit patterned fills; retain seven separately legible signs, visual hierarchy and some original colour in peripheral props.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: MacPaint. Design strength 3/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the focal subject and reading order. Redraw its main motif with the preset's tools or translate it into words for a text-only preset. Group secondary detail.\nSpecific page plan: Replace the central bridge, water and instruments with a black-and-white stepped picture using 1-bit patterned fills; retain seven separately legible signs, visual hierarchy and some original colour in peripheral props.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 4,
+          "file": "macpaint/4.webp",
+          "sha256": "9e4fe1402ba955ff622cdfccd327dee5113f90d48392e9619383d50294576333",
+          "page_plan": "Recompose on a black-and-white bitmap canvas. Large stepped title, framed graphic bridge and river at left made of repeating dot patterns, seven names in a separate right-hand column. Remove the signposts.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: MacPaint. Design strength 4/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Recompose the page. Establish a fresh type area and a distinct image or information area. Rebuild two or three essential motifs; collapse incidental objects into labels, simple marks or open space.\nSpecific page plan: Recompose on a black-and-white bitmap canvas. Large stepped title, framed graphic bridge and river at left made of repeating dot patterns, seven names in a separate right-hand column. Remove the signposts.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 5,
+          "file": "macpaint/5.webp",
+          "sha256": "504be33eb6acff1d96d46240618d9f3ed9cdc321e1ce298accda59ecbec1759a",
+          "page_plan": "Construct the page as a single wide black pixel illustration band (bridge, water, banks) above an aligned seven-line bitmap text block. Two clearly distinct repeating black-and-white patterns for ground and water.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: MacPaint. Design strength 5/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Let the preset determine hierarchy and alignment across the whole page. Merge secondary scenes into one supporting group. Use a single consistent visual vocabulary.\nSpecific page plan: Construct the page as a single wide black pixel illustration band (bridge, water, banks) above an aligned seven-line bitmap text block. Two clearly distinct repeating black-and-white patterns for ground and water.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 6,
+          "file": "macpaint/6.webp",
+          "sha256": "1ac045541bc2da993c6eea8d6799ef21fd0e1f52bf3ca235cbbb0d65b6ca828f",
+          "page_plan": "Use just one continuous black-and-white picture plane. A bold chunky truss occupies the middle with patterned low water and simple banks. Titles in a dedicated zone, seven state names aligned beneath. No smooth tonal transitions.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: MacPaint. Design strength 6/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Rebuild from a blank sheet. Restrict each visible object, type treatment and alignment to the preset's tools. Replace unsupported motifs. Remove incidental set dressing.\nSpecific page plan: Use just one continuous black-and-white picture plane. A bold chunky truss occupies the middle with patterned low water and simple banks. Titles in a dedicated zone, seven state names aligned beneath. No smooth tonal transitions.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 7,
+          "file": "macpaint/7.webp",
+          "sha256": "4ead77ab655ac49bd75cee668b4f4b47c15998793a7801e52120015a33de11cb",
+          "page_plan": "Simplify to one black stepped bridge silhouette in a low broad band with a single repeated ripple pattern. Compact straight bitmap lettering, seven left-aligned names. No trees, signs or props. Give the title generous white space.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: MacPaint. Design strength 7/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Use the strict capability recipe throughout. Keep only the smallest set of image objects that communicates the subject. Consolidate recurring decorations into a single repeatable device.\nSpecific page plan: Simplify to one black stepped bridge silhouette in a low broad band with a single repeated ripple pattern. Compact straight bitmap lettering, seven left-aligned names. No trees, signs or props. Give the title generous white space.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 8,
+          "file": "../eight-styles/macpaint.png",
+          "sha256": "82c81eba4f37faffb84fdbc5c050f9e4bcfaaf1ae26c1efc7cb1a1e8a427939e"
+        }
+      ]
+    },
+    {
+      "mode": "print-shop",
+      "covers": [
+        {
+          "strength": 0,
+          "file": "../level-0.jpeg",
+          "sha256": "fa026dc42e05e291c1d496a940db52885cab04b1233ff1854b23af1565e24f57"
+        },
+        {
+          "strength": 1,
+          "file": "../level-1.png",
+          "sha256": "82e43f719617c2117f00f0071159d0e55d8e36bbcb71e5ec960fda13089047a7"
+        },
+        {
+          "strength": 2,
+          "file": "../level-2.png",
+          "sha256": "ac55eb4798eb1fabd1d8579a87d54c4c48ea2927b92456ccbdf45375935b36c6"
+        },
+        {
+          "strength": 3,
+          "file": "../level-3.png",
+          "sha256": "600e8056bf7add2f48cd7a9e9f5f3e89d3a22d830b20b6d2305ad52952697376"
+        },
+        {
+          "strength": 4,
+          "file": "../level-4.png",
+          "sha256": "4255c0e57203de27a20831dc4c062901ec0eb64782785e25b3d8a90e5e5a65a2"
+        },
+        {
+          "strength": 5,
+          "file": "../level-5.png",
+          "sha256": "70285754b65c0401c016a5066ae6b0f059cd6f73fda60d27aca660014b8f47ae"
+        },
+        {
+          "strength": 6,
+          "file": "../level-6.png",
+          "sha256": "3cb5dada6db324a1cb8a75186893b917435c12829ad9bdd10edd98b74d62303a"
+        },
+        {
+          "strength": 7,
+          "file": "../level-7.png",
+          "sha256": "7aa4a3c2dd79d17ab6de6372201b941d3cb97b5355c049fada83f87fac185475"
+        },
+        {
+          "strength": 8,
+          "file": "../level-8.png",
+          "sha256": "53b02ee28bc80c886224a18fdbd588f603a956d523c1f0333b9bb80eaeec6aec"
+        }
+      ]
+    },
+    {
+      "mode": "deskmate",
+      "covers": [
+        {
+          "strength": 0,
+          "file": "../level-0.jpeg",
+          "sha256": "fa026dc42e05e291c1d496a940db52885cab04b1233ff1854b23af1565e24f57"
+        },
+        {
+          "strength": 1,
+          "file": "deskmate/1.webp",
+          "sha256": "4c9403e0dc086dc88cdd1c8fd1a422971b67eeb4ab832935f841830d85b05d2b",
+          "page_plan": "Replace only the subtitle ribbon lettering with an independently placed straight Roman line in the DeskMate Draw manner. Keep the ornamental artist heading and full dimensional colour source scene.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: Tandy DeskMate Draw. Design strength 1/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the original hierarchy, layout and motifs. Replace one typographic or placement decision with the preset's convention.\nSpecific page plan: Replace only the subtitle ribbon lettering with an independently placed straight Roman line in the DeskMate Draw manner. Keep the ornamental artist heading and full dimensional colour source scene.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet.",
+          "revision_prompt": "Make a precision local edit to the supplied square cover. Retain all of the reference photo-realistic warm detailed landscape, objects, original colours, lighting, ornate artist lettering, wooden state signs AND their existing inscriptions. The sole change is inside the small curved ribbon just below the artist: replace it with a narrow flat ivory strip reading exactly “States of Mind” in plain upright Roman lettering in one straight line as in Tandy DeskMate Draw. Preserve everything outside the subtitle area as faithfully as possible to the input original. This is design 1 out of 8, raster 0, clean. Output one square cover. Absolutely no other style transfer: keep the photographic scene photographic, no polygonal cartoon, pixel reduction, tracing or recolouring."
+        },
+        {
+          "strength": 2,
+          "file": "deskmate/2.webp",
+          "sha256": "0b3f682136e35702e9b9fbe35344583579100889d41ea2a33914fd18e2ee20ea",
+          "page_plan": "Use two independently centred Roman title lines on a pale panel with a thin blue line beneath. Keep the scene, signs and instruments below as detailed original-style artwork.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: Tandy DeskMate Draw. Design strength 2/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the major regions. Reset the headline and supporting type with the preset's alignments and size choices. Simplify one ornamental element.\nSpecific page plan: Use two independently centred Roman title lines on a pale panel with a thin blue line beneath. Keep the scene, signs and instruments below as detailed original-style artwork.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 3,
+          "file": "deskmate/3.webp",
+          "sha256": "cacc5540168386072c7d70d545c97c3dc624dc18cef20b19a1527bdc0a18299b",
+          "page_plan": "Keep the source regions but redraw the main bridge and river with thin dark-blue connected polylines, rectangular piers and a patterned fill. Keep individually readable coloured signs and the original instrument arrangement.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: Tandy DeskMate Draw. Design strength 3/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the focal subject and reading order. Redraw its main motif with the preset's tools or translate it into words for a text-only preset. Group secondary detail.\nSpecific page plan: Keep the source regions but redraw the main bridge and river with thin dark-blue connected polylines, rectangular piers and a patterned fill. Keep individually readable coloured signs and the original instrument arrangement.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 4,
+          "file": "deskmate/4.webp",
+          "sha256": "e1abacb31d3c085531a55948d0ee2c7c50ab09ea778240ffe2c2729ba608a7b9",
+          "page_plan": "Recompose as a DeskMate Draw flyer. Build a bridge and a banjo out of simple line primitives on the left; set the seven names as separately positioned upright Roman lines on the right under a simple title.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: Tandy DeskMate Draw. Design strength 4/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Recompose the page. Establish a fresh type area and a distinct image or information area. Rebuild two or three essential motifs; collapse incidental objects into labels, simple marks or open space.\nSpecific page plan: Recompose as a DeskMate Draw flyer. Build a bridge and a banjo out of simple line primitives on the left; set the seven names as separately positioned upright Roman lines on the right under a simple title.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 5,
+          "file": "deskmate/5.webp",
+          "sha256": "fd29a1c958ba26178ba1088db2b426fef625143452e06df1b7596c50d86e01a3",
+          "page_plan": "On white, draw a wide, spare bridge and a small banjo with ellipse, rectangle and polyline strokes in one connected upper graphic group. Place a row of patterned water beneath the bridge, and the centred seven-name list below.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: Tandy DeskMate Draw. Design strength 5/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Let the preset determine hierarchy and alignment across the whole page. Merge secondary scenes into one supporting group. Use a single consistent visual vocabulary.\nSpecific page plan: On white, draw a wide, spare bridge and a small banjo with ellipse, rectangle and polyline strokes in one connected upper graphic group. Place a row of patterned water beneath the bridge, and the centred seven-name list below.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 6,
+          "file": "deskmate/6.webp",
+          "sha256": "c60431c9d4ace29bdf6038d8e60fbb3d70788cf83a3c4a02867d63eb8ae32e49",
+          "page_plan": "From blank paper use only thin blue or brick-red polylines, rectangles and flat patterned fill. One clean bridge elevation with small piers and two bands of water. Put upright Roman headings and the seven individually placed lines below.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: Tandy DeskMate Draw. Design strength 6/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Rebuild from a blank sheet. Restrict each visible object, type treatment and alignment to the preset's tools. Replace unsupported motifs. Remove incidental set dressing.\nSpecific page plan: From blank paper use only thin blue or brick-red polylines, rectangles and flat patterned fill. One clean bridge elevation with small piers and two bands of water. Put upright Roman headings and the seven individually placed lines below.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 7,
+          "file": "deskmate/7.webp",
+          "sha256": "e2cb9d1f592fac319e9627e48b1e1a34353bf297d5c018f74da83527cce2b418",
+          "page_plan": "A compact symmetric line elevation of one single span, one strip of pale cyan water and one repeating chevron detail. Give it a smaller footprint, and give the centred Roman lettering/open stock more room. No scenic objects.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: Tandy DeskMate Draw. Design strength 7/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Use the strict capability recipe throughout. Keep only the smallest set of image objects that communicates the subject. Consolidate recurring decorations into a single repeatable device.\nSpecific page plan: A compact symmetric line elevation of one single span, one strip of pale cyan water and one repeating chevron detail. Give it a smaller footprint, and give the centred Roman lettering/open stock more room. No scenic objects.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet.",
+          "revision_prompt": "Produce one square States of Mind cover at Retro-DTP deskmate design strength 7/8. First reference fixes the subject and copy, second shows the 8/8 style endpoint. Compose a NEW intermediate layout at 7/8. Match the second reference's thin blue Roman lettering and mechanical Draw primitives on plain WHITE paper. Rebuild a modest unfilled single-span bridge with simple blue polyline and rectangular piers, just one chevron water strip. Set the artist, title and seven names upright as separate clean Roman lines. Keep some of the small parallel blue water strokes and two short red rules flanking the album title. No navy background, curved or ornamental lettering, ribbons, banners, stamps or keyboard-screen output.\nExact required words, in order and once each: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Slashes are line breaks. No added words. Flat cover only. Raster 0, no separate printer or surface distress effect."
+        },
+        {
+          "strength": 8,
+          "file": "../eight-styles/deskmate.png",
+          "sha256": "4d880f609e7c755fbab8272223b5685b39e175faf22b949c2f17ed7f5d6ed39f"
+        }
+      ]
+    },
+    {
+      "mode": "geoworks",
+      "covers": [
+        {
+          "strength": 0,
+          "file": "../level-0.jpeg",
+          "sha256": "fa026dc42e05e291c1d496a940db52885cab04b1233ff1854b23af1565e24f57"
+        },
+        {
+          "strength": 1,
+          "file": "geoworks/1.webp",
+          "sha256": "5761ba5d96adfc3d848b99f86ba91617c89663232b3f8fa00672add699261dff",
+          "page_plan": "Change only the curved album subtitle to a precise straight scalable serif title line. Keep the ornate artist wordmark, instruments, wooden signs and dimensional coloured river scene.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: GeoWorks Ensemble. Design strength 1/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the original hierarchy, layout and motifs. Replace one typographic or placement decision with the preset's convention.\nSpecific page plan: Change only the curved album subtitle to a precise straight scalable serif title line. Keep the ornate artist wordmark, instruments, wooden signs and dimensional coloured river scene.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 2,
+          "file": "geoworks/2.webp",
+          "sha256": "f5df78ef1023b42db07a51124f7388aea41df6e01727be55e73b1c0cdf498766",
+          "page_plan": "Rebuild both top headings as a compact ruled GeoWorks masthead: clean sans artist and larger scalable serif album title. Keep the colour scene, props, and signs below.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: GeoWorks Ensemble. Design strength 2/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the major regions. Reset the headline and supporting type with the preset's alignments and size choices. Simplify one ornamental element.\nSpecific page plan: Rebuild both top headings as a compact ruled GeoWorks masthead: clean sans artist and larger scalable serif album title. Keep the colour scene, props, and signs below.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 3,
+          "file": "geoworks/3.webp",
+          "sha256": "681aecf4a7f44a1024730ede7cbe8641ee1defe56406121f3de0bf8267ea78e5",
+          "page_plan": "Keep the existing vertical reading order but redraw the bridge as independent flat teal geometric objects set against a simplified river. Use a ruled scalable-type masthead. Retain simple coloured state plaques.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: GeoWorks Ensemble. Design strength 3/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the focal subject and reading order. Redraw its main motif with the preset's tools or translate it into words for a text-only preset. Group secondary detail.\nSpecific page plan: Keep the existing vertical reading order but redraw the bridge as independent flat teal geometric objects set against a simplified river. Use a ruled scalable-type masthead. Retain simple coloured state plaques.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 4,
+          "file": "geoworks/4.webp",
+          "sha256": "699cdb74864025fb1941327b239b966b07fbca297922e868d3176fef5c3076b8",
+          "page_plan": "Recompose as a miniature GeoWrite feature page: a ruled masthead and seven names in a distinct narrow left-hand text column, with a separate upright GeoDraw bridge and banjo illustration to the right.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: GeoWorks Ensemble. Design strength 4/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Recompose the page. Establish a fresh type area and a distinct image or information area. Rebuild two or three essential motifs; collapse incidental objects into labels, simple marks or open space.\nSpecific page plan: Recompose as a miniature GeoWrite feature page: a ruled masthead and seven names in a distinct narrow left-hand text column, with a separate upright GeoDraw bridge and banjo illustration to the right.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 5,
+          "file": "geoworks/5.webp",
+          "sha256": "ff3d4ebebba3991e5f0f9226468c6218fcf42ab92250c4fc0a7f23f06e47375d",
+          "page_plan": "Give the text column a disciplined measure and scalable title hierarchy. Group bridge and river in a single broad flat vector illustration crossing a lower horizontal zone; set the names as a clearly distinct list.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: GeoWorks Ensemble. Design strength 5/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Let the preset determine hierarchy and alignment across the whole page. Merge secondary scenes into one supporting group. Use a single consistent visual vocabulary.\nSpecific page plan: Give the text column a disciplined measure and scalable title hierarchy. Group bridge and river in a single broad flat vector illustration crossing a lower horizontal zone; set the names as a clearly distinct list.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet.",
+          "revision_prompt": "Produce one square States of Mind cover at Retro-DTP geoworks design strength 5/8. First reference fixes the subject and copy, second shows the 8/8 style endpoint. Compose a NEW intermediate layout at 5/8. Hold the clean GeoWorks typographic family in the second reference: straight scalable sans artist, straight serif title, no ornamental lettering. Lay out the seven names in a clearly separate compact column above or beside ONE wide grouped GeoDraw illustration of bridge and river at the bottom; a few flat trees and water shapes are still allowed at this intermediate stage. Delete the old scenic collage and all the wooden plaques.\nExact required words, in order and once each: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Slashes are line breaks. No added words. Flat cover only. Raster 0, no separate printer or surface distress effect."
+        },
+        {
+          "strength": 6,
+          "file": "geoworks/6.webp",
+          "sha256": "e9fc6c428ddf11476d3accc56340ce87a5a8187f6d911ba23a9f43fb86837c21",
+          "page_plan": "White sheet; draw the bridge as independent teal polygons and black linear truss elements. Place a small crisp text column at left and a large bridge to the right. Use a ruled masthead and a two-line scalable title.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: GeoWorks Ensemble. Design strength 6/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Rebuild from a blank sheet. Restrict each visible object, type treatment and alignment to the preset's tools. Replace unsupported motifs. Remove incidental set dressing.\nSpecific page plan: White sheet; draw the bridge as independent teal polygons and black linear truss elements. Place a small crisp text column at left and a large bridge to the right. Use a ruled masthead and a two-line scalable title.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 7,
+          "file": "geoworks/7.webp",
+          "sha256": "8b7c750209395d935561bf1fa14a1c905fc40e8ca045618ae2bd6dda97158687",
+          "page_plan": "Make a single enlarged, diagonally arranged truss segment the sole picture object to the right. Use only one repeating geometry in the truss, a concise left column of seven names, and one masthead rule; generous open paper.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: GeoWorks Ensemble. Design strength 7/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Use the strict capability recipe throughout. Keep only the smallest set of image objects that communicates the subject. Consolidate recurring decorations into a single repeatable device.\nSpecific page plan: Make a single enlarged, diagonally arranged truss segment the sole picture object to the right. Use only one repeating geometry in the truss, a concise left column of seven names, and one masthead rule; generous open paper.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet.",
+          "revision_prompt": "Produce one square States of Mind cover at Retro-DTP geoworks design strength 7/8. First reference fixes the subject and copy, second shows the 8/8 style endpoint. Compose a NEW intermediate layout at 7/8. Use the second reference as a guide to the white stock, scalable masthead, aligned list and flat teal construction. A single modest diagonal truss of repeated simple polygons occupies the right half, the full seven-name text column is at left. Keep extra open white space around the bridge and a single rule. Strictly flat solid shapes, no texture or photographic objects. No curved type or decorative signboards.\nExact required words, in order and once each: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Slashes are line breaks. No added words. Flat cover only. Raster 0, no separate printer or surface distress effect."
+        },
+        {
+          "strength": 8,
+          "file": "../eight-styles/geoworks.png",
+          "sha256": "a0cc5d24c8ec2b1bcce2d02d0260c858f8f5aeb5e54e667c3b4746a9e4f5bd76"
+        }
+      ]
+    },
+    {
+      "mode": "pagemaker",
+      "covers": [
+        {
+          "strength": 0,
+          "file": "../level-0.jpeg",
+          "sha256": "fa026dc42e05e291c1d496a940db52885cab04b1233ff1854b23af1565e24f57"
+        },
+        {
+          "strength": 1,
+          "file": "pagemaker/1.webp",
+          "sha256": "63cc1dc1c92f9065df5ec35affa91b821c3f7354db1429b892fc274642787870",
+          "page_plan": "Reset only the album subtitle as a straight Times-like roman line on a narrow paper strip. Preserve the original ornate artist lettering, photographic river scene and seven signboards.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: PageMaker / LaserWriter PostScript. Design strength 1/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the original hierarchy, layout and motifs. Replace one typographic or placement decision with the preset's convention.\nSpecific page plan: Reset only the album subtitle as a straight Times-like roman line on a narrow paper strip. Preserve the original ornate artist lettering, photographic river scene and seven signboards.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 2,
+          "file": "pagemaker/2.webp",
+          "sha256": "66549853d6d13809c138b09df40a066d0233e54206ac7953eca9adb0dd0ae58e",
+          "page_plan": "Set both titles in a bookish flat pasteboard masthead: artist in small italic, album in larger roman, a hairline beneath. Keep the original dimensional colour artwork and signs below.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: PageMaker / LaserWriter PostScript. Design strength 2/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the major regions. Reset the headline and supporting type with the preset's alignments and size choices. Simplify one ornamental element.\nSpecific page plan: Set both titles in a bookish flat pasteboard masthead: artist in small italic, album in larger roman, a hairline beneath. Keep the original dimensional colour artwork and signs below.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 3,
+          "file": "pagemaker/3.webp",
+          "sha256": "eedda2a3172bbd997224fb986a5ae72696803abbd9deb2736f8418701ba6272c",
+          "page_plan": "Replace the focal river/bridge region with a placed black engraving of the bridge; retain the original main composition and seven readable plaques in the scene. Reset the title in roman type.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: PageMaker / LaserWriter PostScript. Design strength 3/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the focal subject and reading order. Redraw its main motif with the preset's tools or translate it into words for a text-only preset. Group secondary detail.\nSpecific page plan: Replace the focal river/bridge region with a placed black engraving of the bridge; retain the original main composition and seven readable plaques in the scene. Reset the title in roman type.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 4,
+          "file": "pagemaker/4.webp",
+          "sha256": "586159b1ecc2b8c6a5b909d64c21312b43a20bced15f98d00068b946a4b5ca79",
+          "page_plan": "Recompose the square as an editorial page: one generous monochrome bridge-and-river image block at left and a separate seven-name text column at right. Place italic artist and measured roman title above.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: PageMaker / LaserWriter PostScript. Design strength 4/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Recompose the page. Establish a fresh type area and a distinct image or information area. Rebuild two or three essential motifs; collapse incidental objects into labels, simple marks or open space.\nSpecific page plan: Recompose the square as an editorial page: one generous monochrome bridge-and-river image block at left and a separate seven-name text column at right. Place italic artist and measured roman title above.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 5,
+          "file": "pagemaker/5.webp",
+          "sha256": "fe5add4420fcd325fd550e630c1b7eb780fe13d7eb1414fe21daab8f07b5c873",
+          "page_plan": "Use a single wide placed monochrome engraving, a generous upper title area and a narrow list of the seven names under it in one book-roman measure. Graphic and text blocks align to the same margins.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: PageMaker / LaserWriter PostScript. Design strength 5/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Let the preset determine hierarchy and alignment across the whole page. Merge secondary scenes into one supporting group. Use a single consistent visual vocabulary.\nSpecific page plan: Use a single wide placed monochrome engraving, a generous upper title area and a narrow list of the seven names under it in one book-roman measure. Graphic and text blocks align to the same margins.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet.",
+          "revision_prompt": "Produce one square States of Mind cover at Retro-DTP pagemaker design strength 5/8. First reference fixes the subject and copy, second shows the 8/8 style endpoint. Compose a NEW intermediate layout at 5/8. As the page before the highly simplified classical title page at 8/8, compose a generous left-aligned italic artist and large upright roman album title above a broad black monochrome engraved bridge-and-river picture spanning most of the page width. Preserve river banks and a tiny instrument among the scene details within this ONE illustration. Use a seven-line serif list beneath, left-aligned in a column with readable names, a thin vertical rule aligned with its left edge. All black on clean white paper. No source banner, decorative gold emblems, swash type or wood plaques.\nExact required words, in order and once each: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Slashes are line breaks. No added words. Flat cover only. Raster 0, no separate printer or surface distress effect."
+        },
+        {
+          "strength": 6,
+          "file": "pagemaker/6.webp",
+          "sha256": "ed981e1df7aaee87b8a7487bf10375aeca8579d47e8941deccc3c9c05b2c8885",
+          "page_plan": "Set an editorial title page from blank white stock. Small italic artist, large roman album title, one rectangular placed black-ink bridge engraving with simplified banks, hairline and seven neatly set names. Black ink only.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: PageMaker / LaserWriter PostScript. Design strength 6/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Rebuild from a blank sheet. Restrict each visible object, type treatment and alignment to the preset's tools. Replace unsupported motifs. Remove incidental set dressing.\nSpecific page plan: Set an editorial title page from blank white stock. Small italic artist, large roman album title, one rectangular placed black-ink bridge engraving with simplified banks, hairline and seven neatly set names. Black ink only.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 7,
+          "file": "pagemaker/7.webp",
+          "sha256": "3cda08cf9adb11f78febc9f0f02c0f55a4bdfed8a4ce8f01d3a7d26e8c66543e",
+          "page_plan": "Simplify to a modest centred bridge vignette, one fine typographic rule, a finely spaced roman title and seven names in book type. No frame around the art, no scenic background, only a hint of the banks.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: PageMaker / LaserWriter PostScript. Design strength 7/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Use the strict capability recipe throughout. Keep only the smallest set of image objects that communicates the subject. Consolidate recurring decorations into a single repeatable device.\nSpecific page plan: Simplify to a modest centred bridge vignette, one fine typographic rule, a finely spaced roman title and seven names in book type. No frame around the art, no scenic background, only a hint of the banks.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet.",
+          "revision_prompt": "Produce one square States of Mind cover at Retro-DTP pagemaker design strength 7/8. First reference fixes the subject and copy, second shows the 8/8 style endpoint. Compose a NEW intermediate layout at 7/8. Match the second reference's typographic family on WHITE paper with BLACK INK only. Give the left inset artist line an italic setting, place a roman title near the top, and place one fine black engraved bridge and a short river mark at centre with no banks or surrounding scene, one hairline and seven upright book-roman names beneath. A little smaller title, wider inset and more airy space than reference two. All ink pure black.\nExact required words, in order and once each: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Slashes are line breaks. No added words. Flat cover only. Raster 0, no separate printer or surface distress effect."
+        },
+        {
+          "strength": 8,
+          "file": "../eight-styles/pagemaker.png",
+          "sha256": "1ecc05763534c1539501bfe190d35e44031ddcf146a15e7336f09df8fec0e29a"
+        }
+      ]
+    },
+    {
+      "mode": "windows-truetype",
+      "covers": [
+        {
+          "strength": 0,
+          "file": "../level-0.jpeg",
+          "sha256": "fa026dc42e05e291c1d496a940db52885cab04b1233ff1854b23af1565e24f57"
+        },
+        {
+          "strength": 1,
+          "file": "windows-truetype/1.webp",
+          "sha256": "bdada3be487d372760d884524a72137ef125055502ecfafc6705ba397b805c99",
+          "page_plan": "Change only the small curved album subtitle to a clean, straight Times New Roman-like italic phrase. Keep the dramatic source artist logo, river scene, props and wooden signs intact.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: Windows 3.1 TrueType. Design strength 1/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the original hierarchy, layout and motifs. Replace one typographic or placement decision with the preset's convention.\nSpecific page plan: Change only the small curved album subtitle to a clean, straight Times New Roman-like italic phrase. Keep the dramatic source artist logo, river scene, props and wooden signs intact.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 2,
+          "file": "windows-truetype/2.webp",
+          "sha256": "94160298af54763b208ac73833a275046f6f4fff22dbb64e7f00a9ee21f8b046",
+          "page_plan": "Reset the artist in bold Arial-like sans, the album in Times-like italic, both flush left in one flat office-document heading area. Keep the original dimensional coloured scene below.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: Windows 3.1 TrueType. Design strength 2/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the major regions. Reset the headline and supporting type with the preset's alignments and size choices. Simplify one ornamental element.\nSpecific page plan: Reset the artist in bold Arial-like sans, the album in Times-like italic, both flush left in one flat office-document heading area. Keep the original dimensional coloured scene below.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 3,
+          "file": "windows-truetype/3.webp",
+          "sha256": "dbe78278121e725e640ec49c2fda0c62e023cdf9fbe140caac3a17f1d90d24d7",
+          "page_plan": "Retain the original regions but redraw the bridge and river as a modest simple two-tone inline illustration, with both headings reset in scalable office type. Keep the seven names on simplified flat sign panels.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: Windows 3.1 TrueType. Design strength 3/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Keep the focal subject and reading order. Redraw its main motif with the preset's tools or translate it into words for a text-only preset. Group secondary detail.\nSpecific page plan: Retain the original regions but redraw the bridge and river as a modest simple two-tone inline illustration, with both headings reset in scalable office type. Keep the seven names on simplified flat sign panels.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 4,
+          "file": "windows-truetype/4.webp",
+          "sha256": "6a63aae5a5390ed6ce998896aebce304ecdd4e5052db37e72086d56517fdb9ce",
+          "page_plan": "Build a letter-size office announcement cropped as a square cover. A text-led header, a modest rectangular river bridge illustration and a separate tab-aligned list of the seven names replace the poster scene. No signboards.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: Windows 3.1 TrueType. Design strength 4/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Recompose the page. Establish a fresh type area and a distinct image or information area. Rebuild two or three essential motifs; collapse incidental objects into labels, simple marks or open space.\nSpecific page plan: Build a letter-size office announcement cropped as a square cover. A text-led header, a modest rectangular river bridge illustration and a separate tab-aligned list of the seven names replace the poster scene. No signboards.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 5,
+          "file": "windows-truetype/5.webp",
+          "sha256": "0964a5719fe6c4328bb46563d162571a00856a070e4a1aac4cfee561c37adeba",
+          "page_plan": "Flush-left navy sans band heading and italic serif title occupy the upper portion. Merge the scenery into one very small simple inline bridge silhouette beside the text area. Seven names use one aligned serif paragraph style.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: Windows 3.1 TrueType. Design strength 5/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Let the preset determine hierarchy and alignment across the whole page. Merge secondary scenes into one supporting group. Use a single consistent visual vocabulary.\nSpecific page plan: Flush-left navy sans band heading and italic serif title occupy the upper portion. Merge the scenery into one very small simple inline bridge silhouette beside the text area. Seven names use one aligned serif paragraph style.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 6,
+          "file": "windows-truetype/6.webp",
+          "sha256": "2bd6e8643f2186d9af6fce4934f2033352ade8310082bfa99fb6bbcb1467119d",
+          "page_plan": "From a blank sheet compose entirely with the early office font family and simple rules. Use the two-line sans masthead, an italic album title and seven flush-left text paragraphs bracketed by two thin rules. No picture.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: Windows 3.1 TrueType. Design strength 6/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Rebuild from a blank sheet. Restrict each visible object, type treatment and alignment to the preset's tools. Replace unsupported motifs. Remove incidental set dressing.\nSpecific page plan: From a blank sheet compose entirely with the early office font family and simple rules. Use the two-line sans masthead, an italic album title and seven flush-left text paragraphs bracketed by two thin rules. No picture.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 7,
+          "file": "windows-truetype/7.webp",
+          "sha256": "e0b7675d3b6db20f6730dbafc5ef264a096914296feb39b33e021a01eb1aa6a6",
+          "page_plan": "Build a sparse type-only announcement: navy sans artist, italic serif album title, a single short rule, and seven aligned serif names. Keep ordinary paragraph spacing, generous white margins and one consistent left edge.",
+          "prompt": "Edit the supplied Wasi River Bluegrass States of Mind album cover into ONE square album cover. Reference is the original. Retro-DTP authoring preset: Windows 3.1 TrueType. Design strength 7/8; raster strength 0; clean output with no added printer, dot, paper-distress or raster effect. This setting determines which DESIGN decisions to rebuild. Use the strict capability recipe throughout. Keep only the smallest set of image objects that communicates the subject. Consolidate recurring decorations into a single repeatable device.\nSpecific page plan: Build a sparse type-only announcement: navy sans artist, italic serif album title, a single short rule, and seven aligned serif names. Keep ordinary paragraph spacing, generous white margins and one consistent left edge.\nREQUIRED WORDS, in reading order: Wasi River Bluegrass / States of Mind / Rage / Rest / Grief / Absurdity / Compliance / Machinery Memory / Transcendence. Render the artist and album title and all seven state names, each once correctly. The slashes are line separators only. Give this lettering enough space to be legible. Omit tiny prop lettering and slogans if needed. Do not print the preset name, the strength or any legends. Return one full-bleed square cover only, shown flat, with no surroundings, frame mockup or contact sheet."
+        },
+        {
+          "strength": 8,
+          "file": "../eight-styles/windows-truetype.png",
+          "sha256": "b8ddd3a00ef4d52f091086b4b6de30250fbb32a9021b5f7a40bc2bef116ea80f"
+        }
+      ]
+    }
+  ]
+}
