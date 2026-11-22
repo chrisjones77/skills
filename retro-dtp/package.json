@@ -1,0 +1,17 @@
+{
+  "name": "retro-dtp",
+  "version": "0.5.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test": "\"$npm_node_execpath\" scripts/test-repository.mjs",
+    "doctor": "\"$npm_node_execpath\" scripts/retro-dtp.mjs doctor --json"
+  },
+  "dependencies": {
+    "playwright": "1.65.1",
+    "fontkit": "3.0.0"
+  }
+}

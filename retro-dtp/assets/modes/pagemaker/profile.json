@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "id": "pagemaker",
+  "display_name": "PageMaker / LaserWriter PostScript",
+  "aliases": [
+    "PageMaker",
+    "PostScript",
+    "LaserWriter",
+    "Aldus PageMaker"
+  ],
+  "reference_baseline": "Early Macintosh PageMaker and Apple LaserWriter PostScript",
+  "fidelity": "period-inspired",
+  "supported_types": [
+    "flyer",
+    "notice",
+    "letterhead"
+  ],
+  "templates": {
+    "flyer": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    },
+    "notice": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    },
+    "letterhead": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    }
+  },
+  "primitives": [
+    "sheets"
+  ],
+  "typography": {
+    "title": {
+      "family": "TeX Gyre Termes",
+      "file": "assets/fonts/texgyretermes-regular.otf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "heading": {
+      "family": "TeX Gyre Termes",
+      "file": "assets/fonts/texgyretermes-italic.otf",
+      "weight": 400,
+      "style": "italic"
+    },
+    "body": {
+      "family": "TeX Gyre Termes",
+      "file": "assets/fonts/texgyretermes-regular.otf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "label": {
+      "family": "TeX Gyre Termes",
+      "file": "assets/fonts/texgyretermes-regular.otf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "date": {
+      "family": "TeX Gyre Termes",
+      "file": "assets/fonts/texgyretermes-italic.otf",
+      "weight": 400,
+      "style": "italic"
+    },
+    "caption": {
+      "family": "TeX Gyre Termes",
+      "file": "assets/fonts/texgyretermes-regular.otf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "footer": {
+      "family": "TeX Gyre Termes",
+      "file": "assets/fonts/texgyretermes-regular.otf",
+      "weight": 400,
+      "style": "normal"
+    }
+  },
+  "palette": {
+    "monochrome": [
+      "#111",
+      "#fff"
+    ]
+  },
+  "print_defaults": {
+    "safe_margin_mm": 12.7,
+    "minimum_body_pt": 10
+  },
+  "signatures": [
+    "Cubic outline serif type",
+    "Hairline rules and separately placed objects",
+    "Engraving-like vector curve detail"
+  ],
+  "artwork_rules": "Compose with independently positioned text, vector objects and fine rules.",
+  "overflow_policy": "Reflow the copy or agree a different sheet count.",
+  "fallbacks": [],
+  "reference_path": "mode.md",
+  "asset_manifest": "artwork/manifest.json",
+  "example_ids": [
+    "pagemaker-flyer"
+  ],
+  "readiness": "supported",
+  "representative_preview": "preview.png",
+  "release_evidence": "release-evidence.json",
+  "postscript_level": 1
+}

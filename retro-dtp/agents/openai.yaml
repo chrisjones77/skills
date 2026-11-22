@@ -1,0 +1,4 @@
+interface:
+  display_name: "Retro DTP"
+  short_description: "Redesign images with period tools or compose print pages"
+  default_prompt: "Use $retro-dtp to redesign my image using Print Shop at design strength 6/8."

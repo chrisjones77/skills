@@ -1,0 +1,15 @@
+{
+  "status": "verified",
+  "preview_sha256": "fce5fcac28596a2cdcccf160c69eb86c960ba4240f5c27eb1424ed92e2be917a",
+  "examples": [
+    {
+      "id": "windows-truetype-flyer",
+      "status": "verified",
+      "pdf_sha256": "d2bfce485f75e44f8467f4dbd798e8eff62ce27697c0f1f16d998e362d675ddf",
+      "revision": "validation/archetypes/windows-truetype/revision-001"
+    }
+  ],
+  "reviewer": "Codex page proof inspection",
+  "physical_print": "not-tested",
+  "creative_acceptance": "not-requested"
+}

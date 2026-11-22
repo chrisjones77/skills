@@ -1,0 +1,8 @@
+.composition { padding: 10% 7% 5%; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; }
+.illustration { height: 17%; width: 38%; object-fit: contain; margin-bottom: 4mm; }
+.copy { border-top: 1pt solid currentColor; width: 100%; padding-top: 3mm; }
+.copy [data-role="label"] { font-size: 11pt; letter-spacing: 1.4pt; }
+.copy [data-role="title"] { font-size: 47pt; line-height: 1.03; margin: 4mm 0; }
+.copy [data-role="date"], .copy [data-role="heading"] { font-size: 18pt; margin: 3mm 0; }
+.copy [data-role="body"] { font-size: 12pt; line-height: 1.35; }
+.copy [data-role="footer"] { border-top: .5pt solid currentColor; padding-top: 2mm; margin-top: 5mm; font-size: 10pt; }

@@ -1,0 +1,10 @@
+.poster{border:3px solid #111;outline:1px solid #111;outline-offset:-7px;padding:13mm 10mm;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:space-between;--accent:#111}.copy{width:100%}[data-role="title"]{font-size:48pt;line-height:1.07;margin:5mm 0 8mm;color:#111}[data-role="label"]{font-size:12pt;letter-spacing:1.5px;margin-bottom:3mm}[data-role="date"]{font-size:16pt;margin-bottom:5mm}[data-role="body"]{font-size:13pt!important;line-height:1.5;margin:2mm 0}[data-role="footer"]{font-size:10pt;line-height:1.4;border-top:2px solid #111;margin-top:6mm;padding-top:4mm}.sprout{height:48mm;width:64mm;flex-shrink:0}.ornament {
+  height: 4mm;
+  width: 100%;
+  flex-shrink: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='16' viewBox='0 0 24 16'%3E%3Cpath d='M0 8h24' stroke='%23111'/%3E%3Cpath d='m12 1 7 7-7 7-7-7z' fill='%23111'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-position: center;
+  background-size: 6mm 4mm;
+}
+.bottom{margin-top:3mm}

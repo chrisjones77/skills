@@ -1,0 +1,81 @@
+Retro-DTP design filter for ChatGPT Images
+
+Use this card when asked to generate or redesign an image. Name a preset and a design strength from 0 to 8. Default to Print Shop at 4/8 if unspecified. Run the ordinary image generator with the composed brief. This card requires no code execution.
+
+Example request: “Redesign the attached cover for Print Shop, design 6/8. Keep the band name, album title and seven state names. Turn the bridge into a stamp.”
+
+Use the normal image generator to make a new composition at the requested aspect ratio. For an existing image, use its original as the content reference for every revision. For a new image, use the user's subject brief directly. Identify the subject, exact required words in reading order, essential identifiers, optional motifs and incidental decoration. Preserve all required words and relationships. When text will not fit, simplify the art or reflow the text. Use only supplied wording. Give the generator a concrete page plan naming the type, image objects, positions, replacements and omissions. Generate the image, then compare the actual result to that plan. If it retains an excluded scene, uses unavailable tools or misspells required copy, correct that specific fault before delivery. Apply a separate paper, ink, dot or pixel treatment only when requested.
+
+Design strength controls which objects, type and layout to rebuild. Default the finish to raster strength 0 and clean output. Apply an explicit raster strength (0–8) to the finished composition. A separate printer request such as nine-pin colour adds visible pin strikes in nine-row sweeps and slight registration differences between ribbon passes. Preserve the arrangement and words of the composed image during finishing.
+
+Choose the strength
+
+0/8 — Bypass the design treatment. Return the supplied original for an existing image. For a new image, generate directly from the user's brief.
+
+1/8 — Keep the original hierarchy, layout and motifs. Replace one typographic or placement decision with the preset's convention.
+
+2/8 — Keep the major regions. Reset the headline and supporting type with the preset's alignments and size choices. Simplify one ornamental element.
+
+3/8 — Keep the focal subject and reading order. Redraw its main motif with the preset's tools or translate it into words for a text-only preset. Group secondary detail.
+
+4/8 — Recompose the page. Establish a fresh type area and a distinct image or information area. Rebuild two or three essential motifs; collapse incidental objects into labels, simple marks or open space.
+
+5/8 — Let the preset determine hierarchy and alignment across the whole page. Merge secondary scenes into one supporting group. Use a single consistent visual vocabulary.
+
+6/8 — Rebuild from a blank sheet. Restrict each visible object, type treatment and alignment to the preset's tools. Replace unsupported motifs. Remove incidental set dressing.
+
+7/8 — Use the strict capability recipe throughout. Keep only the smallest set of image objects that communicates the subject. Consolidate recurring decorations into a single repeatable device.
+
+8/8 — Use the simplest credible native construction from a blank sheet. Every visible element must have a specific creation method in the selected toolset. Prioritize exact required words, one organizing device and the essential identifier. At most one pictorial motif for a graphic preset; use character placement for a text preset.
+
+Choose the tools
+
+IBM Selectric (selectric)
+Tools: One fixed-pitch type element, one character size, ribbon strikes, tab stops, carriage returns, spaces and underscore overstrikes.
+Composition: Build a typed title sheet. Use vertical position, underlining and blank lines to distinguish the title. Put a sequence into aligned typed rows. Translate a pictorial identifier into its supplied name or a tiny arrangement of keyboard characters when needed.
+At strict settings, exclude: Photographs, pasted pictures, drawn borders, proportional or oversized display faces and decorative stamp art.
+Check: Point to the key, carriage movement or overstrike that could have made every mark.
+
+WordStar 3.3 (wordstar)
+Tools: A fixed character measure, margins, paragraph indent, tabs, centring, repeated keyboard characters and printer emphasis.
+Composition: Make a formatted index or bulletin. Centre a heading, align a recurring label to a common tab stop, then allow text to flow in its measure. Set apart sections with a typed rule or one blank line.
+At strict settings, exclude: Free-positioned illustrations, stretched headlines, arbitrary rotation and visible editor commands.
+Check: Read each line on a common character grid. Emphasis and paragraph structure should carry the hierarchy.
+
+MacPaint (macpaint)
+Tools: A single black-and-white picture plane, pencil and brush marks, selections, patterns and bitmap text.
+Composition: Redraw the subject as an original high-contrast silhouette. Separate near and far shapes with two distinct repeat patterns or open white. Reserve a clear zone in the bitmap for straight lettering.
+At strict settings, exclude: Full-colour photos, smooth tonal modelling, independent vector shadows and translucent layers.
+Check: The subject should read from its silhouette; intermediate tone should resolve into black marks and white space.
+
+The New Print Shop for DOS (print-shop)
+Tools: Independently sized straight lines of proportional bitmap lettering, positionable graphic stamps, paper and a border made from a repeated unit.
+Composition: Build a sign or card. Set title lines separately, remake the subject as a small replaceable stepped stamp, and allow paper around it. Convert repeated scene elements into short lines or a repeating border. Use a limited set of spot inks.
+At strict settings, exclude: Photographic collages, dimensional signboards, wood textures, perspective typography, embossing and atmospheric lighting.
+Check: Count the distinct message lines, stamp objects and border unit. Confirm they explain the entire design at the strict settings.
+
+Tandy DeskMate Draw (deskmate)
+Tools: Thin brush, ellipse, rectangle, connected polyline, enclosed flat or patterned fill, independently placed Roman lettering.
+Composition: Construct a recognizable diagram or outline drawing with a few shapes. Centre short lines separately, or flank a text column with simple drawings. On an office form, use aligned labels and writing fields.
+At strict settings, exclude: A detailed raster landscape, an office-window screenshot, complex shading and automatic scenic textures.
+Check: Identify the drawing primitive and fill that produce each prominent object.
+
+GeoWorks Ensemble (geoworks)
+Tools: Scalable type, text columns, a ruled masthead and separately positioned or rotated text and drawing objects.
+Composition: Use GeoDraw for a poster: assemble the subject from a few clean objects and give the title its own space. Use GeoWrite for reading copy: group it in a deliberate column measure. Keep graphic labels optically aligned.
+At strict settings, exclude: Depth-of-field effects, cinematic grading and a mandatory sidebar on short copy.
+Check: Separate the independent text and drawing objects by eye and trace the intended reading order.
+
+PageMaker / LaserWriter PostScript (pagemaker)
+Tools: Pasteboard blocks, placed monochrome art, column measures, cubic outline lettering, rules and printable black ink.
+Composition: Recompose as an editorial title page: one placed illustration, a prominent roman title, a secondary italic line if useful, and an aligned block of small type. Reserve open paper and use measured spacing.
+At strict settings, exclude: Continuous atmospheric effects across the whole sheet, bevels, ambient glows and full-colour scene composites.
+Check: Identify the text blocks, rule and placed illustration that a page compositor would assemble.
+
+Windows 3.1 TrueType (windows-truetype)
+Tools: Scalable quadratic outline fonts in a small office type family, paragraph alignment, tab stops, paragraph spacing and simple rules.
+Composition: Build a type-led announcement. Set an emphatic sans heading, proportional serif reading copy and a fixed-pitch identifier when the brief supplies one. Use point-size changes and paragraph positions for hierarchy.
+At strict settings, exclude: Dimensional logotypes, textured text fills, scenic letter interiors and modern interface chrome.
+Check: The heading, body and labels should be reproducible with a face, point size, alignment and paragraph spacing.
+
+For levels 1–5, apply the native recipe to the parts being redesigned. At 6–8, apply the exclusions across the entire page. For a revision, reuse the original subject and locked copy, then generate a fresh composition at the new setting. Preserve the original aspect ratio unless the user requests another format.

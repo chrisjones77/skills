@@ -1,0 +1,7 @@
+.composition { padding: .6in .30in; }
+.copy { max-width: 72ch; margin: auto; font-family: "Liberation Mono"; font-size: 10pt; }
+.copy [data-dtp-block] { font-size: 10pt; line-height: 12pt; margin: 0 0 12pt; }
+.copy [data-role="label"], .copy [data-role="title"], .copy [data-role="date"] { text-align: center; }
+.copy [data-role="title"] { padding: 12pt 0; border-block: 1px dashed currentColor; }
+.copy [data-role="body"] { text-indent: 5ch; }
+.copy [data-role="footer"] { margin: 24pt 0 0 5ch; text-decoration: underline; }

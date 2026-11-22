@@ -2,13 +2,14 @@
 
 [QVCH and UWH architecture storyboard](../qvch-uwh/README.md): the current component names and their shared six-step workflow, also embedded in the repository README.
 
-Sixteen six-panel concept illustrations cover the current skill-entrypoint inventory. The manifest records the source and image for each board. The original ten-board manifest, prompts, lineage and prior coverage-board image remain in [revision history](revisions/20261022/README.md).
+Seventeen six-panel concept illustrations cover the current skill-entrypoint inventory. The manifest records the source and image for each board. The original ten-board manifest, prompts, lineage and prior coverage-board image remain in [revision history](revisions/20261022/README.md).
 
 These are AI-generated illustrations, not implemented products. All sample UI data, including file sizes, timing and frame counts, are fictional and are not technical calculations or evidence. Canonical skill sources and their references take precedence. Human acceptance remains pending.
 
 [2026-11-20 source reconciliation](reconciliation-20261120.md) · [Local HTML gallery](index.html) · [Source and asset manifest](manifest.json) · [Generation record](generation.json) · [Asset lineage](asset-lineage.json) · [Feature specification](../../specs/001-skill-storyboards/spec.md) · [Work and safety record](../../specs/001-skill-storyboards/work-and-safety.md)
 
 - [Qualified Verification and Control Harness (QVCH)](#qvch)
+- [Retro-DTP](#retro-dtp)
 - [Portable Harnessed Dispatch](#portable-harnessed-dispatch)
 - [AI Operational Governance](#ai-operational-governance)
 - [Harnessed Dispatch](#harnessed-dispatch)
@@ -329,5 +330,24 @@ Human acceptance: pending.
 6. Verify the return — primary agent checks evidence and reports unresolved limits.
 
 Delegation does not transfer authority or guarantee isolation. Concept illustration only: the screens, permissions, checkmarks and sample data are fictional, not an implemented interface or evidence of execution, qualification, authorization or isolation. This portable entry is separate from the repository-local agent skill. The current local contract refuses writer transfers and has a reoffer gap after decline during pending reassessment; preserve the caller-owned checkpoint and consult the source before transfer.
+
+Human acceptance: pending.
+
+<a id="retro-dtp"></a>
+
+## Retro-DTP
+
+[Canonical skill](../../retro-dtp/SKILL.md) · [Full PNG](assets/retro-dtp.png)
+
+![A River Fair flyer reduced to bitmap lettering and a bridge stamp.](assets/retro-dtp.png)
+
+1. Keep the copy. Preserve the words “River Fair” and the bridge motif across revisions.
+2. Choose the toolset. The typewriter sets characters on a fixed grid. Print Shop can place bitmap lettering and graphic stamps.
+3. Set design strength. Move from the original scene toward a composition the chosen tools can build.
+4. Rebuild the page. Give the title and bridge stamp their own positions on the sheet.
+5. Choose the finish. Keep the page clean or add a raster or printer treatment to the composed image.
+6. Inspect the result. Compare spelling, placement and legibility with the brief. Inspect the PDF previews for a print job.
+
+The dot detail illustrates a simulated ribbon finish. Physical printer output requires a device test.
 
 Human acceptance: pending.

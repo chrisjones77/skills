@@ -1,0 +1,15 @@
+{
+  "status": "verified",
+  "preview_sha256": "fb02da6557964609bd7d319a488f37c6db49751c668e7b715de294c06b4a5f6e",
+  "examples": [
+    {
+      "id": "deskmate-form",
+      "status": "verified",
+      "pdf_sha256": "81ecba8653f6dad555ae297f16be736e106db1d181bffd1cddc64ea530f80bd4",
+      "revision": "validation/examples/deskmate-form/revision-003"
+    }
+  ],
+  "reviewer": "Codex structural and visual inspection",
+  "physical_print": "not-tested",
+  "creative_acceptance": "not-requested"
+}

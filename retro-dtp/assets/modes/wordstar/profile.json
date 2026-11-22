@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "id": "wordstar",
+  "display_name": "WordStar 3.3",
+  "aliases": [
+    "WordStar",
+    "MicroPro WordStar"
+  ],
+  "reference_baseline": "MicroPro WordStar 3.3, 1983, Reference Manual chapter 7",
+  "fidelity": "period-inspired",
+  "supported_types": [
+    "flyer",
+    "notice",
+    "memo",
+    "letter"
+  ],
+  "templates": {
+    "flyer": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    },
+    "notice": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    },
+    "memo": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    },
+    "letter": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    }
+  },
+  "primitives": [
+    "sheets"
+  ],
+  "typography": {
+    "title": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Bold.ttf",
+      "weight": 700,
+      "style": "normal"
+    },
+    "heading": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Bold.ttf",
+      "weight": 700,
+      "style": "normal"
+    },
+    "body": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "label": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Bold.ttf",
+      "weight": 700,
+      "style": "normal"
+    },
+    "date": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "caption": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "footer": {
+      "family": "Liberation Mono",
+      "file": "assets/fonts/LiberationMono-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    }
+  },
+  "palette": {
+    "monochrome": [
+      "#111",
+      "#fff"
+    ]
+  },
+  "print_defaults": {
+    "safe_margin_mm": 12.7,
+    "minimum_body_pt": 10
+  },
+  "signatures": [
+    "Fixed-pitch centred heading",
+    "Indented paragraphs and tab stops",
+    "Printer emphasis kept in the text measure"
+  ],
+  "artwork_rules": "Compose a character-grid document with printer controls.",
+  "overflow_policy": "Reflow the copy or agree a different sheet count.",
+  "fallbacks": [],
+  "reference_path": "mode.md",
+  "asset_manifest": "artwork/manifest.json",
+  "example_ids": [
+    "wordstar-flyer"
+  ],
+  "readiness": "supported",
+  "representative_preview": "preview.png",
+  "release_evidence": "release-evidence.json",
+  "text_only": true
+}

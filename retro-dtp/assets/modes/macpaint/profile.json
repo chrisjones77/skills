@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "id": "macpaint",
+  "display_name": "MacPaint 1-bit",
+  "aliases": [
+    "MacPaint",
+    "Macintosh QuickDraw"
+  ],
+  "reference_baseline": "Original Macintosh MacPaint and QuickDraw, 1984",
+  "fidelity": "period-inspired",
+  "supported_types": [
+    "flyer",
+    "notice"
+  ],
+  "templates": {
+    "flyer": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    },
+    "notice": {
+      "html": "templates/sheet.html",
+      "css": "templates/sheet.css",
+      "kind": "sheets"
+    }
+  },
+  "primitives": [
+    "sheets"
+  ],
+  "typography": {
+    "title": {
+      "family": "Paper Grid Serif",
+      "file": "assets/fonts/PaperGridSerif-Bold.ttf",
+      "weight": 700,
+      "style": "normal"
+    },
+    "heading": {
+      "family": "Paper Grid Serif",
+      "file": "assets/fonts/PaperGridSerif-Bold.ttf",
+      "weight": 700,
+      "style": "normal"
+    },
+    "body": {
+      "family": "Paper Grid Serif",
+      "file": "assets/fonts/PaperGridSerif-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "label": {
+      "family": "Paper Grid Serif",
+      "file": "assets/fonts/PaperGridSerif-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "date": {
+      "family": "Paper Grid Serif",
+      "file": "assets/fonts/PaperGridSerif-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "caption": {
+      "family": "Paper Grid Serif",
+      "file": "assets/fonts/PaperGridSerif-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    },
+    "footer": {
+      "family": "Paper Grid Serif",
+      "file": "assets/fonts/PaperGridSerif-Regular.ttf",
+      "weight": 400,
+      "style": "normal"
+    }
+  },
+  "palette": {
+    "monochrome": [
+      "#111",
+      "#fff"
+    ]
+  },
+  "print_defaults": {
+    "safe_margin_mm": 12.7,
+    "minimum_body_pt": 10
+  },
+  "signatures": [
+    "Black or white picture pixels",
+    "Repeated tile fills on an original bitmap",
+    "Stepped lettering and picture contours"
+  ],
+  "artwork_rules": "Use an original one-bit bitmap with pixel-aligned pattern fills.",
+  "overflow_policy": "Reflow the copy or agree a different sheet count.",
+  "fallbacks": [],
+  "reference_path": "mode.md",
+  "asset_manifest": "artwork/manifest.json",
+  "example_ids": [
+    "macpaint-flyer"
+  ],
+  "readiness": "supported",
+  "representative_preview": "preview.png",
+  "release_evidence": "release-evidence.json"
+}

@@ -1,0 +1,15 @@
+{
+  "status": "verified",
+  "preview_sha256": "c62352aaf19800035f43c588d2d4026186be316b3a50bfc6837674521e3f931c",
+  "examples": [
+    {
+      "id": "pagemaker-flyer",
+      "status": "verified",
+      "pdf_sha256": "243356e9f839e73c969efb5d24574b2ddae9562f8c281057196116622137822f",
+      "revision": "validation/archetypes/pagemaker/revision-001"
+    }
+  ],
+  "reviewer": "Codex page proof inspection",
+  "physical_print": "not-tested",
+  "creative_acceptance": "not-requested"
+}

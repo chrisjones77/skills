@@ -1,0 +1,15 @@
+{
+  "status": "verified",
+  "preview_sha256": "b865cd94e118e11f7413461db1eea4585d5bfc5850171c85aed6db6670166b35",
+  "examples": [
+    {
+      "id": "geoworks-newsletter",
+      "status": "verified",
+      "pdf_sha256": "cd7afa188dac389b2059c45d93ad210ce585fb6fd8ccd34830768353a92ed77f",
+      "revision": "validation/examples/geoworks-newsletter/revision-003"
+    }
+  ],
+  "reviewer": "Codex structural and visual inspection",
+  "physical_print": "not-tested",
+  "creative_acceptance": "not-requested"
+}

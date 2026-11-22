@@ -1,0 +1,15 @@
+{
+  "status": "verified",
+  "preview_sha256": "3a0de3925de00a26c3e2afa89129f075d0b27511825fc85eebe2484b3d1b8ccb",
+  "examples": [
+    {
+      "id": "macpaint-flyer",
+      "status": "verified",
+      "pdf_sha256": "77107d9c92cf714b8780f6c1f3ac3df673cd8971a2f472234f378102f520e3d9",
+      "revision": "validation/archetypes/macpaint/revision-001"
+    }
+  ],
+  "reviewer": "Codex page proof inspection",
+  "physical_print": "not-tested",
+  "creative_acceptance": "not-requested"
+}
