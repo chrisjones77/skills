@@ -17,3 +17,5 @@ Read left to right, top to bottom. Level 0 is the original Wasi River Bluegrass 
 | [8 · Stamp and border](level-8.png) | Two title lines, one bridge stamp, seven centred names and a repeating border carry the whole cover. |
 
 Select any level to see the full-size cover. To use the slider offline, download the repository and open this folder’s `index.html` in a browser. “Compare with original” returns to level 0 while remembering your selected setting. [Design brief](brief.txt) · [Image hashes and review](review.json)
+
+To hold the strength at 8/8 and change the toolset instead, [compare all eight styles side by side](eight-styles/).
