@@ -1,6 +1,6 @@
 # States of Mind · the complete Retro-DTP design grid
 
-Read across a row to see how one toolset changes the cover. Read down a column to compare what eight toolsets do with the same design strength. Every row begins with the same Wasi River Bluegrass catalogue cover. Raster strength stays at **0** and the printer finish stays **clean** in all 72 cells.
+Read across a row to see how one toolset changes the cover. Read down a column to compare what eight toolsets do with the same design strength. Every row begins with the same Wasi River Bluegrass catalogue cover. Raster strength stays at **0** and the printer finish stays **clean** in all 72 cells. [Compare all nine raster strengths at design 8/8](../raster-grid/)
 
 [![Eight rows of cover designs, each progressing from the original album artwork at 0 to the simplest native layout at 8. The table below links to each full-size image.](all-72.jpg)](all-72.jpg)
 

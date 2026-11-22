@@ -57,4 +57,4 @@ Retro-DTP 0.5.1 composes editable print documents and redesigns images using eig
 
 For ChatGPT Images, download the design card and attach it with the original image. Try “Redesign this for The New Print Shop for DOS at design 6/8. Keep the title exact, raster 0, clean output.” The optional raster attachment runs with Python and Pillow. [Design card](docs/retro-dtp/retro-design-filter.txt) · [Raster attachment](docs/retro-dtp/retro-filter.txt)
 
-Explore the same Wasi River Bluegrass album cover across eight styles and all nine design settings. Select a cell to open its full-size cover. [Complete *States of Mind* grid](docs/retro-dtp/states-of-mind/grid/) · [Standalone skill README](retro-dtp/README.md)
+Explore the same Wasi River Bluegrass album cover across eight styles and all nine design settings. Select a cell to open its full-size cover. [Complete *States of Mind* grid](docs/retro-dtp/states-of-mind/grid/) · [Raster continuum at design 8/8](docs/retro-dtp/states-of-mind/raster-grid/) · [Standalone skill README](retro-dtp/README.md)
