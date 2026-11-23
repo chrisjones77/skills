@@ -55,7 +55,7 @@ The [Git-first recorder and read-only bus monitor](work-recorder/README.md) prov
 
 Retro-DTP 0.5.1 composes editable print documents and redesigns images using eight period toolsets, from the IBM Selectric to PostScript and early TrueType. Design strength controls how much of the composition to rebuild. Raster strength and simulated printer marks can be selected separately. [Skill and presets](retro-dtp/SKILL.md) · [Print setup](retro-dtp/references/production.md)
 
-For ChatGPT Images, download the design card and attach it with the original image. Try “Redesign this for The New Print Shop for DOS at design 6/8. Keep the title exact, raster 0, clean output.” The optional raster attachment runs with Python and Pillow. [Design card](docs/retro-dtp/retro-design-filter.txt) · [Raster attachment](docs/retro-dtp/retro-filter.txt)
+Start with your image and a short prompt such as “Make this look like The New Print Shop for DOS. Keep the wording.” The standalone guide includes the ChatGPT design card and a one-line Codex install. [Try Retro-DTP](retro-dtp/README.md) · [Raster attachment](docs/retro-dtp/retro-filter.txt)
 
 [![States of Mind cover in eight retro publishing styles. Each row progresses from the original at left to a design built with that style’s tools at right.](./docs/retro-dtp/states-of-mind/grid/all-72.jpg)](./docs/retro-dtp/states-of-mind/grid/)
 

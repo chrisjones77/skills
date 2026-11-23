@@ -2,17 +2,33 @@
 
 Redesign an image as if its maker had a typewriter, a bitmap paint program or an early page-layout system. Retro-DTP can also compose editable flyers, cards, banners, newsletters and office documents.
 
+## Try it in ChatGPT Images
+
+Save the design card and attach it in ChatGPT with your image. For a new design, attach the card and describe what you want to make. [Get the design card](https://raw.githubusercontent.com/chrisjones77/skills/main/docs/retro-dtp/retro-design-filter.txt)
+
+> Make this look like The New Print Shop for DOS. Keep the wording.
+
+The card starts at design 4/8, raster 0 and clean output. To try a stronger redesign, say “Push the design to 8/8.” To change the print finish, say “Add nine-pin colour.”
+
+## Install in Codex
+
+Paste this into a Codex chat once:
+
+```text
+$skill-installer Install https://github.com/chrisjones77/skills/tree/main/retro-dtp
+```
+
+Then attach your image and ask:
+
+> $retro-dtp Make this a DeskMate Draw poster. Keep the wording.
+
 ## States of Mind design grid
 
 [![States of Mind cover in eight retro publishing styles. Each row progresses from the original at left to a design built with that style’s tools at right.](https://raw.githubusercontent.com/chrisjones77/skills/main/docs/retro-dtp/states-of-mind/grid/all-72.jpg)](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/grid/)
 
 Read across each row from design 0/8 to 8/8. Read down a column to compare all eight toolsets at the same strength. Raster stays at 0 and the printer stays clean. [Browse the full grid](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/grid) · [Compare the nine raster strengths at design 8/8](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/raster-grid) · [Compare four printer finishes](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/printer-grid)
 
-## Try it in ChatGPT Images
-
-Download the design card, attach it with your original image, and say which words and motifs matter. For a new design, attach the card and describe the subject. [Download the design card](https://raw.githubusercontent.com/chrisjones77/skills/main/docs/retro-dtp/retro-design-filter.txt)
-
-> Redesign this album cover for DeskMate Draw at design 4/8. Keep the artist, album title and seven state names in order. Use raster 0 and clean output.
+## Choose the settings
 
 | Choice | What it controls |
 | --- | --- |
@@ -21,7 +37,11 @@ Download the design card, attach it with your original image, and say which word
 | Raster strength, 0–8 | Applies pixel-grid, palette and optional dithering changes to the finished composition. Choose 0 to see the design at full detail. |
 | Printer appearance | Clean output is the default for a redesign. Request a simulated finish, such as nine-pin colour, after composing the page. |
 
-When trying a different setting, reuse the original reference and required words. For an image brief with no style or strength specified, the skill defaults to Print Shop at 4/8.
+When trying a different setting, reuse the original reference and required words. The default style is The New Print Shop for DOS.
+
+## Share with a ChatGPT workspace
+
+If your workspace supports skills, upload Retro-DTP once and share its install link with teammates. They can then use it in new chats. [OpenAI’s workspace skill-sharing guide](https://help.openai.com/en/articles/20001066-skills-in-chatgpt)
 
 ## Use as a standalone skill
 
