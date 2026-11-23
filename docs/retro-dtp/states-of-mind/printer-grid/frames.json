@@ -1,0 +1,167 @@
+{
+  "design": 8,
+  "raster": 0,
+  "renderer": "render.py",
+  "styles": [
+    {
+      "mode": "selectric",
+      "name": "IBM Selectric",
+      "clean": {
+        "file": "../eight-styles/selectric.png",
+        "sha256": "3ba1ef14474b37dbc64832c8282524640a63d4ac7b1e17783354c82804cbc56f"
+      },
+      "nine-pin-colour": {
+        "file": "nine-pin-colour/selectric.png",
+        "sha256": "4f4bf920e96b6945e9b94d6e3408ac9382014db58d0241300d54a9624955da21"
+      },
+      "nine-pin-monochrome": {
+        "file": "nine-pin-monochrome/selectric.png",
+        "sha256": "83c229326dbf0b5378a80627bb7255321330607b8da7825d8b0868fecfb22987"
+      },
+      "monochrome-laser": {
+        "file": "monochrome-laser/selectric.png",
+        "sha256": "d5c5294dba5f8c0bac01f2fcd48baac7e755cc486ed8b1320404ce0ca8cc922b"
+      }
+    },
+    {
+      "mode": "wordstar",
+      "name": "WordStar 3.3",
+      "clean": {
+        "file": "../eight-styles/wordstar.png",
+        "sha256": "3adf984cf33582a150073ec3bfad085d28c17829d65e7e0c51c347d32d6cdc78"
+      },
+      "nine-pin-colour": {
+        "file": "nine-pin-colour/wordstar.png",
+        "sha256": "25fe799c20f65e4ae7b440491d3e033f96636dcf0c6247a267d15531373b965f"
+      },
+      "nine-pin-monochrome": {
+        "file": "nine-pin-monochrome/wordstar.png",
+        "sha256": "4d5161d69af91dc79fcf6bb613f6267438c98d8cfc9b4929a032f7f3ab7fdbb5"
+      },
+      "monochrome-laser": {
+        "file": "monochrome-laser/wordstar.png",
+        "sha256": "00f6ee20d7969fa379c4cc6c647137e775725604c860091b78d7b66fdb1ddaf8"
+      }
+    },
+    {
+      "mode": "macpaint",
+      "name": "MacPaint",
+      "clean": {
+        "file": "../eight-styles/macpaint.png",
+        "sha256": "82c81eba4f37faffb84fdbc5c050f9e4bcfaaf1ae26c1efc7cb1a1e8a427939e"
+      },
+      "nine-pin-colour": {
+        "file": "nine-pin-colour/macpaint.png",
+        "sha256": "44e7bb571a652886e3b821216ec2386427e90fbc97b0b19da859243d13b72676"
+      },
+      "nine-pin-monochrome": {
+        "file": "nine-pin-monochrome/macpaint.png",
+        "sha256": "cef9bae91e75a1fc7e338e2890dcbd826852f6a3d4dafce6b57dd2fa078e5793"
+      },
+      "monochrome-laser": {
+        "file": "monochrome-laser/macpaint.png",
+        "sha256": "521cd3de0cba27ce8c319b8ec97dd95aca40e1e84003ddd420cdee219beabdbf"
+      }
+    },
+    {
+      "mode": "print-shop",
+      "name": "The New Print Shop for DOS",
+      "clean": {
+        "file": "../level-8.png",
+        "sha256": "53b02ee28bc80c886224a18fdbd588f603a956d523c1f0333b9bb80eaeec6aec"
+      },
+      "nine-pin-colour": {
+        "file": "nine-pin-colour/print-shop.png",
+        "sha256": "47d0fdbf305bb91e563a8b3b25f756acc18321ab7e95efa3bc0eb4e6e4f3e60c"
+      },
+      "nine-pin-monochrome": {
+        "file": "nine-pin-monochrome/print-shop.png",
+        "sha256": "bb141370a0f2c6a1f9085a1a0b87e0015aa3118991c1358438f5f299ab53c994"
+      },
+      "monochrome-laser": {
+        "file": "monochrome-laser/print-shop.png",
+        "sha256": "b1108f089cae97f309fae167acff094c45af506f81a9450b4bf6227827919d7c"
+      }
+    },
+    {
+      "mode": "deskmate",
+      "name": "Tandy DeskMate Draw",
+      "clean": {
+        "file": "../eight-styles/deskmate.png",
+        "sha256": "4d880f609e7c755fbab8272223b5685b39e175faf22b949c2f17ed7f5d6ed39f"
+      },
+      "nine-pin-colour": {
+        "file": "nine-pin-colour/deskmate.png",
+        "sha256": "36c83b0f5e0e62cf2c9f73023aa9508e4439d1e9be9dd5614232d47adcfd4f8e"
+      },
+      "nine-pin-monochrome": {
+        "file": "nine-pin-monochrome/deskmate.png",
+        "sha256": "bccc31c6ffbdfbfdb2bf4e2ca67c6daa940aee80555534b0ecb591ea28c65751"
+      },
+      "monochrome-laser": {
+        "file": "monochrome-laser/deskmate.png",
+        "sha256": "b8ca5316da8721481f28b4f491a2a005d9b3d64c93962d4e1ffd198908099ecb"
+      }
+    },
+    {
+      "mode": "geoworks",
+      "name": "GeoWorks Ensemble",
+      "clean": {
+        "file": "../eight-styles/geoworks.png",
+        "sha256": "a0cc5d24c8ec2b1bcce2d02d0260c858f8f5aeb5e54e667c3b4746a9e4f5bd76"
+      },
+      "nine-pin-colour": {
+        "file": "nine-pin-colour/geoworks.png",
+        "sha256": "784dd40f6db578fb5b859cfaf191eeb4d3efe5a60901762268f85e8a0d71acda"
+      },
+      "nine-pin-monochrome": {
+        "file": "nine-pin-monochrome/geoworks.png",
+        "sha256": "3b6453f0e3bad7735d5cf8425e7910dfb3e2c768b95f404feac2414a3315ec2a"
+      },
+      "monochrome-laser": {
+        "file": "monochrome-laser/geoworks.png",
+        "sha256": "4c33f25a1d39edd0a54c757365db8ac4ed61ee9f7f4d0b6b223c5dd4d2c2203e"
+      }
+    },
+    {
+      "mode": "pagemaker",
+      "name": "PageMaker / LaserWriter PostScript",
+      "clean": {
+        "file": "../eight-styles/pagemaker.png",
+        "sha256": "1ecc05763534c1539501bfe190d35e44031ddcf146a15e7336f09df8fec0e29a"
+      },
+      "nine-pin-colour": {
+        "file": "nine-pin-colour/pagemaker.png",
+        "sha256": "d4d7dc619edd6a1fb2458c33584100479744a6b4cf99cc8d9dc35fa0f06bbf71"
+      },
+      "nine-pin-monochrome": {
+        "file": "nine-pin-monochrome/pagemaker.png",
+        "sha256": "0b98f110e330c1c44e5a188566edb8f8dd08493768e9eb90876e5ca1098c8cb1"
+      },
+      "monochrome-laser": {
+        "file": "monochrome-laser/pagemaker.png",
+        "sha256": "567caab61ff38525f96cf1e51bfc2d22e6ca9045ac46e300c33e036ce244c5d3"
+      }
+    },
+    {
+      "mode": "windows-truetype",
+      "name": "Windows 3.1 TrueType",
+      "clean": {
+        "file": "../eight-styles/windows-truetype.png",
+        "sha256": "b8ddd3a00ef4d52f091086b4b6de30250fbb32a9021b5f7a40bc2bef116ea80f"
+      },
+      "nine-pin-colour": {
+        "file": "nine-pin-colour/windows-truetype.png",
+        "sha256": "7a7879965d070a47ec4af585b4342459603c2a5c33e5242b69f45f2ffb4c3901"
+      },
+      "nine-pin-monochrome": {
+        "file": "nine-pin-monochrome/windows-truetype.png",
+        "sha256": "53011587ef41ac8089aca3f55bc5697b6f8a09437ac793f7e05a914c8d910f47"
+      },
+      "monochrome-laser": {
+        "file": "monochrome-laser/windows-truetype.png",
+        "sha256": "23e69b4d826d658c9f632bd379daff3c0f27baa0ed8765388158423d4ff2744c"
+      }
+    }
+  ]
+}
