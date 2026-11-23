@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>States of Mind · Retro-DTP printer finishes</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eeece5;color:#203029;font:17px/1.45 system-ui,sans-serif}main{display:grid;grid-template-columns:minmax(230px,320px) minmax(0,820px);gap:32px;max-width:1230px;margin:auto;padding:clamp(16px,4vw,48px)}h1{font:normal clamp(32px,4vw,48px)/1.05 Georgia,serif;margin:0 0 12px}p{margin:0 0 20px}label{display:block;font-weight:600;margin:15px 0 5px}select,input{width:100%;font:inherit;accent-color:#215140}select{padding:6px}img{display:block;width:100%;height:auto;background:white}a{color:#174c39}small{font-size:14px}a:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #1264a3}#current{font-weight:600;margin:16px 0 4px}figure{margin:0}figcaption{padding-top:8px}@media(max-width:720px){main{grid-template-columns:1fr;gap:16px}aside>p{margin-bottom:8px}h1{font-size:29px}}
+</style>
+</head>
+<body>
+<main>
+<aside>
+<h1>States of Mind</h1><p>Wasi River Bluegrass<br><small>Design 8/8 · Raster 0</small></p>
+<label for="style">Authoring style</label><select id="style"><option value="selectric">IBM Selectric</option><option value="wordstar">WordStar 3.3</option><option value="macpaint">MacPaint</option><option value="print-shop">The New Print Shop for DOS</option><option value="deskmate">Tandy DeskMate Draw</option><option value="geoworks">GeoWorks Ensemble</option><option value="pagemaker">PageMaker / LaserWriter PostScript</option><option value="windows-truetype">Windows 3.1 TrueType</option></select>
+<label for="finish">Printer finish</label><select id="finish"><option value="clean">Clean</option><option value="nine-pin-colour">Nine-pin colour</option><option value="nine-pin-monochrome">Nine-pin monochrome</option><option value="monochrome-laser">Monochrome laser</option></select>
+<p id="current" aria-live="polite"></p>
+<a href="all-32.jpg">View all 32 covers</a><br><a href="details.png">Compare magnified marks</a>
+</aside>
+<figure><a id="full" href="../eight-styles/selectric.png"><img id="cover" width="1254" height="1254" alt="IBM Selectric cover, clean" src="../eight-styles/selectric.png"></a><figcaption>Open the cover for its full-size image.</figcaption></figure>
+</main>
+<script>
+const sources = {
+  "selectric": {
+    "clean": "../eight-styles/selectric.png",
+    "nine-pin-colour": "nine-pin-colour/selectric.png",
+    "nine-pin-monochrome": "nine-pin-monochrome/selectric.png",
+    "monochrome-laser": "monochrome-laser/selectric.png"
+  },
+  "wordstar": {
+    "clean": "../eight-styles/wordstar.png",
+    "nine-pin-colour": "nine-pin-colour/wordstar.png",
+    "nine-pin-monochrome": "nine-pin-monochrome/wordstar.png",
+    "monochrome-laser": "monochrome-laser/wordstar.png"
+  },
+  "macpaint": {
+    "clean": "../eight-styles/macpaint.png",
+    "nine-pin-colour": "nine-pin-colour/macpaint.png",
+    "nine-pin-monochrome": "nine-pin-monochrome/macpaint.png",
+    "monochrome-laser": "monochrome-laser/macpaint.png"
+  },
+  "print-shop": {
+    "clean": "../level-8.png",
+    "nine-pin-colour": "nine-pin-colour/print-shop.png",
+    "nine-pin-monochrome": "nine-pin-monochrome/print-shop.png",
+    "monochrome-laser": "monochrome-laser/print-shop.png"
+  },
+  "deskmate": {
+    "clean": "../eight-styles/deskmate.png",
+    "nine-pin-colour": "nine-pin-colour/deskmate.png",
+    "nine-pin-monochrome": "nine-pin-monochrome/deskmate.png",
+    "monochrome-laser": "monochrome-laser/deskmate.png"
+  },
+  "geoworks": {
+    "clean": "../eight-styles/geoworks.png",
+    "nine-pin-colour": "nine-pin-colour/geoworks.png",
+    "nine-pin-monochrome": "nine-pin-monochrome/geoworks.png",
+    "monochrome-laser": "monochrome-laser/geoworks.png"
+  },
+  "pagemaker": {
+    "clean": "../eight-styles/pagemaker.png",
+    "nine-pin-colour": "nine-pin-colour/pagemaker.png",
+    "nine-pin-monochrome": "nine-pin-monochrome/pagemaker.png",
+    "monochrome-laser": "monochrome-laser/pagemaker.png"
+  },
+  "windows-truetype": {
+    "clean": "../eight-styles/windows-truetype.png",
+    "nine-pin-colour": "nine-pin-colour/windows-truetype.png",
+    "nine-pin-monochrome": "nine-pin-monochrome/windows-truetype.png",
+    "monochrome-laser": "monochrome-laser/windows-truetype.png"
+  }
+};
+const style = document.getElementById('style');
+const finish = document.getElementById('finish');
+const cover = document.getElementById('cover');
+function show() {
+  const file = sources[style.value][finish.value];
+  const title = style.selectedOptions[0].text + ' · ' + finish.selectedOptions[0].text;
+  cover.src = file;
+  cover.alt = 'Wasi River Bluegrass, States of Mind. ' + title;
+  document.getElementById('full').href = file;
+  document.getElementById('current').textContent = title;
+}
+style.addEventListener('change', show);
+finish.addEventListener('change', show);
+show();
+</script>
+</body>
+</html>

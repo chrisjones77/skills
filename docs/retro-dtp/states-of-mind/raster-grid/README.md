@@ -1,6 +1,6 @@
 # States of Mind · raster continuum
 
-Each row begins with the published **design 8/8** cover for that style. Read across to see the effect of raster strengths **0–8** on exactly the same lettering and artwork. The printer stays **clean** throughout. [Companion design grid](../grid/)
+Each row begins with the published **design 8/8** cover for that style. Read across to see the effect of raster strengths **0–8** on exactly the same lettering and artwork. The printer stays **clean** throughout. [Companion design grid](../grid/) · [Compare printer finishes](../printer-grid/)
 
 [![Eight rows show each style’s finished album cover at nine raster strengths.](all-72.jpg)](all-72.jpg)
 

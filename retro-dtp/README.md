@@ -1,6 +1,6 @@
 # Retro-DTP
 
-Redesign an image as if its maker had a typewriter, a bitmap paint program or an early page-layout system. Retro-DTP can also compose editable flyers, cards, banners, newsletters and office documents. The *States of Mind* gallery shows how the same album cover changes across every style and design strength. [Browse the full grid](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/grid) · [Compare the nine raster strengths at design 8/8](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/raster-grid)
+Redesign an image as if its maker had a typewriter, a bitmap paint program or an early page-layout system. Retro-DTP can also compose editable flyers, cards, banners, newsletters and office documents. The *States of Mind* gallery shows how the same album cover changes across every style and design strength. [Browse the full grid](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/grid) · [Compare the nine raster strengths at design 8/8](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/raster-grid) · [Compare four printer finishes](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/printer-grid)
 
 ## Try it in ChatGPT Images
 
