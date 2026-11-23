@@ -1,6 +1,12 @@
 # Retro-DTP
 
-Redesign an image as if its maker had a typewriter, a bitmap paint program or an early page-layout system. Retro-DTP can also compose editable flyers, cards, banners, newsletters and office documents. The *States of Mind* gallery shows how the same album cover changes across every style and design strength. [Browse the full grid](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/grid) · [Compare the nine raster strengths at design 8/8](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/raster-grid) · [Compare four printer finishes](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/printer-grid)
+Redesign an image as if its maker had a typewriter, a bitmap paint program or an early page-layout system. Retro-DTP can also compose editable flyers, cards, banners, newsletters and office documents.
+
+## States of Mind design grid
+
+[![States of Mind cover in eight retro publishing styles. Each row progresses from the original at left to a design built with that style’s tools at right.](https://raw.githubusercontent.com/chrisjones77/skills/main/docs/retro-dtp/states-of-mind/grid/all-72.jpg)](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/grid/)
+
+Read across each row from design 0/8 to 8/8. Read down a column to compare all eight toolsets at the same strength. Raster stays at 0 and the printer stays clean. [Browse the full grid](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/grid) · [Compare the nine raster strengths at design 8/8](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/raster-grid) · [Compare four printer finishes](https://github.com/chrisjones77/skills/tree/main/docs/retro-dtp/states-of-mind/printer-grid)
 
 ## Try it in ChatGPT Images
 
