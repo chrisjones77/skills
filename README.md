@@ -57,4 +57,6 @@ Retro-DTP 0.5.1 composes editable print documents and redesigns images using eig
 
 For ChatGPT Images, download the design card and attach it with the original image. Try “Redesign this for The New Print Shop for DOS at design 6/8. Keep the title exact, raster 0, clean output.” The optional raster attachment runs with Python and Pillow. [Design card](docs/retro-dtp/retro-design-filter.txt) · [Raster attachment](docs/retro-dtp/retro-filter.txt)
 
-Explore the same Wasi River Bluegrass album cover across eight styles and all nine design settings. Select a cell to open its full-size cover. [Complete *States of Mind* grid](docs/retro-dtp/states-of-mind/grid/) · [Raster continuum at design 8/8](docs/retro-dtp/states-of-mind/raster-grid/) · [Compare printer finishes](docs/retro-dtp/states-of-mind/printer-grid/) · [Standalone skill README](retro-dtp/README.md)
+[![States of Mind cover in eight retro publishing styles. Each row progresses from the original at left to a design built with that style’s tools at right.](./docs/retro-dtp/states-of-mind/grid/all-72.jpg)](./docs/retro-dtp/states-of-mind/grid/)
+
+The *States of Mind* grid shows the same Wasi River Bluegrass cover across eight styles and nine design settings. Open the gallery to see any cover at full size. [Complete *States of Mind* grid](docs/retro-dtp/states-of-mind/grid/) · [Raster continuum at design 8/8](docs/retro-dtp/states-of-mind/raster-grid/) · [Compare printer finishes](docs/retro-dtp/states-of-mind/printer-grid/) · [Standalone skill README](retro-dtp/README.md)
